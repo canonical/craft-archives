@@ -1,5 +1,5 @@
 [project]
-name = "starcraft"
+name = "craft-archives"
 version = "0.0.1"
 readme = "README.rst"
 dependencies = [
@@ -14,7 +14,7 @@ classifiers = [
 requires-python = ">=3.8"
 
 [project.scripts]
-starcraft-hello = "starcraft:hello"
+craft-archives-hello = "craft_archives:hello"
 
 [project.optional-dependencies]
 dev = [
@@ -65,7 +65,7 @@ skip_empty = true
 fail_under = 80
 
 [tool.pyright]
-strict = ["starcraft"]
+strict = ["craft_archives"]
 pythonVersion = "3.8"
 pythonPlatform = "Linux"
 venvPath = ".tox"
@@ -74,7 +74,7 @@ venv = "py38"
 [tool.ruff]
 line-length = 88
 target-version = "py38"
-src = ["starcraft", "tests"]
+src = ["craft_archives", "tests"]
 extend-exclude = [
     "docs",
     "__pycache__",

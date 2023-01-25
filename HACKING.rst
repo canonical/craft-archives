@@ -1,8 +1,8 @@
-*********
-Starcraft
-*********
+**************
+craft-archives
+**************
 
-Welcome to Starcraft! We hope this document helps you get started. Before contributing any code, please sign the `Canonical contributor licence agreement`_.
+Welcome to craft-archives! We hope this document helps you get started. Before contributing any code, please sign the `Canonical contributor licence agreement`_.
 
 Setting up a development environment
 ------------------------------------
