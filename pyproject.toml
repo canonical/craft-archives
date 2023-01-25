@@ -27,7 +27,7 @@ types = [
 
 [build-system]
 requires = [
-    "setuptools==45.2.0",  # This is the version provided in apt with focal
+    "setuptools==66.1.1",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -150,3 +150,6 @@ ignore = [
 ]
 # isort leaves init files alone by default, this makes ruff ignore them too.
 "__init__.py" = ["I001"]
+
+[tool.setuptools]
+packages = ["craft_archives"]
