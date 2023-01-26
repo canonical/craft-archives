@@ -17,7 +17,7 @@
 import pydantic
 import pytest
 
-from snapcraft.repo.projects import AptDeb, AptPPA
+from craft_archives.repo.projects import AptDeb, AptPPA
 
 
 class TestAptPPAValidation:

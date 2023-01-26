@@ -18,7 +18,7 @@
 
 from typing import Optional
 
-from snapcraft.errors import SnapcraftError
+from craft_archives.errors import SnapcraftError
 
 
 class PackageRepositoryError(SnapcraftError):

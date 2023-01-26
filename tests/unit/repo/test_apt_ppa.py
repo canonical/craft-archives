@@ -20,13 +20,13 @@ from unittest.mock import call
 import launchpadlib
 import pytest
 
-from snapcraft.repo import apt_ppa, errors
+from craft_archives.repo import apt_ppa, errors
 
 
 @pytest.fixture(autouse=True)
 def mock_launchpad(mocker):
     m = mocker.patch(
-        "snapcraft.repo.apt_ppa.Launchpad", spec=launchpadlib.launchpad.Launchpad
+        "craft_archives.repo.apt_ppa.Launchpad", spec=launchpadlib.launchpad.Launchpad
     )
     m.login_anonymously.return_value.load.return_value.signing_key_fingerprint = (
         "FAKE-PPA-SIGNING-KEY"

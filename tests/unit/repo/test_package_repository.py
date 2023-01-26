@@ -17,8 +17,8 @@
 
 import pytest
 
-from snapcraft.repo import errors
-from snapcraft.repo.package_repository import (
+from craft_archives.repo import errors
+from craft_archives.repo.package_repository import (
     PackageRepository,
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
