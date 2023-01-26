@@ -1,6 +1,6 @@
 # -*- Mode:Python; indent-tabs-mode:nil; tab-width:4 -*-
 #
-# Copyright 2015-2022 Canonical Ltd.
+# Copyright 2015-2023 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -17,17 +17,18 @@
 """Manage the host's apt source repository configuration."""
 
 import io
+import logging
 import pathlib
 import re
 import subprocess
 from typing import List, Optional, cast
 
-from craft_cli import emit
-
 from craft_archives import os_release, utils
 
 from . import apt_ppa, package_repository
 
+
+logger = logging.getLogger(__name__)
 
 def _construct_deb822_source(
     *,
@@ -110,11 +111,11 @@ class AptSourcesManager:
         config_path = self._sources_list_d / f"{name}.sources"
         if config_path.exists() and config_path.read_text() == config:
             # Already installed and matches, nothing to do.
-            emit.debug(f"Ignoring unchanged sources: {config_path!s}")
+            logger.debug(f"Ignoring unchanged sources: {config_path!s}")
             return False
 
         config_path.write_text(config)
-        emit.debug(f"Installed sources: {config_path!s}")
+        logger.debug(f"Installed sources: {config_path!s}")
         return True
 
     def _install_sources_apt(
@@ -202,7 +203,7 @@ class AptSourcesManager:
 
         :returns: True if source configuration was changed.
         """
-        emit.debug(f"Processing repo: {package_repo!r}")
+        logger.debug(f"Processing repo: {package_repo!r}")
         if isinstance(package_repo, package_repository.PackageRepositoryAptPPA):
             return self._install_sources_ppa(package_repo=package_repo)
 
@@ -221,5 +222,5 @@ class AptSourcesManager:
 def _add_architecture(architectures: List[str]):
     """Add package repository architecture."""
     for arch in architectures:
-        emit.progress(f"Add repository architecture: {arch}", permanent=True)
+        logger.info(f"Add repository architecture: {arch}")
         subprocess.run(["dpkg", "--add-architecture", arch], check=True)

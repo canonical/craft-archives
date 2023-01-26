@@ -1,6 +1,6 @@
 # -*- Mode:Python; indent-tabs-mode:nil; tab-width:4 -*-
 #
-# Copyright 2015-2022 Canonical Ltd.
+# Copyright 2015-2023 Canonical Ltd.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
@@ -15,17 +15,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """APT key management helpers."""
-
+import logging
 import pathlib
 import subprocess
 import tempfile
 from typing import List, Optional
 
 import gnupg
-from craft_cli import emit
 
 from . import apt_ppa, errors, package_repository
 
+logger = logging.getLogger(__name__)
 
 class AptKeyManager:
     """Manage APT repository keys."""
@@ -97,7 +97,7 @@ class AptKeyManager:
         except subprocess.CalledProcessError as error:
             # Export shouldn't exit with failure based on testing,
             # but assume the key is not installed and log a warning.
-            emit.progress(f"Unexpected apt-key failure: {error.output}", permanent=True)
+            logger.warning(f"Unexpected apt-key failure: {error.output}")
             return False
 
         apt_key_output = proc.stdout.decode()
@@ -111,7 +111,7 @@ class AptKeyManager:
         # The two strings above have worked in testing, but if neither is
         # present for whatever reason, assume the key is not installed
         # and log a warning.
-        emit.progress(f"Unexpected apt-key output: {apt_key_output}", permanent=True)
+        logger.warning(f"Unexpected apt-key output: {apt_key_output}")
         return False
 
     def install_key(self, *, key: str) -> None:
@@ -130,7 +130,7 @@ class AptKeyManager:
         ]
 
         try:
-            emit.debug(f"Executing: {cmd!r}")
+            logger.debug(f"Executing: {cmd!r}")
             env = {}
             env["LANG"] = "C.UTF-8"
             subprocess.run(
@@ -144,7 +144,7 @@ class AptKeyManager:
         except subprocess.CalledProcessError as error:
             raise errors.AptGPGKeyInstallError(error.output.decode(), key=key)
 
-        emit.debug(f"Installed apt repository key:\n{key}")
+        logger.debug(f"Installed apt repository key:\n{key}")
 
     def install_key_from_keyserver(
         self, *, key_id: str, key_server: str = "keyserver.ubuntu.com"
@@ -171,7 +171,7 @@ class AptKeyManager:
         ]
 
         try:
-            emit.debug(f"Executing: {cmd!r}")
+            logger.debug(f"Executing: {cmd!r}")
             subprocess.run(
                 cmd,
                 stdout=subprocess.PIPE,
