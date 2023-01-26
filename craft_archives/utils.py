@@ -16,9 +16,10 @@
 
 """Utilities for craft_archives."""
 import logging
-import pathlib
 import platform
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,9 @@ _32BIT_USERSPACE_ARCHITECTURE = {
 }
 
 
-def get_os_platform(filepath=pathlib.Path("/etc/os-release")):
+def get_os_platform(
+    filepath: Path = Path("/etc/os-release"),  # noqa: B008
+) -> OSPlatform:
     """Determine a system/release combo for an OS using /etc/os-release if available."""
     system = platform.system()
     release = platform.release()
@@ -73,7 +76,7 @@ def get_os_platform(filepath=pathlib.Path("/etc/os-release")):
         except FileNotFoundError:
             logger.debug("Unable to locate 'os-release' file, using default values")
         else:
-            os_release = {}
+            os_release: Dict[str, str] = {}
             for line in lines:
                 line = line.strip()
                 if not line or line.startswith("#") or "=" not in line:
@@ -88,7 +91,7 @@ def get_os_platform(filepath=pathlib.Path("/etc/os-release")):
     return OSPlatform(system=system, release=release, machine=machine)
 
 
-def get_host_architecture():
+def get_host_architecture() -> str:
     """Get host architecture in deb format suitable for base definition."""
     os_platform_machine = get_os_platform().machine
 

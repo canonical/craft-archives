@@ -21,7 +21,7 @@ import re
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 
-from overrides import overrides
+from overrides import overrides  # pyright: reportUnknownVariableType=false
 
 from . import errors
 
@@ -36,7 +36,7 @@ class PackageRepository(abc.ABC):
     @classmethod
     def unmarshal(cls, data: Dict[str, str]) -> "PackageRepository":
         """Create a package repository object from the given data."""
-        if not isinstance(data, dict):
+        if not isinstance(data, dict):  # pyright: reportUnnecessaryIsInstance=false
             raise errors.PackageRepositoryValidationError(
                 url=str(data),
                 brief="invalid object.",
@@ -55,7 +55,7 @@ class PackageRepository(abc.ABC):
     @classmethod
     def unmarshal_package_repositories(cls, data: Any) -> List["PackageRepository"]:
         """Create multiple package repositories from the given data."""
-        repositories = []
+        repositories: List[PackageRepository] = []
 
         if data is not None:
             if not isinstance(data, list):
@@ -228,7 +228,7 @@ class PackageRepositoryApt(PackageRepository):
 
     # pylint: disable=too-many-branches
 
-    def validate(self) -> None:  # noqa: C901
+    def validate(self) -> None:
         """Ensure the current repository data is valid."""
         if self.formats is not None:
             for repo_format in self.formats:
@@ -341,10 +341,11 @@ class PackageRepositoryApt(PackageRepository):
 
     # pylint: enable=too-many-branches
 
-    @classmethod  # noqa: C901
+    @classmethod
     @overrides
-    def unmarshal(cls, data: Dict[str, Any]) -> "PackageRepositoryApt":  # noqa: C901
+    def unmarshal(cls, data: Dict[str, Any]) -> "PackageRepositoryApt":
         """Create a package repository object from the given data."""
+        # pyright: reportUnknownArgumentType=false
         if not isinstance(data, dict):
             raise errors.PackageRepositoryValidationError(
                 url=str(data),

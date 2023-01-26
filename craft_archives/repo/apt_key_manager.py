@@ -15,6 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """APT key management helpers."""
+
+# pyright: reportMissingTypeStubs=false
+
 import logging
 import pathlib
 import subprocess
@@ -27,13 +30,14 @@ from . import apt_ppa, errors, package_repository
 
 logger = logging.getLogger(__name__)
 
+
 class AptKeyManager:
     """Manage APT repository keys."""
 
     def __init__(
         self,
         *,
-        gpg_keyring: pathlib.Path = pathlib.Path(
+        gpg_keyring: pathlib.Path = pathlib.Path(  # noqa: B008
             "/etc/apt/trusted.gpg.d/snapcraft.gpg"
         ),
         key_assets: pathlib.Path,
@@ -70,6 +74,7 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
+        # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
         with tempfile.NamedTemporaryFile(suffix="keyring") as temp_file:
             return (
                 gnupg.GPG(keyring=temp_file.name).import_keys(key_data=key).fingerprints

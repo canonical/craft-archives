@@ -79,7 +79,7 @@ def _unmarshal_repositories(
     project_repositories: List[Dict[str, Any]]
 ) -> List[PackageRepository]:
     """Create package repositories objects from project data."""
-    repositories = []
+    repositories: List[PackageRepository] = []
     for data in project_repositories:
         pkg_repo: PackageRepository
 

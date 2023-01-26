@@ -15,6 +15,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Personal Package Archive helpers."""
+
+# pyright: reportMissingTypeStubs=false
+
 import logging
 from typing import Tuple
 
@@ -29,13 +32,14 @@ logger = logging.getLogger(__name__)
 def split_ppa_parts(*, ppa: str) -> Tuple[str, str]:
     """Obtain user and repository components from a PPA line."""
     ppa_split = ppa.split("/")
-    if len(ppa_split) != 2:
+    if len(ppa_split) != 2:  # noqa: PLR2004
         raise errors.AptPPAInstallError(ppa, "invalid PPA format")
     return ppa_split[0], ppa_split[1]
 
 
 def get_launchpad_ppa_key_id(*, ppa: str) -> str:
     """Query Launchpad for PPA's key ID."""
+    # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
     owner, name = split_ppa_parts(ppa=ppa)
     launchpad = Launchpad.login_anonymously("snapcraft", "production")
     launchpad_url = f"~{owner}/+archive/{name}"

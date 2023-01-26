@@ -16,7 +16,6 @@
 
 import pydantic
 import pytest
-
 from craft_archives.repo.projects import AptDeb, AptPPA
 
 
