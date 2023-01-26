@@ -24,7 +24,7 @@ from typing import List, Optional, cast
 
 from craft_cli import emit
 
-from snapcraft import os_release, utils
+from craft_archives import os_release, utils
 
 from . import apt_ppa, package_repository
 

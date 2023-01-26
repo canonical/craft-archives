@@ -20,8 +20,8 @@ from unittest.mock import call
 
 import pytest
 
-from snapcraft.repo import apt_ppa, apt_sources_manager, errors
-from snapcraft.repo.package_repository import (
+from craft_archives.repo import apt_ppa, apt_sources_manager, errors
+from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
 )
@@ -30,7 +30,7 @@ from snapcraft.repo.package_repository import (
 @pytest.fixture(autouse=True)
 def mock_apt_ppa_get_signing_key(mocker):
     yield mocker.patch(
-        "snapcraft.repo.apt_ppa.get_launchpad_ppa_key_id",
+        "craft_archives.repo.apt_ppa.get_launchpad_ppa_key_id",
         spec=apt_ppa.get_launchpad_ppa_key_id,
         return_value="FAKE-PPA-SIGNING-KEY",
     )
@@ -43,7 +43,7 @@ def mock_environ_copy(mocker):
 
 @pytest.fixture(autouse=True)
 def mock_host_arch(mocker):
-    m = mocker.patch("snapcraft.utils.get_host_architecture")
+    m = mocker.patch("craft_archives.utils.get_host_architecture")
     m.return_value = "FAKE-HOST-ARCH"
 
     yield m
@@ -57,7 +57,7 @@ def mock_run(mocker):
 @pytest.fixture(autouse=True)
 def mock_version_codename(mocker):
     yield mocker.patch(
-        "snapcraft.os_release.OsRelease.version_codename",
+        "craft_archives.os_release.OsRelease.version_codename",
         return_value="FAKE-CODENAME",
     )
 
