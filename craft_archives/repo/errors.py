@@ -34,7 +34,7 @@ class PackageRepositoryValidationError(PackageRepositoryError):
         brief: str,
         details: Optional[str] = None,
         resolution: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__(
             f"Invalid package repository for {url!r}: {brief}",
             details=details,
@@ -45,7 +45,7 @@ class PackageRepositoryValidationError(PackageRepositoryError):
 class AptPPAInstallError(PackageRepositoryError):
     """Installation of a PPA repository failed."""
 
-    def __init__(self, ppa: str, reason: str):
+    def __init__(self, ppa: str, reason: str) -> None:
         super().__init__(
             f"Failed to install PPA {ppa!r}: {reason}",
             resolution="Verify PPA is correct and try again",
@@ -62,7 +62,7 @@ class AptGPGKeyInstallError(PackageRepositoryError):
         key: Optional[str] = None,
         key_id: Optional[str] = None,
         key_server: Optional[str] = None,
-    ):
+    ) -> None:
         """Convert apt-key's output into a more user-friendly message."""
         message = output.replace(
             "Warning: apt-key output should not be parsed (stdout is not a terminal)",

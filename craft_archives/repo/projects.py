@@ -35,6 +35,10 @@ class ProjectModel(pydantic.BaseModel):
     class Config:  # pylint: disable=too-few-public-methods
         """Pydantic model configuration."""
 
+        # pyright: reportUnknownMemberType=false
+        # pyright: reportUnknownVariableType=false
+        # pyright: reportUnknownLambdaType=false
+
         validate_assignment = True
         allow_mutation = False
         allow_population_by_field_name = True
@@ -78,12 +82,12 @@ class AptPPA(ProjectModel):
         return cls(**data)
 
 
-def validate_repository(data: Dict[str, Any]):
+def validate_repository(data: Dict[str, Any]) -> None:
     """Validate a package repository.
 
     :param data: The repository data to validate.
     """
-    if not isinstance(data, dict):
+    if not isinstance(data, dict):  # pyright: reportUnnecessaryIsInstance=false
         raise TypeError("value must be a dictionary")
 
     try:

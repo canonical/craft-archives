@@ -19,7 +19,6 @@ from textwrap import dedent
 from unittest.mock import call
 
 import pytest
-
 from craft_archives.repo import apt_ppa, apt_sources_manager, errors
 from craft_archives.repo.package_repository import (
     PackageRepositoryApt,

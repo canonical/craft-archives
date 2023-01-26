@@ -16,7 +16,6 @@
 
 
 import pytest
-
 from craft_archives.repo import errors
 from craft_archives.repo.package_repository import (
     PackageRepository,

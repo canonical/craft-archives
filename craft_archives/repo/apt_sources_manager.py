@@ -18,17 +18,17 @@
 
 import io
 import logging
-import pathlib
 import re
 import subprocess
-from typing import List, Optional, cast
+from pathlib import Path
+from typing import List, Optional
 
 from craft_archives import os_release, utils
 
 from . import apt_ppa, package_repository
 
-
 logger = logging.getLogger(__name__)
+
 
 def _construct_deb822_source(
     *,
@@ -76,7 +76,7 @@ class AptSourcesManager:
     def __init__(
         self,
         *,
-        sources_list_d: pathlib.Path = pathlib.Path("/etc/apt/sources.list.d"),
+        sources_list_d: Path = Path("/etc/apt/sources.list.d"),  # noqa: B008
     ) -> None:
         self._sources_list_d = sources_list_d
 
@@ -209,9 +209,7 @@ class AptSourcesManager:
 
         if isinstance(package_repo, package_repository.PackageRepositoryApt):
             changed = self._install_sources_apt(package_repo=package_repo)
-            architectures = cast(
-                package_repository.PackageRepositoryApt, package_repo
-            ).architectures
+            architectures = package_repo.architectures
             if changed and architectures:
                 _add_architecture(architectures)
             return changed
@@ -219,7 +217,7 @@ class AptSourcesManager:
         raise RuntimeError(f"unhandled package repository: {package_repository!r}")
 
 
-def _add_architecture(architectures: List[str]):
+def _add_architecture(architectures: List[str]) -> None:
     """Add package repository architecture."""
     for arch in architectures:
         logger.info(f"Add repository architecture: {arch}")

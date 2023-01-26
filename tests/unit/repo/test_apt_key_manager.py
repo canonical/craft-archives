@@ -21,7 +21,6 @@ from unittest.mock import call
 
 import gnupg
 import pytest
-
 from craft_archives.repo import apt_ppa, errors
 from craft_archives.repo.apt_key_manager import AptKeyManager
 from craft_archives.repo.package_repository import (
