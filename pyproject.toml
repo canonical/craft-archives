@@ -3,7 +3,12 @@ name = "craft-archives"
 version = "0.0.1"
 readme = "README.rst"
 dependencies = [
-
+    "gnupg",
+    "launchpadlib",
+    "lazr.restfulclient",
+    "lazr.uri",
+    "overrides",
+    "pydantic",
 ]
 classifiers = [
     "Development Status :: 1 - Planning",

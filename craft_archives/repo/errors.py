@@ -18,10 +18,10 @@
 
 from typing import Optional
 
-from craft_archives.errors import SnapcraftError
+from craft_archives.errors import ArchivesError
 
 
-class PackageRepositoryError(SnapcraftError):
+class PackageRepositoryError(ArchivesError):
     """Package repository error base."""
 
 
