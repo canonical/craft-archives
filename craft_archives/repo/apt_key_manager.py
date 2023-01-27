@@ -24,7 +24,7 @@ import subprocess
 import tempfile
 from typing import List, Optional
 
-import gnupg
+import gnupg  # type: ignore
 
 from . import apt_ppa, errors, package_repository
 
@@ -76,7 +76,7 @@ class AptKeyManager:
         """
         # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
         with tempfile.NamedTemporaryFile(suffix="keyring") as temp_file:
-            return (
+            return (  # type: ignore
                 gnupg.GPG(keyring=temp_file.name).import_keys(key_data=key).fingerprints
             )
 

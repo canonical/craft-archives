@@ -21,8 +21,8 @@
 import logging
 from typing import Tuple
 
-import lazr.restfulclient.errors
-from launchpadlib.launchpad import Launchpad
+import lazr.restfulclient.errors  # type: ignore
+from launchpadlib.launchpad import Launchpad  # type: ignore
 
 from . import errors
 
@@ -46,7 +46,7 @@ def get_launchpad_ppa_key_id(*, ppa: str) -> str:
 
     logger.debug(f"Loading launchpad url: {launchpad_url}")
     try:
-        key_id = launchpad.load(launchpad_url).signing_key_fingerprint
+        key_id: str = launchpad.load(launchpad_url).signing_key_fingerprint
     except lazr.restfulclient.errors.NotFound as error:
         raise errors.AptPPAInstallError(ppa, "not found on launchpad") from error
 
