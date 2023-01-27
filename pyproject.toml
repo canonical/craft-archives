@@ -36,12 +36,20 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+exclude = [
+    "dist",
+    "docs",
+    "results",
+    "tests",
+]
+
 [tool.black]
 target-version = ["py38"]
 
 [tool.codespell]
 ignore-words-list = "buildd,crate,keyserver,comandos,ro,dedent,dedented"
-skip = ".tox,.git,build,.*_cache,__pycache__,*.tar,*.snap,*.png,node_modules"
+skip = ".tox,.git,build,.*_cache,__pycache__,*.tar,*.snap,*.png,./node_modules,./docs/_build"
 quiet-level = 3
 check-filenames = true
 
@@ -57,15 +65,13 @@ line_length = 88
 minversion = "7.0"
 testpaths = "tests"
 xfail_strict = true
-addopts = [
-    "--cov",
-]
 
 [tool.coverage.run]
 branch = true
+parallel = true
 omit = [
     "tests/**",
-    "craft_archives/os_release.py"
+    "craft_archives/os_release.py",
 ]
 
 [tool.coverage.report]
@@ -78,6 +84,31 @@ pythonVersion = "3.8"
 pythonPlatform = "Linux"
 venvPath = ".tox"
 venv = "py38"
+
+[tool.mypy]
+python_version = "3.8"
+exclude = [
+    "build",
+    "tests",
+    "results",
+]
+warn_unused_configs = true
+warn_redundant_casts = true
+strict_equality = true
+strict_concatenate = true
+warn_return_any = true
+disallow_subclassing_any = true
+disallow_untyped_decorators = true
+disallow_any_generics = true
+
+[[tool.mypy.overrides]]
+module = ["craft_archives"]
+disallow_untyped_defs = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+strict = false
 
 [tool.ruff]
 line-length = 88
@@ -159,6 +190,3 @@ ignore = [
 ]
 # isort leaves init files alone by default, this makes ruff ignore them too.
 "__init__.py" = ["I001"]
-
-[tool.setuptools]
-packages = ["craft_archives"]
