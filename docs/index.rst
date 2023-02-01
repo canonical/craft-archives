@@ -1,6 +1,6 @@
 .. craft-archives documentation root file
 
-craft-archives
+Craft Archives
 ==============
 
 .. toctree::
