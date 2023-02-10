@@ -28,12 +28,12 @@ dev = [
     "pytest-mock==3.10.0",
 ]
 dev-lint = [  # Static linting environment dependencies
-    "black>=22.12.0",
-    "codespell[tomli]>=2.2.2",
-    "ruff>=0.0.226",
+    "black==23.1.0",
+    "codespell[tomli]==2.2.2",
+    "ruff==0.0.244",
 ]
 types = [  # Dependencies for typing. Both types packages and mypy itself.
-    "mypy[reports]>=0.991",
+    "mypy[reports]==1.0.0",
 ]
 docs = [
     "furo==2022.12.07",
