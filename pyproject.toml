@@ -25,6 +25,7 @@ craft-archives-hello = "craft_archives:hello"
 dev = [
     "pytest==7.2.1",
     "pytest-cov==4.0.0",
+    "coverage[toml]==7.1.0",
     "pytest-mock==3.10.0",
 ]
 dev-lint = [  # Static linting environment dependencies
