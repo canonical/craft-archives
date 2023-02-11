@@ -19,7 +19,6 @@ classifiers = [
 requires-python = ">=3.8"
 
 [project.scripts]
-craft-archives-hello = "craft_archives:hello"
 
 [project.optional-dependencies]
 dev = [
