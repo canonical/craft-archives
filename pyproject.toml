@@ -34,7 +34,7 @@ dev = [
 dev-lint = [  # Static linting environment dependencies
     "black==23.1.0",
     "codespell[tomli]==2.2.2",
-    "ruff==0.0.247",
+    "ruff==0.0.252",
 ]
 types = [  # Dependencies for typing. Both types packages and mypy itself.
     "mypy[reports]==1.0.1",
