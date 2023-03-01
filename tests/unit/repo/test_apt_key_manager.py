@@ -16,6 +16,7 @@
 
 
 import subprocess
+from pathlib import Path
 from unittest import mock
 from unittest.mock import call
 
@@ -133,6 +134,22 @@ def test_is_key_installed(
     assert mock_run.mock_calls == [
         call(
             ["apt-key", "export", "foo"],
+            check=True,
+            stderr=subprocess.STDOUT,
+            stdout=subprocess.PIPE,
+        )
+    ]
+
+
+def test_is_key_installed_with_keyring_path(apt_gpg, mock_run):
+    mock_run.return_value.stdout = b"BEGIN PGP PUBLIC KEY BLOCK"
+
+    keyring_path = Path("FAKEPATH")
+    assert apt_gpg.is_key_installed(key_id="foo", keyring_path=keyring_path)
+
+    assert mock_run.mock_calls == [
+        call(
+            ["apt-key", "--keyring", "FAKEPATH", "export", "foo"],
             check=True,
             stderr=subprocess.STDOUT,
             stdout=subprocess.PIPE,

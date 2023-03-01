@@ -81,7 +81,9 @@ class AptKeyManager:
             )
 
     @classmethod
-    def is_key_installed(cls, *, key_id: str) -> bool:
+    def is_key_installed(
+        cls, *, key_id: str, keyring_path: Optional[pathlib.Path] = None
+    ) -> bool:
         """Check if specified key_id is installed.
 
         Check if key is installed by attempting to export the key.
@@ -89,12 +91,18 @@ class AptKeyManager:
         we have to do our best to parse the output.
 
         :param key_id: Key ID to check for.
+        :param keyring_path: An optional path to the keyring to check.
+          If not provided, uses apt-key's default behavior of checking all
+          apt's keyring locations.
 
         :returns: True if key is installed.
         """
+        extra_args = []
+        if keyring_path:
+            extra_args = ["--keyring", str(keyring_path)]
         try:
             proc = subprocess.run(
-                ["apt-key", "export", key_id],
+                ["apt-key", *extra_args] + ["export", key_id],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 check=True,
