@@ -19,6 +19,7 @@
 # pyright: reportMissingTypeStubs=false
 
 import logging
+import os
 import pathlib
 import subprocess
 import tempfile
@@ -30,6 +31,10 @@ from . import apt_ppa, errors, package_repository
 
 logger = logging.getLogger(__name__)
 
+# Default keyring file to use if none is provided. Temporary until we move to
+# per-repo keyrings.
+_DEFAULT_KEYRING = pathlib.Path("/etc/apt/trusted.gpg.d/snapcraft.gpg")
+
 
 class AptKeyManager:
     """Manage APT repository keys."""
@@ -37,9 +42,7 @@ class AptKeyManager:
     def __init__(
         self,
         *,
-        gpg_keyring: pathlib.Path = pathlib.Path(  # noqa: B008
-            "/etc/apt/trusted.gpg.d/snapcraft.gpg"
-        ),
+        gpg_keyring: pathlib.Path = _DEFAULT_KEYRING,
         key_assets: pathlib.Path,
     ) -> None:
         self._gpg_keyring = gpg_keyring
@@ -85,47 +88,44 @@ class AptKeyManager:
         cls, *, key_id: str, keyring_path: Optional[pathlib.Path] = None
     ) -> bool:
         """Check if specified key_id is installed.
-
-        Check if key is installed by attempting to export the key.
-        Unfortunately, apt-key does not exit with error and
-        we have to do our best to parse the output.
-
         :param key_id: Key ID to check for.
         :param keyring_path: An optional path to the keyring to check.
-          If not provided, uses apt-key's default behavior of checking all
-          apt's keyring locations.
+          If not provided, defaults to _DEFAULT_KEYRING.
 
         :returns: True if key is installed.
         """
-        extra_args = []
-        if keyring_path:
-            extra_args = ["--keyring", str(keyring_path)]
+        keyring_file = keyring_path or _DEFAULT_KEYRING
+
+        # Check if the keyring file exists first, otherwise the gpg check itself
+        # creates it.
+        if not keyring_file.is_file():
+            logger.debug(f"Keyring file not found: {keyring_file}")
+            return False
+
+        cmd = [
+            *_gpg_prefix(),
+            "--keyring",
+            _gnupg_ring(keyring_file),
+            "--list-key",
+            key_id,
+        ]
         try:
-            proc = subprocess.run(
-                ["apt-key", *extra_args] + ["export", key_id],
+            logger.debug(f"Executing command: {cmd}")
+            subprocess.run(
+                cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 check=True,
             )
         except subprocess.CalledProcessError as error:
-            # Export shouldn't exit with failure based on testing,
-            # but assume the key is not installed and log a warning.
-            logger.warning(f"Unexpected apt-key failure: {error.output}")
+            # From testing, the gpg call will fail with return code 2 if the key
+            # doesn't exist in the keyring, so it's an expected possible case.
+            _expected_returncode = 2
+            if error.returncode != _expected_returncode:
+                logger.warning(f"Unexpected gpg failure: {error.output}")
             return False
-
-        apt_key_output = proc.stdout.decode()
-
-        if "BEGIN PGP PUBLIC KEY BLOCK" in apt_key_output:
+        else:
             return True
-
-        if "nothing exported" in apt_key_output:
-            return False
-
-        # The two strings above have worked in testing, but if neither is
-        # present for whatever reason, assume the key is not installed
-        # and log a warning.
-        logger.warning(f"Unexpected apt-key output: {apt_key_output}")
-        return False
 
     def install_key(self, *, key: str) -> None:
         """Install given key.
@@ -135,10 +135,10 @@ class AptKeyManager:
         :raises: AptGPGKeyInstallError if unable to install key.
         """
         cmd = [
-            "apt-key",
+            *_gpg_prefix(),
             "--keyring",
-            str(self._gpg_keyring),
-            "add",
+            _gnupg_ring(self._gpg_keyring),
+            "--import",
             "-",
         ]
 
@@ -157,6 +157,8 @@ class AptKeyManager:
         except subprocess.CalledProcessError as error:
             raise errors.AptGPGKeyInstallError(error.output.decode(), key=key)
 
+        # Change the permissions on the file so that APT itself can read it later
+        os.chmod(self._gpg_keyring, 0o644)
         logger.debug(f"Installed apt repository key:\n{key}")
 
     def install_key_from_keyserver(
@@ -169,29 +171,33 @@ class AptKeyManager:
 
         :raises: AptGPGKeyInstallError if unable to install key.
         """
-        env = {}
-        env["LANG"] = "C.UTF-8"
-
-        cmd = [
-            "apt-key",
-            "--keyring",
-            str(self._gpg_keyring),
-            "adv",
-            "--keyserver",
-            key_server,
-            "--recv-keys",
-            key_id,
-        ]
+        env = {"LANG": "C.UTF-8"}
 
         try:
-            logger.debug(f"Executing: {cmd!r}")
-            subprocess.run(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                check=True,
-                env=env,
-            )
+            with tempfile.TemporaryDirectory() as tmpdir:
+                # We use a tmpdir because gpg needs a "homedir" to place temporary
+                # files into during the download process.
+                os.chmod(tmpdir, 0o700)
+                cmd = [
+                    *_gpg_prefix(),
+                    "--homedir",
+                    tmpdir,
+                    "--keyring",
+                    _gnupg_ring(self._gpg_keyring),
+                    "--keyserver",
+                    key_server,
+                    "--recv-keys",
+                    key_id,
+                ]
+                logger.debug(f"Executing: {cmd!r}")
+                subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                    env=env,
+                )
+            os.chmod(self._gpg_keyring, 0o644)
         except subprocess.CalledProcessError as error:
             raise errors.AptGPGKeyInstallError(
                 error.output.decode(), key_id=key_id, key_server=key_server
@@ -237,3 +243,15 @@ class AptKeyManager:
             self.install_key_from_keyserver(key_id=key_id, key_server=key_server)
 
         return True
+
+
+def _gpg_prefix() -> List[str]:
+    """Create a gpg command line that includes options that we always want to use."""
+    return ["gpg", "--batch", "--no-default-keyring"]
+
+
+def _gnupg_ring(keyring_file: pathlib.Path) -> str:
+    """Create a string specifying that ``keyring_file`` is in the binary OpenGPG format.
+    This is for use in ``gpg`` commands for APT-related keys.
+    """
+    return f"gnupg-ring:{keyring_file}"

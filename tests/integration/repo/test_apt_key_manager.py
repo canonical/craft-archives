@@ -16,30 +16,10 @@
 
 """Integration tests for AptKeyManager"""
 
-import subprocess
 from pathlib import Path
 
 import pytest
 from craft_archives.repo.apt_key_manager import AptKeyManager
-
-
-@pytest.fixture
-def fakeroot(mocker) -> None:
-    """Fixture that injects a "--fakeroot" parameter into every "apt-key" call.
-
-    The fixture *fails* if subprocess.run() is called for something else, so
-    that the code can be reviewed and this fixture possibly removed.
-    """
-    original_run = subprocess.run
-
-    def inject_fakeroot(cmd, *args, **kwargs):
-        if cmd[0] == "apt-key":
-            cmd = ["apt-key", "--fakeroot"] + cmd[1:]
-        else:
-            pytest.fail(f"Unexpected subprocess.run() call: {cmd}")
-        return original_run(cmd, *args, **kwargs)
-
-    mocker.patch.object(subprocess, "run", side_effect=inject_fakeroot)
 
 
 @pytest.fixture
@@ -60,7 +40,7 @@ def gpg_keyring(tmp_path):
 
 
 @pytest.fixture
-def apt_gpg(key_assets, gpg_keyring, fakeroot):
+def apt_gpg(key_assets, gpg_keyring):
     return AptKeyManager(
         gpg_keyring=gpg_keyring,
         key_assets=key_assets,
