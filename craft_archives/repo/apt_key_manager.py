@@ -19,7 +19,6 @@
 # pyright: reportMissingTypeStubs=false
 
 import logging
-import os
 import pathlib
 import subprocess
 import tempfile
@@ -34,6 +33,16 @@ logger = logging.getLogger(__name__)
 # Default keyring file to use if none is provided. Temporary until we move to
 # per-repo keyrings.
 _DEFAULT_KEYRING = pathlib.Path("/etc/apt/trusted.gpg.d/snapcraft.gpg")
+
+# GnuPG command line options that we always want to use.
+_GPG_PREFIX = ["gpg", "--batch", "--no-default-keyring"]
+
+
+def _gnupg_ring(keyring_file: pathlib.Path) -> str:
+    """return a string specifying that ``keyring_file`` is in the binary OpenGPG format.
+    This is for use in ``gpg`` commands for APT-related keys.
+    """
+    return f"gnupg-ring:{keyring_file}"
 
 
 class AptKeyManager:
@@ -103,7 +112,7 @@ class AptKeyManager:
             return False
 
         cmd = [
-            *_gpg_prefix(),
+            *_GPG_PREFIX,
             "--keyring",
             _gnupg_ring(keyring_file),
             "--list-key",
@@ -135,7 +144,7 @@ class AptKeyManager:
         :raises: AptGPGKeyInstallError if unable to install key.
         """
         cmd = [
-            *_gpg_prefix(),
+            *_GPG_PREFIX,
             "--keyring",
             _gnupg_ring(self._gpg_keyring),
             "--import",
@@ -158,7 +167,7 @@ class AptKeyManager:
             raise errors.AptGPGKeyInstallError(error.output.decode(), key=key)
 
         # Change the permissions on the file so that APT itself can read it later
-        os.chmod(self._gpg_keyring, 0o644)
+        self._gpg_keyring.chmod(0o644)
         logger.debug(f"Installed apt repository key:\n{key}")
 
     def install_key_from_keyserver(
@@ -174,14 +183,15 @@ class AptKeyManager:
         env = {"LANG": "C.UTF-8"}
 
         try:
-            with tempfile.TemporaryDirectory() as tmpdir:
+            with tempfile.TemporaryDirectory() as tmpdir_str:
                 # We use a tmpdir because gpg needs a "homedir" to place temporary
                 # files into during the download process.
-                os.chmod(tmpdir, 0o700)
+                tmpdir = pathlib.Path(tmpdir_str)
+                tmpdir.chmod(0o700)
                 cmd = [
-                    *_gpg_prefix(),
+                    *_GPG_PREFIX,
                     "--homedir",
-                    tmpdir,
+                    str(tmpdir),
                     "--keyring",
                     _gnupg_ring(self._gpg_keyring),
                     "--keyserver",
@@ -197,7 +207,7 @@ class AptKeyManager:
                     check=True,
                     env=env,
                 )
-            os.chmod(self._gpg_keyring, 0o644)
+            self._gpg_keyring.chmod(0o644)
         except subprocess.CalledProcessError as error:
             raise errors.AptGPGKeyInstallError(
                 error.output.decode(), key_id=key_id, key_server=key_server
@@ -243,15 +253,3 @@ class AptKeyManager:
             self.install_key_from_keyserver(key_id=key_id, key_server=key_server)
 
         return True
-
-
-def _gpg_prefix() -> List[str]:
-    """Create a gpg command line that includes options that we always want to use."""
-    return ["gpg", "--batch", "--no-default-keyring"]
-
-
-def _gnupg_ring(keyring_file: pathlib.Path) -> str:
-    """Create a string specifying that ``keyring_file`` is in the binary OpenGPG format.
-    This is for use in ``gpg`` commands for APT-related keys.
-    """
-    return f"gnupg-ring:{keyring_file}"

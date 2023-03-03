@@ -48,7 +48,7 @@ def mock_run(mocker):
 
 @pytest.fixture
 def mock_chmod(mocker):
-    return mocker.patch("os.chmod")
+    return mocker.patch("pathlib.Path.chmod", autospec=True)
 
 
 @pytest.fixture(autouse=True)
