@@ -39,7 +39,8 @@ _GPG_PREFIX = ["gpg", "--batch", "--no-default-keyring"]
 
 
 def _gnupg_ring(keyring_file: pathlib.Path) -> str:
-    """return a string specifying that ``keyring_file`` is in the binary OpenGPG format.
+    """Return a string specifying that ``keyring_file`` is in the binary OpenGPG format.
+
     This is for use in ``gpg`` commands for APT-related keys.
     """
     return f"gnupg-ring:{keyring_file}"
@@ -97,6 +98,7 @@ class AptKeyManager:
         cls, *, key_id: str, keyring_path: Optional[pathlib.Path] = None
     ) -> bool:
         """Check if specified key_id is installed.
+
         :param key_id: Key ID to check for.
         :param keyring_path: An optional path to the keyring to check.
           If not provided, defaults to _DEFAULT_KEYRING.
