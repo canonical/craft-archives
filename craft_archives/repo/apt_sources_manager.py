@@ -18,6 +18,7 @@
 
 import io
 import logging
+import pathlib
 import re
 import subprocess
 from pathlib import Path
@@ -37,8 +38,9 @@ def _construct_deb822_source(
     formats: Optional[List[str]] = None,
     suites: List[str],
     url: str,
+    signed_by: Optional[pathlib.Path] = None,
 ) -> str:
-    """Construct deb-822 formatted sources.list config string."""
+    """Construct deb-822 formatted sources string."""
     with io.StringIO() as deb822:
         if formats:
             type_text = " ".join(formats)
@@ -62,6 +64,9 @@ def _construct_deb822_source(
             arch_text = utils.get_host_architecture()
 
         print(f"Architectures: {arch_text}", file=deb822)
+
+        if signed_by:
+            print(f"Signed-By: {str(signed_by)}", file=deb822)
 
         return deb822.getvalue()
 

@@ -228,7 +228,7 @@ class PackageRepositoryApt(PackageRepository):
 
     # pylint: disable=too-many-branches
 
-    def validate(self) -> None:
+    def validate(self) -> None:  # noqa: PLR0912 - too many branches
         """Ensure the current repository data is valid."""
         if self.formats is not None:
             for repo_format in self.formats:
