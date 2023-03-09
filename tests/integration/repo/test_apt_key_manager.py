@@ -40,30 +40,32 @@ def gpg_keyring(tmp_path):
 
 
 @pytest.fixture
-def apt_gpg(key_assets, gpg_keyring):
+def apt_gpg(key_assets, tmp_path):
     return AptKeyManager(
-        gpg_keyring=gpg_keyring,
+        keyrings_path=tmp_path,
         key_assets=key_assets,
     )
 
 
-def test_install_key(apt_gpg, gpg_keyring, test_keys_dir):
-    assert not gpg_keyring.is_file()
-    assert not apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=gpg_keyring)
+def test_install_key(apt_gpg, tmp_path, test_keys_dir):
+    expected_file = tmp_path / "craft-FC42E99D.gpg"
+    assert not expected_file.exists()
+    assert not apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=tmp_path)
 
     keypath = test_keys_dir / "FC42E99D.asc"
     apt_gpg.install_key(key=keypath.read_text())
 
-    assert gpg_keyring.is_file()
-    assert apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=gpg_keyring)
+    assert expected_file.is_file()
+    assert apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=tmp_path)
 
 
-def test_install_key_from_keyserver(apt_gpg, gpg_keyring):
-    assert not gpg_keyring.is_file()
-    assert not apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=gpg_keyring)
+def test_install_key_from_keyserver(apt_gpg, tmp_path):
+    expected_file = tmp_path / "craft-FC42E99D.gpg"
+    assert not expected_file.exists()
+    assert not apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=tmp_path)
 
     key_id = "78E1918602959B9C59103100F1831DDAFC42E99D"
     apt_gpg.install_key_from_keyserver(key_id=key_id)
 
-    assert gpg_keyring.is_file()
-    assert apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=gpg_keyring)
+    assert expected_file.is_file()
+    assert apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=tmp_path)
