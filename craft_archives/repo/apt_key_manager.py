@@ -22,7 +22,7 @@ import logging
 import pathlib
 import subprocess
 import tempfile
-from typing import Iterable, List, Optional, Union
+from typing import Iterable, List, Optional
 
 from . import apt_ppa, errors, package_repository
 
@@ -33,14 +33,6 @@ _KEYRINGS_PATH = pathlib.Path("/etc/apt/keyrings")
 
 # GnuPG command line options that we always want to use.
 _GPG_PREFIX = ["gpg", "--batch", "--no-default-keyring"]
-
-
-def _gnupg_ring(keyring_file: pathlib.Path) -> str:
-    """Return a string specifying that ``keyring_file`` is in the binary OpenGPG format.
-
-    This is for use in ``gpg`` commands for APT-related keys.
-    """
-    return f"gnupg-ring:{keyring_file}"
 
 
 def _call_gpg(
@@ -132,7 +124,7 @@ class AptKeyManager:
             temp_file.flush()
 
             response = _call_gpg("--show-keys", temp_file.name).splitlines()
-            fingerprints = []
+            fingerprints: List[str] = []
             for index, line in enumerate(response):
                 if line.startswith(b"pub   "):
                     fingerprints.append(response[index + 1].decode().strip())
