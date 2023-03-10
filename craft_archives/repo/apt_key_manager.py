@@ -85,23 +85,6 @@ def _get_key_path(
     return base_path.joinpath(file_base).with_suffix(".asc" if is_ascii else ".gpg")
 
 
-def _gen_gpg_fingerprints(path: Union[str, pathlib.Path]) -> Iterable[str]:
-    """Get the fingerprint of a GPG key by file path.
-
-    :returns: the fingerprint of the first GPG key in the file
-    :raises: FileNotFoundError if the file does not exist
-    """
-    if not pathlib.Path(path).is_file():
-        raise FileNotFoundError(f"GPG key file does not exist: {str(path)}")
-
-    response = _call_gpg("--show-keys", str(path)).splitlines(keepends=False)
-    for index, line in enumerate(
-        response, start=1
-    ):  # index will be the next line's index
-        if line.startswith(b"pub   "):
-            yield response[index].decode().strip()
-
-
 class AptKeyManager:
     """Manage APT repository keys."""
 
@@ -147,7 +130,13 @@ class AptKeyManager:
         with tempfile.NamedTemporaryFile() as temp_file:
             temp_file.write(key.encode())
             temp_file.flush()
-            return list(_gen_gpg_fingerprints(temp_file.name))
+
+            response = _call_gpg("--show-keys", temp_file.name).splitlines()
+            fingerprints = []
+            for index, line in enumerate(response):
+                if line.startswith(b"pub   "):
+                    fingerprints.append(response[index + 1].decode().strip())
+            return fingerprints
 
     @classmethod
     def is_key_installed(
