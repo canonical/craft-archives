@@ -37,7 +37,7 @@ dev-lint = [  # Static linting environment dependencies
     "ruff==0.0.254",
 ]
 types = [  # Dependencies for typing. Both types packages and mypy itself.
-    "mypy[reports]==1.0.1",
+    "mypy[reports]==1.1.1",
 ]
 docs = [
     "furo==2022.12.07",
