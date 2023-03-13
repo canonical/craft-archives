@@ -55,11 +55,11 @@ class AptPPAInstallError(PackageRepositoryError):
 class AptGPGKeyringError(PackageRepositoryError):
     """GPG keyring for repository does not exist or not valid."""
 
-    def __init__(self, keyring_path: pathlib.Path):
+    def __init__(self, keyring_path: pathlib.Path) -> None:
         super().__init__(
-            f"Could not find keyring file for repository.",
+            "Could not find keyring file for repository.",
             f"Keyring file does not exist or is invalid: {keyring_path}",
-            "Ensure the keyring is installed in the correct path."
+            "Ensure the keyring is installed in the correct path.",
         )
 
 

@@ -69,8 +69,7 @@ def apt_sources_mgr(tmp_path):
     keyrings_dir.mkdir(parents=True)
 
     yield apt_sources_manager.AptSourcesManager(
-        sources_list_d=sources_list_d,
-        keyrings_dir=keyrings_dir
+        sources_list_d=sources_list_d, keyrings_dir=keyrings_dir
     )
 
 
@@ -176,7 +175,9 @@ def test_install(package_repo, name, content_template, apt_sources_mgr, mocker):
     keyring_path = apt_sources_mgr._keyrings_dir / "craft-AAAAAAAA.gpg"
     keyring_path.touch(exist_ok=True)
     content = content_template.format(keyring_path=keyring_path).encode()
-    mock_keyring_path = mocker.patch("craft_archives.repo.apt_key_manager.get_keyring_path")
+    mock_keyring_path = mocker.patch(
+        "craft_archives.repo.apt_key_manager.get_keyring_path"
+    )
     mock_keyring_path.return_value = keyring_path
 
     changed = apt_sources_mgr.install_package_repository_sources(

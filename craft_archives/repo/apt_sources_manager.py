@@ -26,7 +26,7 @@ from typing import List, Optional
 
 from craft_archives import os_release, utils
 
-from . import apt_ppa, package_repository, apt_key_manager, errors
+from . import apt_key_manager, apt_ppa, errors, package_repository
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ class AptSourcesManager:
         self,
         *,
         sources_list_d: Path = _DEFAULT_SOURCES_DIRECTORY,
-        keyrings_dir: Path = apt_key_manager.KEYRINGS_PATH
+        keyrings_dir: Path = apt_key_manager.KEYRINGS_PATH,
     ) -> None:
         self._sources_list_d = sources_list_d
         self._keyrings_dir = keyrings_dir
@@ -98,7 +98,7 @@ class AptSourcesManager:
         name: str,
         suites: List[str],
         url: str,
-        keyring_path: Optional[pathlib.Path] = None
+        keyring_path: Optional[pathlib.Path] = None,
     ) -> bool:
         """Install sources list configuration.
 
@@ -107,7 +107,7 @@ class AptSourcesManager:
 
         :returns: True if configuration was changed.
         """
-        if not keyring_path.is_file():
+        if keyring_path and not keyring_path.is_file():
             raise errors.AptGPGKeyringError(keyring_path)
 
         config = _construct_deb822_source(
@@ -184,7 +184,7 @@ class AptSourcesManager:
             name=name,
             suites=suites,
             url=package_repo.url,
-            keyring_path=keyring_path
+            keyring_path=keyring_path,
         )
 
     def _install_sources_ppa(
@@ -204,7 +204,9 @@ class AptSourcesManager:
         codename = os_release.OsRelease().version_codename()
 
         key_id = apt_ppa.get_launchpad_ppa_key_id(ppa=package_repo.ppa)
-        keyring_path = apt_key_manager.get_keyring_path(key_id, base_path=self._keyrings_dir)
+        keyring_path = apt_key_manager.get_keyring_path(
+            key_id, base_path=self._keyrings_dir
+        )
 
         return self._install_sources(
             components=["main"],

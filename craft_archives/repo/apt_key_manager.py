@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """APT key management helpers."""
-import functools
+
 # pyright: reportMissingTypeStubs=false
 
 import logging
@@ -121,7 +121,9 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
-        response = _call_gpg("--show-keys", "--with-colons", stdin=key.encode()).splitlines()
+        response = _call_gpg(
+            "--show-keys", "--with-colons", stdin=key.encode()
+        ).splitlines()
         fingerprints: List[str] = []
         for line in response:
             if line.startswith(b"fpr:"):
@@ -175,9 +177,13 @@ class AptKeyManager:
         if not fingerprints:
             raise errors.AptGPGKeyInstallError("Invalid GPG key", key=key)
         if len(fingerprints) != 1:
-            raise errors.AptGPGKeyInstallError("Key must be a single key, not multiple.", key=key)
+            raise errors.AptGPGKeyInstallError(
+                "Key must be a single key, not multiple.", key=key
+            )
         try:
-            keyring_path = get_keyring_path(fingerprints[0], base_path=self._keyrings_path)
+            keyring_path = get_keyring_path(
+                fingerprints[0], base_path=self._keyrings_path
+            )
             _call_gpg("--import", "-", keyring=keyring_path, stdin=key.encode())
         except subprocess.CalledProcessError as error:
             raise errors.AptGPGKeyInstallError(error.output.decode(), key=key)
