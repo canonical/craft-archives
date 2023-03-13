@@ -213,7 +213,7 @@ def test_install_key(
 def test_install_key_with_apt_key_failure(apt_gpg, mock_run):
     mock_run.side_effect = [
         subprocess.CompletedProcess(
-            ["gpg", "--do-something"], returncode=0, stdout=b"fpr:::FAKEKEY:"
+            ["gpg", "--do-something"], returncode=0, stdout=SAMPLE_GPG_SHOW_KEY_OUTPUT
         ),
         subprocess.CalledProcessError(cmd=["foo"], returncode=1, output=b"some error"),
     ]
