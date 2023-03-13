@@ -72,6 +72,7 @@ ignore-words-list = "buildd,crate,keyserver,comandos,ro,dedent,dedented"
 skip = ".tox,.git,build,.*_cache,__pycache__,*.tar,*.snap,*.png,./node_modules,./docs/_build"
 quiet-level = 3
 check-filenames = true
+exclude-file = ".codespell_ignore_lines"
 
 [tool.isort]
 multi_line_output = 3
