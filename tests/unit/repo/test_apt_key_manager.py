@@ -29,6 +29,13 @@ from craft_archives.repo.package_repository import (
 
 with open(pathlib.Path(__file__).parent / "test_keys/FC42E99D.asc") as _f:
     SAMPLE_KEY = _f.read()
+SAMPLE_KEY_BYTES = SAMPLE_KEY.encode()
+
+SAMPLE_GPG_SHOW_KEY_OUTPUT = b"""\
+pub:-:4096:1:F1831DDAFC42E99D:1416490823:::-:::scSC::::::23::0:
+fpr:::::::::FAKE-KEY-ID-FROM-GNUPG:
+uid:-::::1416490823::DCB9EEE37DC9FD84C3DB333BFBF6C41A075EEF62::Launchpad PPA for Snappy Developers::::::::::0:
+"""
 
 
 @pytest.fixture(autouse=True)
@@ -95,21 +102,15 @@ def test_get_key_fingerprints(
     apt_gpg,
     mock_run,
 ):
-    mock_run.return_value.stdout = dedent(
-        """\
-        pub   rsa4096 2021-02-13 [SC] [expires: 2029-02-11]
-              FAKE-KEY-ID-FROM-GNUPG
-        uid           [ unknown] Debian Stable Release Key (11/bullseye) <debian-release@lists.debian.org>
-    """
-    ).encode()
+    mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
 
     ids = apt_gpg.get_key_fingerprints(key="8" * 40)
 
     assert ids == ["FAKE-KEY-ID-FROM-GNUPG"]
     assert mock_run.mock_calls == [
         call(
-            ["gpg", "--batch", "--no-default-keyring", "--show-keys", mock.ANY],
-            input=None,
+            ["gpg", "--batch", "--no-default-keyring", "--show-keys", "--with-colons"],
+            input=b"8" * 40,
             capture_output=True,
             check=True,
             env={"LANG": "C.UTF-8"},
@@ -180,21 +181,14 @@ def test_install_key(
     mock_run,
     mock_chmod,
 ):
-    mock_run.return_value.stdout = dedent(
-        """\
-        pub   rsa4096 2014-11-20 [SC]
-              78E1918602959B9C59103100F1831DDAFC42E99D
-        uid                      Launchpad PPA for Snappy Developers
-
-    """
-    ).encode()
+    mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
 
     apt_gpg.install_key(key=SAMPLE_KEY)
 
     assert mock_run.mock_calls == [
         call(
-            ["gpg", "--batch", "--no-default-keyring", "--show-keys", mock.ANY],
-            input=None,
+            ["gpg", "--batch", "--no-default-keyring", "--show-keys", "--with-colons"],
+            input=SAMPLE_KEY_BYTES,
             capture_output=True,
             check=True,
             env={"LANG": "C.UTF-8"},
@@ -209,7 +203,7 @@ def test_install_key(
                 "--import",
                 "-",
             ],
-            input=SAMPLE_KEY.encode(),
+            input=SAMPLE_KEY_BYTES,
             capture_output=True,
             check=True,
             env={"LANG": "C.UTF-8"},
@@ -222,7 +216,7 @@ def test_install_key_with_apt_key_failure(apt_gpg, mock_run):
         subprocess.CompletedProcess(
             ["gpg", "--do-something"],
             returncode=0,
-            stdout=b"pub    \nFAKEKEY"
+            stdout=b"fpr:::FAKEKEY:"
         ),
         subprocess.CalledProcessError(
             cmd=["foo"], returncode=1, output=b"some error"

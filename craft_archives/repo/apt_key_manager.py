@@ -121,16 +121,12 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
-        with tempfile.NamedTemporaryFile() as temp_file:
-            temp_file.write(key.encode())
-            temp_file.flush()
-
-            response = _call_gpg("--show-keys", temp_file.name).splitlines()
-            fingerprints: List[str] = []
-            for index, line in enumerate(response):
-                if line.startswith(b"pub   "):
-                    fingerprints.append(response[index + 1].decode().strip())
-            return fingerprints
+        response = _call_gpg("--show-keys", "--with-colons", stdin=key.encode()).splitlines()
+        fingerprints: List[str] = []
+        for line in response:
+            if line.startswith(b"fpr:"):
+                fingerprints.append(line[4:].decode().strip(":"))
+        return fingerprints
 
     @classmethod
     def is_key_installed(
