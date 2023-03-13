@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """APT key management helpers."""
-
+import functools
 # pyright: reportMissingTypeStubs=false
 
 import logging
@@ -28,8 +28,10 @@ from . import apt_ppa, errors, package_repository
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_APT_KEYSERVER = "keyserver.ubuntu.com"
+
 # Directory for apt keyrings as recommended by Debian for third-party keyrings.
-_KEYRINGS_PATH = pathlib.Path("/etc/apt/keyrings")
+KEYRINGS_PATH = pathlib.Path("/etc/apt/keyrings")
 
 # GnuPG command line options that we always want to use.
 _GPG_PREFIX = ["gpg", "--batch", "--no-default-keyring"]
@@ -57,11 +59,11 @@ def _call_gpg(
     return process.stdout
 
 
-def _get_key_path(
+def get_keyring_path(
     key_id: str,
     *,
     is_ascii: bool = False,
-    base_path: pathlib.Path = _KEYRINGS_PATH,
+    base_path: pathlib.Path = KEYRINGS_PATH,
     prefix: str = "craft-",
 ) -> pathlib.Path:
     """Get a Path object where we would expect to find a key.
@@ -83,7 +85,7 @@ class AptKeyManager:
     def __init__(
         self,
         *,
-        keyrings_path: pathlib.Path = _KEYRINGS_PATH,
+        keyrings_path: pathlib.Path = KEYRINGS_PATH,
         key_assets: pathlib.Path,
     ) -> None:
         self._keyrings_path = keyrings_path
@@ -99,7 +101,7 @@ class AptKeyManager:
 
         :returns: Path of key asset if match found, otherwise None.
         """
-        key_path = _get_key_path(
+        key_path = get_keyring_path(
             key_id, is_ascii=True, prefix="", base_path=self._key_assets
         )
 
@@ -132,7 +134,7 @@ class AptKeyManager:
 
     @classmethod
     def is_key_installed(
-        cls, *, key_id: str, keyring_path: pathlib.Path = _KEYRINGS_PATH
+        cls, *, key_id: str, keyring_path: pathlib.Path = KEYRINGS_PATH
     ) -> bool:
         """Check if specified key_id is installed.
 
@@ -141,7 +143,7 @@ class AptKeyManager:
 
         :returns: True if key is installed.
         """
-        keyring_file = _get_key_path(key_id, base_path=keyring_path)
+        keyring_file = get_keyring_path(key_id, base_path=keyring_path)
         # Check if the keyring file exists first, otherwise the gpg check itself
         # creates it.
         if not keyring_file.is_file():
@@ -173,15 +175,13 @@ class AptKeyManager:
         :raises: AptGPGKeyInstallError if unable to install key.
         """
         logger.debug(f"Importing key {key}")
+        fingerprints = self.get_key_fingerprints(key=key)
+        if not fingerprints:
+            raise errors.AptGPGKeyInstallError("Invalid GPG key", key=key)
+        if len(fingerprints) != 1:
+            raise errors.AptGPGKeyInstallError("Key must be a single key, not multiple.", key=key)
         try:
-            fingerprints = self.get_key_fingerprints(key=key)
-            if not fingerprints:
-                raise errors.AptGPGKeyInstallError("Invalid GPG key", key=key)
-            if len(fingerprints) != 1:
-                raise errors.AptGPGKeyInstallError(
-                    "Key must be a single key, not multiple.", key=key
-                )
-            keyring_path = _get_key_path(fingerprints[0], base_path=self._keyrings_path)
+            keyring_path = get_keyring_path(fingerprints[0], base_path=self._keyrings_path)
             _call_gpg("--import", "-", keyring=keyring_path, stdin=key.encode())
         except subprocess.CalledProcessError as error:
             raise errors.AptGPGKeyInstallError(error.output.decode(), key=key)
@@ -191,7 +191,7 @@ class AptKeyManager:
         logger.debug(f"Installed apt repository key:\n{key}")
 
     def install_key_from_keyserver(
-        self, *, key_id: str, key_server: str = "keyserver.ubuntu.com"
+        self, *, key_id: str, key_server: str = DEFAULT_APT_KEYSERVER
     ) -> None:
         """Install key from specified key server.
 
@@ -200,7 +200,7 @@ class AptKeyManager:
 
         :raises: AptGPGKeyInstallError if unable to install key.
         """
-        keyring_path = _get_key_path(key_id, base_path=self._keyrings_path)
+        keyring_path = get_keyring_path(key_id, base_path=self._keyrings_path)
         try:
             with tempfile.TemporaryDirectory() as tmpdir_str:
                 # We use a tmpdir because gpg needs a "homedir" to place temporary
@@ -240,12 +240,13 @@ class AptKeyManager:
 
         :raises: AptGPGKeyInstallError if unable to install key.
         """
-        key_server: Optional[str] = None
+        key_server = DEFAULT_APT_KEYSERVER
         if isinstance(package_repo, package_repository.PackageRepositoryAptPPA):
             key_id = apt_ppa.get_launchpad_ppa_key_id(ppa=package_repo.ppa)
         elif isinstance(package_repo, package_repository.PackageRepositoryApt):
             key_id = package_repo.key_id
-            key_server = package_repo.key_server
+            if package_repo.key_server:
+                key_server = package_repo.key_server
         else:
             raise RuntimeError(f"unhandled package repo type: {package_repo!r}")
 
@@ -257,8 +258,6 @@ class AptKeyManager:
         if key_path is not None:
             self.install_key(key=key_path.read_text())
         else:
-            if key_server is None:
-                key_server = "keyserver.ubuntu.com"
             self.install_key_from_keyserver(key_id=key_id, key_server=key_server)
 
         return True

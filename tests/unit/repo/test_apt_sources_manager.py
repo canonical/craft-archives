@@ -65,14 +65,17 @@ def mock_version_codename(mocker):
 def apt_sources_mgr(tmp_path):
     sources_list_d = tmp_path / "sources.list.d"
     sources_list_d.mkdir(parents=True)
+    keyrings_dir = tmp_path / "keyrings"
+    keyrings_dir.mkdir(parents=True)
 
     yield apt_sources_manager.AptSourcesManager(
         sources_list_d=sources_list_d,
+        keyrings_dir=keyrings_dir
     )
 
 
 @pytest.mark.parametrize(
-    "package_repo,name,content",
+    "package_repo,name,content_template",
     [
         (
             PackageRepositoryApt(
@@ -91,8 +94,9 @@ def apt_sources_mgr(tmp_path):
                 Suites: test-suite1 test-suite2
                 Components: test-component
                 Architectures: amd64 arm64
+                Signed-By: {keyring_path}
                 """
-            ).encode(),
+            ),
         ),
         (
             PackageRepositoryApt(
@@ -111,8 +115,9 @@ def apt_sources_mgr(tmp_path):
                 Suites: test-suite1 test-suite2
                 Components: test-component
                 Architectures: amd64 arm64
+                Signed-By: {keyring_path}
                 """
-            ).encode(),
+            ),
         ),
         (
             PackageRepositoryApt(
@@ -128,8 +133,9 @@ def apt_sources_mgr(tmp_path):
                 URIs: http://test.url/ubuntu
                 Suites: some-path/
                 Architectures: FAKE-HOST-ARCH
+                Signed-By: {keyring_path}
                 """
-            ).encode(),
+            ),
         ),
         (
             PackageRepositoryApt(
@@ -144,8 +150,9 @@ def apt_sources_mgr(tmp_path):
                 URIs: http://test.url/ubuntu
                 Suites: /
                 Architectures: FAKE-HOST-ARCH
+                Signed-By: {keyring_path}
                 """
-            ).encode(),
+            ),
         ),
         (
             PackageRepositoryAptPPA(ppa="test/ppa"),
@@ -157,14 +164,20 @@ def apt_sources_mgr(tmp_path):
                 Suites: FAKE-CODENAME
                 Components: main
                 Architectures: FAKE-HOST-ARCH
+                Signed-By: {keyring_path}
                 """
-            ).encode(),
+            ),
         ),
     ],
 )
-def test_install(package_repo, name, content, apt_sources_mgr, mocker):
+def test_install(package_repo, name, content_template, apt_sources_mgr, mocker):
     run_mock = mocker.patch("subprocess.run")
     sources_path = apt_sources_mgr._sources_list_d / name
+    keyring_path = apt_sources_mgr._keyrings_dir / "craft-AAAAAAAA.gpg"
+    keyring_path.touch(exist_ok=True)
+    content = content_template.format(keyring_path=keyring_path).encode()
+    mock_keyring_path = mocker.patch("craft_archives.repo.apt_key_manager.get_keyring_path")
+    mock_keyring_path.return_value = keyring_path
 
     changed = apt_sources_mgr.install_package_repository_sources(
         package_repo=package_repo

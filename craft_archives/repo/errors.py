@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Package repository error definitions."""
-
+import pathlib
 from typing import Optional
 
 from craft_archives.errors import ArchivesError
@@ -49,6 +49,17 @@ class AptPPAInstallError(PackageRepositoryError):
         super().__init__(
             f"Failed to install PPA {ppa!r}: {reason}",
             resolution="Verify PPA is correct and try again",
+        )
+
+
+class AptGPGKeyringError(PackageRepositoryError):
+    """GPG keyring for repository does not exist or not valid."""
+
+    def __init__(self, keyring_path: pathlib.Path):
+        super().__init__(
+            f"Could not find keyring file for repository.",
+            f"Keyring file does not exist or is invalid: {keyring_path}",
+            "Ensure the keyring is installed in the correct path."
         )
 
 
