@@ -236,7 +236,7 @@ class UnvalidatedAptRepo(PackageRepositoryApt):
             ),
             errors.AptGPGKeyringError,
             "",
-            id="keyring error"
+            id="keyring error",
         ),
         pytest.param(
             UnvalidatedAptRepo(
@@ -247,7 +247,7 @@ class UnvalidatedAptRepo(PackageRepositoryApt):
             ),
             RuntimeError,
             "no components with suite",
-            id="no components with suite"
+            id="no components with suite",
         ),
         pytest.param(
             UnvalidatedAptRepo(
@@ -260,7 +260,6 @@ class UnvalidatedAptRepo(PackageRepositoryApt):
             "no suites or path",
             id="no suites or path",
         ),
-
     ],
 )
 def test_install_apt_errors(repo, error_cls, error_match, apt_sources_mgr):
