@@ -33,11 +33,11 @@ dev = [
 ]
 dev-lint = [  # Static linting environment dependencies
     "black==23.1.0",
-    "codespell[tomli]==2.2.2",
+    "codespell[tomli]==2.2.4",
     "ruff==0.0.254",
 ]
 types = [  # Dependencies for typing. Both types packages and mypy itself.
-    "mypy[reports]==1.0.1",
+    "mypy[reports]==1.1.1",
 ]
 docs = [
     "furo==2022.12.07",
@@ -52,7 +52,7 @@ docs = [
 
 [build-system]
 requires = [
-    "setuptools==67.4.0",
+    "setuptools==67.6.0",
 ]
 build-backend = "setuptools.build_meta"
 
