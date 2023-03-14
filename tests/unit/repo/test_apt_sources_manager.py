@@ -216,3 +216,53 @@ def test_install_ppa_invalid(apt_sources_mgr):
     assert str(raised.value) == (
         "Failed to install PPA 'ppa-missing-slash': invalid PPA format"
     )
+
+
+class UnvalidatedAptRepo(PackageRepositoryApt):
+    """Repository with no validation to use for invalid repositories."""
+
+    def validate(self) -> None:
+        pass
+
+
+@pytest.mark.parametrize(
+    "repo,error_cls,error_match",
+    [
+        pytest.param(
+            PackageRepositoryApt(
+                architectures=["amd64"],
+                url="https://example.com",
+                key_id="A" * 40,
+            ),
+            errors.AptGPGKeyringError,
+            "",
+            id="keyring error"
+        ),
+        pytest.param(
+            UnvalidatedAptRepo(
+                architectures=["amd64"],
+                url="https://example.com",
+                suites=["honeymoon", "presidential"],
+                key_id="A" * 40,
+            ),
+            RuntimeError,
+            "no components with suite",
+            id="no components with suite"
+        ),
+        pytest.param(
+            UnvalidatedAptRepo(
+                architectures=["amd64"],
+                url="https://example.com",
+                components=["handlebar"],
+                key_id="A" * 40,
+            ),
+            RuntimeError,
+            "no suites or path",
+            id="no suites or path",
+        ),
+
+    ],
+)
+def test_install_apt_errors(repo, error_cls, error_match, apt_sources_mgr):
+    with pytest.raises(error_cls, match=error_match):
+        apt_sources_mgr._install_sources_apt(package_repo=repo)

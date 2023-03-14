@@ -13,8 +13,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import logging
 import pathlib
+import re
 import subprocess
+from itertools import zip_longest
 from unittest import mock
 from unittest.mock import call
 
@@ -58,6 +61,13 @@ def mock_apt_ppa_get_signing_key(mocker):
         "craft_archives.repo.apt_ppa.get_launchpad_ppa_key_id",
         spec=apt_ppa.get_launchpad_ppa_key_id,
         return_value="FAKE-PPA-SIGNING-KEY",
+    )
+
+
+@pytest.fixture()
+def mock_logger(mocker):
+    yield mocker.patch(
+        "craft_archives.repo.apt_key_manager.logger", spec=logging.Logger
     )
 
 
@@ -162,17 +172,42 @@ def test_is_key_installed(
     ]
 
 
-def test_is_key_installed_with_apt_key_failure(
-    apt_gpg,
-    mock_run,
+@pytest.mark.parametrize(
+    "return_code,logger_regexes",
+    [
+        pytest.param(
+            1,
+            [
+                re.compile("Unexpected gpg failure: some error"),
+                re.compile("Keyring file .+ does not contain the expected key."),
+            ],
+            id="Unexpected gpg failure",
+        ),
+        pytest.param(
+            2,
+            [
+                re.compile("Keyring file .+ does not contain the expected key."),
+            ],
+            id="File foes not contain key",
+        ),
+    ],
+)
+def test_is_key_installed_with_gpg_failure(
+    apt_gpg, mock_run, mock_logger, tmp_path, return_code, logger_regexes
 ):
+    keyring_file = tmp_path / "craft-FOO.gpg"
+    keyring_file.touch()
     mock_run.side_effect = subprocess.CalledProcessError(
-        cmd=["gpg"], returncode=1, output=b"some error"
+        cmd=["gpg"], returncode=return_code, output=b"some error"
     )
 
-    is_installed = apt_gpg.is_key_installed(key_id="foo")
+    is_installed = apt_gpg.is_key_installed(key_id="foo", keyring_path=tmp_path)
 
     assert is_installed is False
+    for mock_call, regex in zip_longest(mock_logger.warning.mock_calls, logger_regexes):
+        assert regex.fullmatch(
+            mock_call.args[0]
+        ), f"Regex failed: {regex!r}, {mock_call!r}"
 
 
 def test_install_key(
@@ -210,7 +245,7 @@ def test_install_key(
     ]
 
 
-def test_install_key_with_apt_key_failure(apt_gpg, mock_run):
+def test_install_key_with_gpg_failure(apt_gpg, mock_run):
     mock_run.side_effect = [
         subprocess.CompletedProcess(
             ["gpg", "--do-something"], returncode=0, stdout=SAMPLE_GPG_SHOW_KEY_OUTPUT
@@ -222,6 +257,27 @@ def test_install_key_with_apt_key_failure(apt_gpg, mock_run):
         apt_gpg.install_key(key="FAKEKEY")
 
     assert str(raised.value) == "Failed to install GPG key: some error"
+
+
+@pytest.mark.parametrize(
+    "fingerprints,error",
+    [
+        pytest.param([], "Invalid GPG key", id="no keys"),
+        pytest.param(
+            ["finger1", "finger2"],
+            "Key must be a single key, not multiple.",
+            id="multiple keys",
+        ),
+    ],
+)
+def test_install_key_with_key_issue(apt_gpg, mocker, fingerprints, error):
+    mock_fingerprints = mocker.patch.object(apt_gpg, "get_key_fingerprints")
+    mock_fingerprints.return_value = fingerprints
+
+    with pytest.raises(errors.AptGPGKeyInstallError) as raised:
+        apt_gpg.install_key(key="key")
+
+    assert str(raised.value) == f"Failed to install GPG key: {error}"
 
 
 def test_install_key_from_keyserver(apt_gpg, mock_run, mock_chmod):

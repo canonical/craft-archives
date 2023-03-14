@@ -157,9 +157,9 @@ class AptKeyManager:
             # doesn't exist in the keyring, so it's an expected possible case.
             _expected_returncode = 2
             if error.returncode != _expected_returncode:
-                logger.warning(f"Unexpected gpg failure: {error.output}")
+                logger.warning(f"Unexpected gpg failure: {error.output.decode()}")
             logger.warning(
-                f"Keyring file {keyring_file!r} does not contain the expected key."
+                f"Keyring file {keyring_file} does not contain the expected key."
             )
             return False
         else:
