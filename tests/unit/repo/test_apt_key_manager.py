@@ -188,7 +188,7 @@ def test_is_key_installed(
             [
                 re.compile("Keyring file .+ does not contain the expected key."),
             ],
-            id="File foes not contain key",
+            id="File does not contain key",
         ),
     ],
 )
