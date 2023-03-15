@@ -40,7 +40,7 @@ def _construct_deb822_source(
     formats: Optional[List[str]] = None,
     suites: List[str],
     url: str,
-    signed_by: Optional[pathlib.Path] = None,
+    signed_by: pathlib.Path,
 ) -> str:
     """Construct deb-822 formatted sources string."""
     with io.StringIO() as deb822:
@@ -67,8 +67,7 @@ def _construct_deb822_source(
 
         print(f"Architectures: {arch_text}", file=deb822)
 
-        if signed_by:
-            print(f"Signed-By: {str(signed_by)}", file=deb822)
+        print(f"Signed-By: {str(signed_by)}", file=deb822)
 
         return deb822.getvalue()
 
@@ -98,7 +97,7 @@ class AptSourcesManager:
         name: str,
         suites: List[str],
         url: str,
-        keyring_path: Optional[pathlib.Path] = None,
+        keyring_path: pathlib.Path,
     ) -> bool:
         """Install sources list configuration.
 
