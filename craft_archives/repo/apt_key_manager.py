@@ -34,7 +34,7 @@ DEFAULT_APT_KEYSERVER = "keyserver.ubuntu.com"
 KEYRINGS_PATH = pathlib.Path("/etc/apt/keyrings")
 
 # GnuPG command line options that we always want to use.
-_GPG_PREFIX = ["gpg", "--batch", "--no-default-keyring"]
+_GPG_PREFIX = ["gpg", "--batch", "--no-default-keyring", "--with-colons"]
 
 
 def _call_gpg(
@@ -114,16 +114,11 @@ class AptKeyManager:
     def get_key_fingerprints(cls, *, key: str) -> List[str]:
         """List fingerprints found in specified key.
 
-        Do this by importing the key into a temporary keyring,
-        then querying the keyring for fingerprints.
-
         :param key: Key data (string) to parse.
 
         :returns: List of key fingerprints/IDs.
         """
-        response = _call_gpg(
-            "--show-keys", "--with-colons", stdin=key.encode()
-        ).splitlines()
+        response = _call_gpg("--show-keys", stdin=key.encode()).splitlines()
         fingerprints: List[str] = []
         for line in response:
             if line.startswith(b"fpr:"):
@@ -153,14 +148,7 @@ class AptKeyManager:
             logger.debug("Listing keys in keyring...")
             _call_gpg("--list-keys", key_id, keyring=keyring_file)
         except subprocess.CalledProcessError as error:
-            # From testing, the gpg call will fail with return code 2 if the key
-            # doesn't exist in the keyring, so it's an expected possible case.
-            _expected_returncode = 2
-            if error.returncode != _expected_returncode:
-                logger.warning(f"Unexpected gpg failure: {error.output.decode()}")
-            logger.warning(
-                f"Keyring file {keyring_file} does not contain the expected key."
-            )
+            logger.warning(f"gpg error: {error.output.decode()}")
             return False
         else:
             return True
@@ -255,6 +243,11 @@ class AptKeyManager:
         # Already installed, nothing to do.
         if self.is_key_installed(key_id=key_id):
             return False
+
+        # If the keyring exists but does not contain the key, remove it and
+        # install a fresh one.
+        keyring_path = get_keyring_path(key_id, base_path=self._keyrings_path)
+        keyring_path.unlink(missing_ok=True)
 
         key_path = self.find_asset_with_key_id(key_id=key_id)
         if key_path is not None:

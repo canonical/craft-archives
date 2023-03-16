@@ -15,9 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import pathlib
-import re
 import subprocess
-from itertools import zip_longest
 from unittest import mock
 from unittest.mock import call
 
@@ -118,7 +116,13 @@ def test_get_key_fingerprints(
     assert ids == ["FAKE-KEY-ID-FROM-GNUPG"]
     assert mock_run.mock_calls == [
         call(
-            ["gpg", "--batch", "--no-default-keyring", "--show-keys", "--with-colons"],
+            [
+                "gpg",
+                "--batch",
+                "--no-default-keyring",
+                "--with-colons",
+                "--show-keys",
+            ],
             input=b"8" * 40,
             capture_output=True,
             check=True,
@@ -138,7 +142,9 @@ def test_is_key_installed(
     should_raise, expected_is_installed, apt_gpg, mock_run, tmp_path
 ):
     if should_raise:
-        mock_run.side_effect = subprocess.CalledProcessError(returncode=2, cmd=[])
+        mock_run.side_effect = subprocess.CalledProcessError(
+            returncode=2, cmd=[], output=b""
+        )
     else:
         mock_run.returncode = 0
 
@@ -159,6 +165,7 @@ def test_is_key_installed(
                 "gpg",
                 "--batch",
                 "--no-default-keyring",
+                "--with-colons",
                 "--keyring",
                 f"gnupg-ring:{keyring_path}",
                 "--list-keys",
@@ -172,28 +179,9 @@ def test_is_key_installed(
     ]
 
 
-@pytest.mark.parametrize(
-    "return_code,logger_regexes",
-    [
-        pytest.param(
-            1,
-            [
-                re.compile("Unexpected gpg failure: some error"),
-                re.compile("Keyring file .+ does not contain the expected key."),
-            ],
-            id="Unexpected gpg failure",
-        ),
-        pytest.param(
-            2,
-            [
-                re.compile("Keyring file .+ does not contain the expected key."),
-            ],
-            id="File does not contain key",
-        ),
-    ],
-)
+@pytest.mark.parametrize("return_code", [1, 2, 130])
 def test_is_key_installed_with_gpg_failure(
-    apt_gpg, mock_run, mock_logger, tmp_path, return_code, logger_regexes
+    apt_gpg, mock_run, mock_logger, tmp_path, return_code
 ):
     keyring_file = tmp_path / "craft-FOO.gpg"
     keyring_file.touch()
@@ -204,10 +192,7 @@ def test_is_key_installed_with_gpg_failure(
     is_installed = apt_gpg.is_key_installed(key_id="foo", keyring_path=tmp_path)
 
     assert is_installed is False
-    for mock_call, regex in zip_longest(mock_logger.warning.mock_calls, logger_regexes):
-        assert regex.fullmatch(
-            mock_call.args[0]
-        ), f"Regex failed: {regex!r}, {mock_call!r}"
+    mock_logger.warning.assert_called_once_with("gpg error: some error")
 
 
 def test_install_key(
@@ -221,7 +206,13 @@ def test_install_key(
 
     assert mock_run.mock_calls == [
         call(
-            ["gpg", "--batch", "--no-default-keyring", "--show-keys", "--with-colons"],
+            [
+                "gpg",
+                "--batch",
+                "--no-default-keyring",
+                "--with-colons",
+                "--show-keys",
+            ],
             input=SAMPLE_KEY_BYTES,
             capture_output=True,
             check=True,
@@ -232,6 +223,7 @@ def test_install_key(
                 "gpg",
                 "--batch",
                 "--no-default-keyring",
+                "--with-colons",
                 "--keyring",
                 mock.ANY,
                 "--import",
@@ -289,6 +281,7 @@ def test_install_key_from_keyserver(apt_gpg, mock_run, mock_chmod):
                 "gpg",
                 "--batch",
                 "--no-default-keyring",
+                "--with-colons",
                 "--keyring",
                 mock.ANY,
                 "--homedir",
