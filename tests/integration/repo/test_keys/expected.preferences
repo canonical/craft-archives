@@ -1,0 +1,9 @@
+# This file is managed by craft-archives
+Package: *
+Pin: release o=LP-PPA-safety-ppa
+Pin-Priority: 99999
+
+Package: *
+Pin: origin "apt_ppa.redhat.arch.mac"
+Pin-Priority: -1
+

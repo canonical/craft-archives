@@ -1,0 +1,10 @@
+Explanation: This preferences file has no header
+Package: *
+Pin: release o=LP-PPA-safety-ppa
+Pin-Priority: 99999
+
+Explanation: But it does have two paragraphs
+Package: *
+Pin: origin "apt_ppa.redhat.arch.mac"
+Pin-Priority: -1
+
