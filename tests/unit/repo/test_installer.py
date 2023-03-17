@@ -46,7 +46,7 @@ def test_unmarshal_repositories():
     ]
 
     pkg_repos = installer._unmarshal_repositories(data)
-    assert len(pkg_repos) == 2
+    assert len(pkg_repos) == 4
     assert isinstance(pkg_repos[0], PackageRepositoryAptPPA)
     assert pkg_repos[0].ppa == "test/somerepo"
     assert pkg_repos[0].priority is None
