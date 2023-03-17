@@ -73,6 +73,7 @@ ignore-words-list = "buildd,crate,keyserver,comandos,ro,dedent,dedented"
 skip = ".tox,.git,build,.*_cache,__pycache__,*.tar,*.snap,*.png,./node_modules,./docs/_build"
 quiet-level = 3
 check-filenames = true
+exclude-file = ".codespell_ignore_lines"
 
 [tool.isort]
 multi_line_output = 3
@@ -207,6 +208,7 @@ ignore = [
     "S101",  # Allow assertions in tests
     "S103", # Allow `os.chmod` setting a permissive mask `0o555` on file or directory
     "S108", # Allow Probable insecure usage of temporary file or directory
+    "PLR0913", # Too many arguments to function
     "PLR2004", # Allow magic values used in comparisons
 ]
 # isort leaves init files alone by default, this makes ruff ignore them too.

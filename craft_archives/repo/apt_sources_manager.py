@@ -18,6 +18,7 @@
 
 import io
 import logging
+import pathlib
 import re
 import subprocess
 from pathlib import Path
@@ -25,9 +26,11 @@ from typing import List, Optional
 
 from craft_archives import os_release, utils
 
-from . import apt_ppa, package_repository
+from . import apt_key_manager, apt_ppa, errors, package_repository
 
 logger = logging.getLogger(__name__)
+
+_DEFAULT_SOURCES_DIRECTORY = Path("/etc/apt/sources.list.d")
 
 
 def _construct_deb822_source(
@@ -37,8 +40,9 @@ def _construct_deb822_source(
     formats: Optional[List[str]] = None,
     suites: List[str],
     url: str,
+    signed_by: pathlib.Path,
 ) -> str:
-    """Construct deb-822 formatted sources.list config string."""
+    """Construct deb-822 formatted sources string."""
     with io.StringIO() as deb822:
         if formats:
             type_text = " ".join(formats)
@@ -63,6 +67,8 @@ def _construct_deb822_source(
 
         print(f"Architectures: {arch_text}", file=deb822)
 
+        print(f"Signed-By: {str(signed_by)}", file=deb822)
+
         return deb822.getvalue()
 
 
@@ -76,9 +82,11 @@ class AptSourcesManager:
     def __init__(
         self,
         *,
-        sources_list_d: Path = Path("/etc/apt/sources.list.d"),  # noqa: B008
+        sources_list_d: Path = _DEFAULT_SOURCES_DIRECTORY,
+        keyrings_dir: Path = apt_key_manager.KEYRINGS_PATH,
     ) -> None:
         self._sources_list_d = sources_list_d
+        self._keyrings_dir = keyrings_dir
 
     def _install_sources(
         self,
@@ -89,6 +97,7 @@ class AptSourcesManager:
         name: str,
         suites: List[str],
         url: str,
+        keyring_path: pathlib.Path,
     ) -> bool:
         """Install sources list configuration.
 
@@ -97,12 +106,16 @@ class AptSourcesManager:
 
         :returns: True if configuration was changed.
         """
+        if keyring_path and not keyring_path.is_file():
+            raise errors.AptGPGKeyringError(keyring_path)
+
         config = _construct_deb822_source(
             architectures=architectures,
             components=components,
             formats=formats,
             suites=suites,
             url=url,
+            signed_by=keyring_path,
         )
 
         if name not in ["default", "default-security"]:
@@ -159,6 +172,10 @@ class AptSourcesManager:
         else:
             name = re.sub(r"\W+", "_", package_repo.url)
 
+        keyring_path = apt_key_manager.get_keyring_path(
+            package_repo.key_id, base_path=self._keyrings_dir
+        )
+
         return self._install_sources(
             architectures=package_repo.architectures,
             components=package_repo.components,
@@ -166,6 +183,7 @@ class AptSourcesManager:
             name=name,
             suites=suites,
             url=package_repo.url,
+            keyring_path=keyring_path,
         )
 
     def _install_sources_ppa(
@@ -184,12 +202,18 @@ class AptSourcesManager:
         owner, name = apt_ppa.split_ppa_parts(ppa=package_repo.ppa)
         codename = os_release.OsRelease().version_codename()
 
+        key_id = apt_ppa.get_launchpad_ppa_key_id(ppa=package_repo.ppa)
+        keyring_path = apt_key_manager.get_keyring_path(
+            key_id, base_path=self._keyrings_dir
+        )
+
         return self._install_sources(
             components=["main"],
             formats=["deb"],
             name=f"ppa-{owner}_{name}",
             suites=[codename],
             url=f"http://ppa.launchpad.net/{owner}/{name}/ubuntu",
+            keyring_path=keyring_path,
         )
 
     def install_package_repository_sources(

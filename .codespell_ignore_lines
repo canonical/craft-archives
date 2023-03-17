@@ -1,0 +1,2 @@
+            if line.startswith(b"fpr:"):
+fpr:::::::::FAKE-KEY-ID-FROM-GNUPG:
