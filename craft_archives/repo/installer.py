@@ -21,6 +21,7 @@ from typing import Any, Dict, List
 
 from . import errors
 from .apt_key_manager import AptKeyManager
+from .apt_preferences_manager import AptPreferencesManager
 from .apt_sources_manager import AptSourcesManager
 from .package_repository import (
     PackageRepository,
@@ -34,13 +35,14 @@ def install(
 ) -> bool:
     """Add package repositories to the host system.
 
-    :param package_repositories: A list of package repositories to install.
+    :param project_repositories: A list of package repositories to install.
     :param key_assets: The directory containing repository keys.
 
     :return: Whether a package list refresh is required.
     """
     key_manager = AptKeyManager(key_assets=key_assets)
     sources_manager = AptSourcesManager()
+    preferences_manager = AptPreferencesManager()
 
     package_repositories = _unmarshal_repositories(project_repositories)
 
@@ -52,6 +54,11 @@ def install(
         refresh_required |= sources_manager.install_package_repository_sources(
             package_repo=package_repo
         )
+        refresh_required |= preferences_manager.add(
+            pin=package_repo.pin, priority=package_repo.priority
+        )
+
+    refresh_required |= preferences_manager.write()
 
     _verify_all_key_assets_installed(key_assets=key_assets, key_manager=key_manager)
 

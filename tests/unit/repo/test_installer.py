@@ -32,12 +32,27 @@ def test_unmarshal_repositories():
             "url": "https://some/url",
             "key-id": "ABCDE12345" * 4,
         },
+        {
+            "type": "apt",
+            "ppa": "test/somerepo",
+            "priority": -1,
+        },
+        {
+            "type": "apt",
+            "url": "https://some/url",
+            "key-id": "ABCDE12345" * 4,
+            "priority": -2,
+        },
     ]
 
     pkg_repos = installer._unmarshal_repositories(data)
     assert len(pkg_repos) == 2
     assert isinstance(pkg_repos[0], PackageRepositoryAptPPA)
     assert pkg_repos[0].ppa == "test/somerepo"
+    assert pkg_repos[0].priority is None
     assert isinstance(pkg_repos[1], PackageRepositoryApt)
     assert pkg_repos[1].url == "https://some/url"
     assert pkg_repos[1].key_id == "ABCDE12345" * 4
+    assert pkg_repos[1].priority is None
+    assert pkg_repos[2].priority == -1
+    assert pkg_repos[3].priority == -2

@@ -24,7 +24,7 @@ from craft_archives.repo.package_repository import (
 )
 
 # region Test data and fixtures
-BASIC_PPA_MARSHALLED = {"type": "apt", "ppa": "test/foo"}
+BASIC_PPA_MARSHALLED = {"type": "apt", "ppa": "test/foo", "priority": 123}
 BASIC_APT_MARSHALLED = {
     "architectures": ["amd64", "i386"],
     "components": ["main", "multiverse"],
@@ -35,6 +35,7 @@ BASIC_APT_MARSHALLED = {
     "suites": ["xenial", "xenial-updates"],
     "type": "apt",
     "url": "http://archive.ubuntu.com/ubuntu",
+    "priority": 123,
 }
 
 
@@ -49,6 +50,7 @@ def apt_repository():
         name="test-name",
         suites=["xenial", "xenial-updates"],
         url="http://archive.ubuntu.com/ubuntu",
+        priority=123,
     )
 
 
@@ -224,6 +226,7 @@ def test_apt_unmarshal_invalid_extra_keys():
         "suites": ["xenial", "xenial-updates"],
         "type": "apt",
         "url": "http://archive.ubuntu.com/ubuntu",
+        "priority": 123,
         "foo": "bar",
         "foo2": "bar",
     }
@@ -265,6 +268,7 @@ def test_apt_unmarshal_invalid_type():
         "suites": ["xenial", "xenial-updates"],
         "type": "aptx",
         "url": "http://archive.ubuntu.com/ubuntu",
+        "priority": "always",
     }
 
     with pytest.raises(errors.PackageRepositoryValidationError) as raised:
@@ -321,18 +325,71 @@ def test_apt_unmarshal_invalid_type():
                 )
             ),
         ),
+        {
+            "type": "apt",
+            "key-id": "A" * 40,
+            "url": "https://example.com",
+            "name": "test",
+            "components": ["main"],
+            "suites": ["jammy"],
+            "priority": "always",
+        },
+        {
+            "type": "apt",
+            "key-id": "A" * 40,
+            "url": "https://example.com",
+            "name": "test",
+            "components": ["main"],
+            "suites": ["jammy"],
+            "priority": 1234,
+        },
     ],
 )
 def test_apt_marshal_unmarshal_inverses(repository):
     assert PackageRepositoryApt.unmarshal(repository).marshal() == repository
 
 
+@pytest.mark.parametrize(
+    "priority_str,priority_int",
+    [
+        ("always", 1000),
+        ("prefer", 990),
+        ("defer", 100),
+    ],
+)
+def test_priority_correctly_converted(priority_str, priority_int):
+    repo_marshalled = BASIC_APT_MARSHALLED.copy()
+    repo_marshalled["priority"] = priority_str
+    repo = PackageRepositoryApt.unmarshal(repo_marshalled)
+
+    assert repo.priority == priority_int
+
+
+@pytest.mark.parametrize(
+    "url,pin",
+    [
+        ("https://example.com/repo", 'origin "example.com"'),
+        ("http://archive.debian.org/debian/stable/blah", 'origin "archive.debian.org"'),
+        (
+            "https://ppa.launchpadcontent.net/deadsnakes/ppa/ubuntu/",
+            'origin "ppa.launchpadcontent.net"',
+        ),
+    ],
+)
+def test_pin_value(url, pin):
+    repo_marshalled = BASIC_APT_MARSHALLED.copy()
+    repo_marshalled["url"] = url
+    repo = PackageRepositoryApt.unmarshal(repo_marshalled)
+
+    assert repo.pin == pin
+
+
 # endregion
 # region PackageRepositoryAptPPA
 def test_ppa_marshal():
-    repo = PackageRepositoryAptPPA(ppa="test/ppa")
+    repo = PackageRepositoryAptPPA(ppa="test/ppa", priority=123)
 
-    assert repo.marshal() == {"type": "apt", "ppa": "test/ppa"}
+    assert repo.marshal() == {"type": "apt", "ppa": "test/ppa", "priority": 123}
 
 
 @pytest.mark.parametrize(
@@ -394,6 +451,40 @@ def test_ppa_unmarshal_error(check, ppa, error, details, resolution):
     check.equal(str(raised.value), error)
     check.equal(raised.value.details, details)
     check.equal(raised.value.resolution, resolution)
+
+
+@pytest.mark.parametrize(
+    "priority_str,priority_int",
+    [
+        ("always", 1000),
+        ("prefer", 990),
+        ("defer", 100),
+    ],
+)
+def test_ppa_priority_correctly_converted(priority_str, priority_int):
+    repo_marshalled = BASIC_PPA_MARSHALLED.copy()
+    repo_marshalled["priority"] = priority_str
+    repo = PackageRepositoryAptPPA.unmarshal(repo_marshalled)
+
+    assert repo.priority == priority_int
+
+
+@pytest.mark.parametrize(
+    "ppa,pin",
+    [
+        ("ppa/ppa", "release o=LP-PPA-ppa-ppa"),
+        ("deadsnakes/nightly", "release o=LP-PPA-deadsnakes-nightly"),
+    ],
+)
+def test_ppa_pin_value(ppa, pin):
+    repo = PackageRepositoryAptPPA.unmarshal(
+        {
+            "type": "apt",
+            "ppa": ppa,
+        }
+    )
+
+    assert repo.pin == pin
 
 
 # endregion

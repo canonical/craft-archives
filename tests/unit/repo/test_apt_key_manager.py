@@ -27,7 +27,7 @@ from craft_archives.repo.package_repository import (
     PackageRepositoryAptPPA,
 )
 
-with open(pathlib.Path(__file__).parent / "test_keys/FC42E99D.asc") as _f:
+with open(pathlib.Path(__file__).parent / "test_data/FC42E99D.asc") as _f:
     SAMPLE_KEY = _f.read()
 SAMPLE_KEY_BYTES = SAMPLE_KEY.encode()
 

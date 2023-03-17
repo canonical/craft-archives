@@ -17,13 +17,26 @@
 """Package repository definitions."""
 
 import abc
+import enum
 import re
 from copy import deepcopy
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
+from urllib.parse import urlparse
 
 from overrides import overrides  # pyright: reportUnknownVariableType=false
 
 from . import errors
+
+
+class PriorityString(enum.IntEnum):
+    """Convenience values that represent common deb priorities."""
+
+    ALWAYS = 1000
+    PREFER = 990
+    DEFER = 100
+
+
+PriorityValue = Union[int, Literal["always", "prefer", "defer"]]
 
 
 class PackageRepository(abc.ABC):
@@ -79,17 +92,19 @@ class PackageRepository(abc.ABC):
 class PackageRepositoryAptPPA(PackageRepository):
     """A PPA package repository."""
 
-    def __init__(self, *, ppa: str) -> None:
+    def __init__(self, *, ppa: str, priority: Optional[int] = None) -> None:
         self.type = "apt"
         self.ppa = ppa
+        self.priority = priority
 
         self.validate()
 
     @overrides
-    def marshal(self) -> Dict[str, Any]:
+    def marshal(self) -> Dict[str, Union[str, int]]:
         """Return the package repository data as a dictionary."""
-        data: Dict[str, Any] = {"type": "apt"}
-        data["ppa"] = self.ppa
+        data = {"type": "apt", "ppa": self.ppa}
+        if self.priority is not None:
+            data["priority"] = self.priority
         return data
 
     def validate(self) -> None:
@@ -104,10 +119,17 @@ class PackageRepositoryAptPPA(PackageRepository):
                     "'ppa' is correctly specified."
                 ),
             )
+        if self.priority == 0:
+            raise errors.PackageRepositoryValidationError(
+                url=self.ppa,
+                brief=f"invalid priority {self.priority}.",
+                details=("Priority cannot be zero."),
+                resolution="Verify priority value.",
+            )
 
     @classmethod
     @overrides
-    def unmarshal(cls, data: Dict[str, str]) -> "PackageRepositoryAptPPA":
+    def unmarshal(cls, data: Dict[str, Union[str, int]]) -> "PackageRepositoryAptPPA":
         """Create a package repository object from the given data."""
         if not isinstance(data, dict):
             raise errors.PackageRepositoryValidationError(
@@ -124,6 +146,7 @@ class PackageRepositoryAptPPA(PackageRepository):
 
         ppa = data_copy.pop("ppa", "")
         repo_type = data_copy.pop("type", None)
+        priority = data_copy.pop("priority", None)
 
         if repo_type != "apt":
             raise errors.PackageRepositoryValidationError(
@@ -138,7 +161,7 @@ class PackageRepositoryAptPPA(PackageRepository):
 
         if not isinstance(ppa, str):
             raise errors.PackageRepositoryValidationError(
-                url=ppa,
+                url=str(ppa),
                 brief=f"Invalid PPA {ppa!r}.",
                 details="PPA must be a valid string.",
                 resolution=(
@@ -146,6 +169,32 @@ class PackageRepositoryAptPPA(PackageRepository):
                     "is correctly specified."
                 ),
             )
+
+        if isinstance(priority, str):
+            priority = priority.upper()
+            if priority in PriorityString.__members__:
+                priority = PriorityString[priority]
+            else:
+                raise errors.PackageRepositoryValidationError(
+                    url=ppa,
+                    brief=f"invalid priority {priority!r}.",
+                    details=(
+                        "Priority must be 'always', 'prefer', 'defer' or a nonzero integer."
+                    ),
+                    resolution="Verify priority value.",
+                )
+        elif priority is not None:
+            try:
+                priority = int(priority)
+            except TypeError:
+                raise errors.PackageRepositoryValidationError(
+                    url=ppa,
+                    brief=f"invalid priority {priority!r}.",
+                    details=(
+                        "Priority must be 'always', 'prefer', 'defer' or a nonzero integer."
+                    ),
+                    resolution="Verify priority value.",
+                )
 
         if data_copy:
             keys = ", ".join([repr(k) for k in data_copy.keys()])
@@ -157,7 +206,13 @@ class PackageRepositoryAptPPA(PackageRepository):
                 ),
             )
 
-        return cls(ppa=ppa)
+        return cls(ppa=ppa, priority=priority)
+
+    @property
+    def pin(self) -> str:
+        """The pin string for this repository if needed."""
+        ppa_origin = self.ppa.replace("/", "-")
+        return f"release o=LP-PPA-{ppa_origin}"
 
 
 class PackageRepositoryApt(PackageRepository):
@@ -175,6 +230,7 @@ class PackageRepositoryApt(PackageRepository):
         path: Optional[str] = None,
         suites: Optional[List[str]] = None,
         url: str,
+        priority: Optional[int] = None,
     ) -> None:
         self.type = "apt"
         self.architectures = architectures
@@ -192,6 +248,7 @@ class PackageRepositoryApt(PackageRepository):
         self.path = path
         self.suites = suites
         self.url = url
+        self.priority = priority
 
         self.validate()
 
@@ -223,6 +280,12 @@ class PackageRepositoryApt(PackageRepository):
             data["suites"] = self.suites
 
         data["url"] = self.url
+
+        if self.priority:
+            if isinstance(self.priority, PriorityString):
+                data["priority"] = self.priority.name.lower()
+            else:
+                data["priority"] = self.priority
 
         return data
 
@@ -339,11 +402,20 @@ class PackageRepositoryApt(PackageRepository):
                 ),
             )
 
+        if self.priority == 0:
+            raise errors.PackageRepositoryValidationError(
+                url=self.url,
+                brief=f"invalid priority {self.priority}.",
+                details="Priority cannot be zero.",
+                resolution="Verify priority value.",
+            )
+
     # pylint: enable=too-many-branches
 
     @classmethod
     @overrides
-    def unmarshal(cls, data: Dict[str, Any]) -> "PackageRepositoryApt":
+    # Disabling too many branches check for this method, though we should fix that.
+    def unmarshal(cls, data: Dict[str, Any]) -> "PackageRepositoryApt":  # noqa PLR0912
         """Create a package repository object from the given data."""
         # pyright: reportUnknownArgumentType=false
         if not isinstance(data, dict):
@@ -369,6 +441,7 @@ class PackageRepositoryApt(PackageRepository):
         suites = data_copy.pop("suites", None)
         url = data_copy.pop("url", "")
         repo_type = data_copy.pop("type", None)
+        priority = data_copy.pop("priority", None)
 
         if repo_type != "apt":
             raise errors.PackageRepositoryValidationError(
@@ -494,6 +567,20 @@ class PackageRepositoryApt(PackageRepository):
                 ),
             )
 
+        if isinstance(priority, str):
+            priority = priority.upper()
+            if priority in PriorityString.__members__:
+                priority = PriorityString[priority]
+            else:
+                raise errors.PackageRepositoryValidationError(
+                    url=url,
+                    brief=f"invalid priority {priority!r}.",
+                    details=(
+                        "Priority must be 'always', 'prefer', 'defer' or a nonzero integer."
+                    ),
+                    resolution="Verify priority value.",
+                )
+
         if data_copy:
             keys = ", ".join([repr(k) for k in data_copy.keys()])
             raise errors.PackageRepositoryValidationError(
@@ -511,4 +598,11 @@ class PackageRepositoryApt(PackageRepository):
             name=name,
             suites=suites,
             url=url,
+            priority=priority,
         )
+
+    @property
+    def pin(self) -> str:
+        """The pin string for this repository if needed."""
+        domain = urlparse(self.url).netloc
+        return f'origin "{domain}"'
