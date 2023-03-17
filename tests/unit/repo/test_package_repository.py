@@ -500,6 +500,27 @@ def test_unmarshal_validation_error(data):
 
 
 @pytest.mark.parametrize(
+    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
+        PackageRepositoryAptPPA.unmarshal(ppa)
+
+    check.equal(str(raised.value), error)
+    check.equal(raised.value.details, details)
+    check.equal(raised.value.resolution, resolution)
+
+
+# endregion
+# region PackageRepository
+@pytest.mark.parametrize("data", [None, "some_string"])
+def test_unmarshal_validation_error(data):
+    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
+        PackageRepository.unmarshal(data)
+
+    assert (
+        raised.value.details == "Package repository must be a valid dictionary object."
+    )
+
+
+@pytest.mark.parametrize(
     "repositories",
     [
         [],
