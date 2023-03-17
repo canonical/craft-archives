@@ -200,9 +200,9 @@ def test_read_and_write_correct(pref_path, expected_path, tmp_path):
                 {"priority": -1, "pin": 'origin "apt_ppa.redhat.arch.mac"'},
             ],
             DATA_PATH / "expected.preferences",
-            id="basic_file"
+            id="basic_file",
         )
-    ]
+    ],
 )
 def test_preferences_added(tmp_path, preferences, expected_path):
     actual_path = tmp_path / "preferences"
@@ -213,5 +213,6 @@ def test_preferences_added(tmp_path, preferences, expected_path):
     manager.write()
 
     assert actual_path.read_text() == expected_path.read_text()
+
 
 # endregion
