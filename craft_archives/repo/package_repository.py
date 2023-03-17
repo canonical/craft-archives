@@ -20,7 +20,7 @@ import abc
 import enum
 import re
 from copy import deepcopy
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Mapping, Optional, Union
 from urllib.parse import urlparse
 
 from overrides import overrides  # pyright: reportUnknownVariableType=false
@@ -47,7 +47,7 @@ class PackageRepository(abc.ABC):
         """Return the package repository data as a dictionary."""
 
     @classmethod
-    def unmarshal(cls, data: Dict[str, str]) -> "PackageRepository":
+    def unmarshal(cls, data: Mapping[str, str]) -> "PackageRepository":
         """Create a package repository object from the given data."""
         if not isinstance(data, dict):  # pyright: reportUnnecessaryIsInstance=false
             raise errors.PackageRepositoryValidationError(
@@ -102,7 +102,7 @@ class PackageRepositoryAptPPA(PackageRepository):
     @overrides
     def marshal(self) -> Dict[str, Union[str, int]]:
         """Return the package repository data as a dictionary."""
-        data = {"type": "apt", "ppa": self.ppa}
+        data: Dict[str, Union[str, int]] = {"type": "apt", "ppa": self.ppa}
         if self.priority is not None:
             data["priority"] = self.priority
         return data
@@ -129,7 +129,7 @@ class PackageRepositoryAptPPA(PackageRepository):
 
     @classmethod
     @overrides
-    def unmarshal(cls, data: Dict[str, Union[str, int]]) -> "PackageRepositoryAptPPA":
+    def unmarshal(cls, data: Mapping[str, str]) -> "PackageRepositoryAptPPA":
         """Create a package repository object from the given data."""
         if not isinstance(data, dict):
             raise errors.PackageRepositoryValidationError(
@@ -415,7 +415,7 @@ class PackageRepositoryApt(PackageRepository):
     @classmethod
     @overrides
     # Disabling too many branches check for this method, though we should fix that.
-    def unmarshal(cls, data: Dict[str, Any]) -> "PackageRepositoryApt":  # noqa PLR0912
+    def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryApt":
         """Create a package repository object from the given data."""
         # pyright: reportUnknownArgumentType=false
         if not isinstance(data, dict):

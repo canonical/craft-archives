@@ -54,9 +54,13 @@ def install(
         refresh_required |= sources_manager.install_package_repository_sources(
             package_repo=package_repo
         )
-        refresh_required |= preferences_manager.add(
-            pin=package_repo.pin, priority=package_repo.priority
-        )
+        if (
+            isinstance(package_repo, (PackageRepositoryApt, PackageRepositoryAptPPA))
+            and package_repo.priority is not None
+        ):
+            refresh_required |= preferences_manager.add(
+                pin=package_repo.pin, priority=package_repo.priority
+            )
 
     refresh_required |= preferences_manager.write()
 

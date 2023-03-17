@@ -54,5 +54,7 @@ def test_unmarshal_repositories():
     assert pkg_repos[1].url == "https://some/url"
     assert pkg_repos[1].key_id == "ABCDE12345" * 4
     assert pkg_repos[1].priority is None
+    assert isinstance(pkg_repos[2], PackageRepositoryAptPPA)
+    assert isinstance(pkg_repos[3], PackageRepositoryApt)
     assert pkg_repos[2].priority == -1
     assert pkg_repos[3].priority == -2

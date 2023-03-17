@@ -60,6 +60,10 @@ class Preference:
                 priority = int(value)
             else:
                 logger.warning(f"Unknown preference line: {line!r}")
+        if not pin:
+            raise ValueError(f"Invalid pin string: {pin!r}")
+        if not priority:
+            raise ValueError(f"Invalid priority: {priority}")
         return cls(pin=pin, priority=priority)
 
     def __post_init__(self) -> None:
@@ -88,12 +92,12 @@ class AptPreferencesManager:
     ) -> None:
         self._header = header
         self._path = path
+        self._preferences: typing.List[Preference] = []
 
         self._read()
 
     def _read(self) -> None:
         """Read the preferences file and populate Preferences objects."""
-        self._preferences = []
         if not self._path.exists():
             logger.debug("No preferences read.")
             return
