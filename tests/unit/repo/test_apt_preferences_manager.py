@@ -25,6 +25,7 @@ from craft_archives.repo.apt_preferences_manager import (
     AptPreferencesManager,
     Preference,
 )
+from craft_archives.repo.errors import AptPreferencesError
 
 VALID_PRIORITY_STRINGS = ("always", "prefer", "defer")
 VALID_PRIORITY_INTS = (1000, 990, 100, 500, 1, -1)
@@ -48,7 +49,7 @@ def test_create_valid_preferences(pin, priority):
 
 @pytest.mark.parametrize("priority", INVALID_PRIORITIES)
 def test_invalid_priorities(priority):
-    with pytest.raises(ValueError):
+    with pytest.raises(AptPreferencesError):
         Preference(pin="", priority=priority)
 
 

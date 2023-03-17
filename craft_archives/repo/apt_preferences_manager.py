@@ -21,6 +21,8 @@ import logging
 import typing
 from pathlib import Path
 
+from craft_archives.repo.errors import AptPreferencesError
+
 _DEFAULT_PREFERENCES_FILE = Path("/etc/apt/preferences.d/craft-archives")
 
 _DEFAULT_HEADER = "# This file is managed by craft-archives"
@@ -61,14 +63,26 @@ class Preference:
             else:
                 logger.warning(f"Unknown preference line: {line!r}")
         if not pin:
-            raise ValueError(f"Invalid pin string: {pin!r}")
+            raise AptPreferencesError(
+                component="pin",
+                value=pin,
+                resolution="Remove or update preferences file.",
+            )
         if not priority:
-            raise ValueError(f"Invalid priority: {priority}")
+            raise AptPreferencesError(
+                component="priority",
+                value=priority,
+                resolution="Remove or update preferences file.",
+            )
         return cls(pin=pin, priority=priority)
 
     def __post_init__(self) -> None:
         if self.priority == 0:
-            raise ValueError("Pin-Priority cannot be zero.")
+            raise AptPreferencesError(
+                component="pin",
+                details="Pin-Priority cannot be zero.",
+                resolution="Check pin values for repositories.",
+            )
 
     def to_file(self, file: typing.TextIO) -> None:
         """Write this preference to the opened file-like object provided.

@@ -415,7 +415,9 @@ class PackageRepositoryApt(PackageRepository):
     @classmethod
     @overrides
     # Disabling too many branches check for this method, though we should fix that.
-    def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryApt":
+    def unmarshal(  # noqa: PLR0912
+        cls, data: Mapping[str, Any]
+    ) -> "PackageRepositoryApt":
         """Create a package repository object from the given data."""
         # pyright: reportUnknownArgumentType=false
         if not isinstance(data, dict):

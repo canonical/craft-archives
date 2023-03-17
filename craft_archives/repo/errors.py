@@ -16,7 +16,7 @@
 
 """Package repository error definitions."""
 import pathlib
-from typing import Optional
+from typing import Any, Literal, Optional
 
 from craft_archives.errors import ArchivesError
 
@@ -38,6 +38,23 @@ class PackageRepositoryValidationError(PackageRepositoryError):
         super().__init__(
             f"Invalid package repository for {url!r}: {brief}",
             details=details,
+            resolution=resolution,
+        )
+
+
+class AptPreferencesError(PackageRepositoryError):
+    """Apt preferences are invalid."""
+
+    def __init__(
+        self,
+        component: Literal["pin", "priority"],
+        value: Optional[Any] = None,
+        details: Optional[str] = None,
+        resolution: Optional[str] = None,
+    ) -> None:
+        super().__init__(
+            brief=f"Invalid repository preference {component}",
+            details=details or f"Invalid value: {value!r}",
             resolution=resolution,
         )
 
