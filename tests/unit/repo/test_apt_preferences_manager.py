@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """Tests for apt_preferencs_manager"""
-import io
 import pathlib
 import shutil
 from textwrap import dedent
@@ -123,11 +122,7 @@ def test_preference_string_parsing(input_str, expected):
     ],
 )
 def test_preference_to_file(preference, expected):
-    file = io.StringIO()
-
-    preference.to_file(file)
-
-    assert file.getvalue() == expected
+    assert str(preference) == expected
 
 
 # endregion

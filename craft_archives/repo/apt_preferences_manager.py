@@ -84,15 +84,14 @@ class Preference:
                 resolution="Check pin values for repositories.",
             )
 
-    def to_file(self, file: typing.TextIO) -> None:
-        """Write this preference to the opened file-like object provided.
-
-        :param file: A file-like object with text input.
-        """
-        print("Package: *", file=file)
-        print(f"Pin: {self.pin}", file=file)
-        print(f"Pin-Priority: {self.priority}", file=file)
-        print("", file=file)  # Empty line to start a new paragraph.
+    def __str__(self) -> str:
+        """Return the preference paragraph as a string."""
+        with io.StringIO() as file:
+            print("Package: *", file=file)
+            print(f"Pin: {self.pin}", file=file)
+            print(f"Pin-Priority: {self.priority}", file=file)
+            print("", file=file)  # Empty line to start a new paragraph.
+            return file.getvalue()
 
 
 class AptPreferencesManager:
@@ -131,7 +130,7 @@ class AptPreferencesManager:
         with io.StringIO() as config:
             print(self._header, file=config)
             for preference in self._preferences:
-                preference.to_file(config)
+                config.write(str(preference))
 
             config_str = config.getvalue()
 
