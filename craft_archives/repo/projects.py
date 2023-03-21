@@ -15,11 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Project model definitions and helpers."""
-
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional
+import abc
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
 import pydantic
-from pydantic import constr
+from pydantic import constr, validator
+
+from craft_archives.repo import errors
 
 # Workaround for mypy
 # see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
@@ -27,6 +29,8 @@ if TYPE_CHECKING:
     KeyIdStr = str
 else:
     KeyIdStr = constr(regex=r"^[0-9A-F]{40}$")
+
+PriorityValue = Optional[Union[Literal["always", "prefer", "defer"], int]]
 
 
 class ProjectModel(pydantic.BaseModel):
@@ -51,10 +55,40 @@ class ProjectModel(pydantic.BaseModel):
 #       field validation (moving all validation rules to pydantic).
 
 
-class AptDeb(ProjectModel):
-    """Apt package repository definition."""
+class Apt(abc.ABC, ProjectModel):
+    """Apt package repository — could be deb-style or a PPA."""
 
     type: Literal["apt"]
+    # URL and PPA must be defined before priority so the validator can use their values
+    url: Optional[str]
+    ppa: Optional[str]
+    priority: PriorityValue
+
+    @classmethod
+    def unmarshal(cls, data: Dict[str, Any]) -> "Apt":
+        """Create an Apt subclass object from a dictionary."""
+        if "ppa" in data:
+            return AptPPA.unmarshal(data)
+        return AptDeb.unmarshal(data)
+
+    @validator("priority")
+    def priority_cannot_be_zero(
+        cls, priority: PriorityValue, values: Dict[str, Any]
+    ) -> PriorityValue:
+        """Priority cannot be zero per apt Preferences specification."""
+        if priority == 0:
+            raise errors.PackageRepositoryValidationError(
+                url=str(values.get("url") or values.get("ppa")),
+                brief=f"invalid priority {priority}.",
+                details="Priority cannot be zero.",
+                resolution="Verify priority value.",
+            )
+        return priority
+
+
+class AptDeb(Apt):
+    """Apt package repository definition."""
+
     url: str
     key_id: KeyIdStr
     architectures: Optional[List[str]]
@@ -70,10 +104,9 @@ class AptDeb(ProjectModel):
         return cls(**data)
 
 
-class AptPPA(ProjectModel):
+class AptPPA(Apt):
     """PPA package repository definition."""
 
-    type: Literal["apt"]
     ppa: str
 
     @classmethod
