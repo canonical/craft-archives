@@ -20,17 +20,23 @@ from craft_archives.repo import errors
 from craft_archives.repo.projects import Apt, AptDeb, AptPPA
 
 
+@pytest.fixture
+def ppa_dict():
+    return {"type": "apt", "ppa": "test/somerepo"}
+
 class TestAptPPAValidation:
     """AptPPA field validation."""
 
     @pytest.mark.parametrize(
         "priority", ["always", "prefer", "defer", 1000, 990, 500, 100, -1, None]
     )
-    def test_apt_ppa_valid(self, priority):
-        repo = {"type": "apt", "ppa": "test/somerepo", "priority": priority}
-        apt_ppa = AptPPA.unmarshal(repo)
+    def test_apt_ppa_valid(self, priority, ppa_dict):
+        if priority is not None:
+            ppa_dict["priority"] = priority
+        apt_ppa = AptPPA.unmarshal(ppa_dict)
         assert apt_ppa.type == "apt"
         assert apt_ppa.ppa == "test/somerepo"
+        assert apt_ppa.priority == priority
 
     def test_apt_ppa_repository_invalid(self):
         repo = {

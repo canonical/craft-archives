@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 else:
     KeyIdStr = constr(regex=r"^[0-9A-F]{40}$")
 
-PriorityValue = Optional[Union[Literal["always", "prefer", "defer"], int]]
+PriorityValue = Union[Literal["always", "prefer", "defer"], int]
 
 
 class ProjectModel(pydantic.BaseModel):
@@ -62,7 +62,7 @@ class Apt(abc.ABC, ProjectModel):
     # URL and PPA must be defined before priority so the validator can use their values
     url: Optional[str]
     ppa: Optional[str]
-    priority: PriorityValue
+    priority: Optional[PriorityValue]
 
     @classmethod
     def unmarshal(cls, data: Dict[str, Any]) -> "Apt":
@@ -73,8 +73,8 @@ class Apt(abc.ABC, ProjectModel):
 
     @validator("priority")
     def priority_cannot_be_zero(
-        cls, priority: PriorityValue, values: Dict[str, Any]
-    ) -> PriorityValue:
+        cls, priority: Optional[PriorityValue], values: Dict[str, Any]
+    ) -> Optional[PriorityValue]:
         """Priority cannot be zero per apt Preferences specification."""
         if priority == 0:
             raise errors.PackageRepositoryValidationError(
