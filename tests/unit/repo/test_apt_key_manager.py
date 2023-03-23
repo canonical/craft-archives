@@ -255,6 +255,23 @@ def test_install_key_missing_dir(mock_run, mock_chmod, tmp_path, key_assets):
     assert keyrings_path.exists()
 
 
+def test_install_package_repository_key_missing_dir(
+    mock_run, mock_chmod, tmp_path, key_assets, mock_apt_ppa_get_signing_key
+):
+    keyrings_path = tmp_path / "keyrings"
+    assert not keyrings_path.exists()
+    repo = PackageRepositoryAptPPA(ppa="snappy-dev/snapcraft-daily")
+    mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
+    apt_gpg = AptKeyManager(
+        keyrings_path=keyrings_path,
+        key_assets=key_assets
+    )
+
+    apt_gpg.install_package_repository_key(package_repo=repo)
+
+    assert keyrings_path.is_dir()
+
+
 def test_install_key_with_gpg_failure(apt_gpg, mock_run):
     mock_run.side_effect = [
         subprocess.CompletedProcess(

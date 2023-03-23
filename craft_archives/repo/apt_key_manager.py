@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """APT key management helpers."""
-
+import contextlib
 # pyright: reportMissingTypeStubs=false
 
 import logging
@@ -250,7 +250,8 @@ class AptKeyManager:
         # If the keyring exists but does not contain the key, remove it and
         # install a fresh one.
         keyring_path = get_keyring_path(key_id, base_path=self._keyrings_path)
-        keyring_path.unlink(missing_ok=True)
+        with contextlib.suppress(NotADirectoryError):
+            keyring_path.unlink(missing_ok=True)
 
         key_path = self.find_asset_with_key_id(key_id=key_id)
         if key_path is not None:
