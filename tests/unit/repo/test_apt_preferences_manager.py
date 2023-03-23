@@ -208,6 +208,7 @@ def test_write_empty_preferences_removes_file(tmp_path):
     assert manager.write()
     assert not file.exists()
 
+
 @pytest.mark.parametrize(
     "preferences,expected_path",
     [

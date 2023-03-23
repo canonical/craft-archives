@@ -140,8 +140,7 @@ class AptPreferencesManager:
             if self._path.exists():
                 self._path.unlink()
                 return True
-            else:
-                return False
+            return False
         with io.StringIO() as config:
             print(self._header, file=config)
             for preference in self._preferences:
