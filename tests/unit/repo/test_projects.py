@@ -24,6 +24,7 @@ from craft_archives.repo.projects import Apt, AptDeb, AptPPA
 def ppa_dict():
     return {"type": "apt", "ppa": "test/somerepo"}
 
+
 class TestAptPPAValidation:
     """AptPPA field validation."""
 
