@@ -1,6 +1,6 @@
 [project]
 name = "craft-archives"
-version = "0.0.2"
+version = "0.0.3"
 readme = "README.rst"
 dependencies = [
     "gnupg",
