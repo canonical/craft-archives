@@ -69,3 +69,19 @@ def test_install_key_from_keyserver(apt_gpg, tmp_path):
 
     assert expected_file.is_file()
     assert apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=tmp_path)
+
+
+def test_install_key_missing_directory(key_assets, tmp_path, test_keys_dir):
+    keyrings_path = tmp_path / "keyrings"
+    assert not keyrings_path.exists()
+
+    apt_gpg = AptKeyManager(
+        keyrings_path=keyrings_path,
+        key_assets=key_assets,
+    )
+
+    keypath = test_keys_dir / "FC42E99D.asc"
+    apt_gpg.install_key(key=keypath.read_text())
+
+    assert keyrings_path.exists()
+    assert keyrings_path.stat().st_mode == 0o40755

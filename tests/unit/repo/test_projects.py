@@ -16,20 +16,28 @@
 
 import pydantic
 import pytest
-from craft_archives.repo.projects import AptDeb, AptPPA
+from craft_archives.repo import errors
+from craft_archives.repo.projects import Apt, AptDeb, AptPPA
+
+
+@pytest.fixture
+def ppa_dict():
+    return {"type": "apt", "ppa": "test/somerepo"}
 
 
 class TestAptPPAValidation:
     """AptPPA field validation."""
 
-    def test_apt_ppa_valid(self):
-        repo = {
-            "type": "apt",
-            "ppa": "test/somerepo",
-        }
-        apt_ppa = AptPPA.unmarshal(repo)
+    @pytest.mark.parametrize(
+        "priority", ["always", "prefer", "defer", 1000, 990, 500, 100, -1, None]
+    )
+    def test_apt_ppa_valid(self, priority, ppa_dict):
+        if priority is not None:
+            ppa_dict["priority"] = priority
+        apt_ppa = AptPPA.unmarshal(ppa_dict)
         assert apt_ppa.type == "apt"
         assert apt_ppa.ppa == "test/somerepo"
+        assert apt_ppa.priority == priority
 
     def test_apt_ppa_repository_invalid(self):
         repo = {
@@ -53,6 +61,9 @@ class TestAptDebValidation:
     """AptDeb field validation."""
 
     @pytest.mark.parametrize(
+        "priority", ["always", "prefer", "defer", 1000, 990, 500, 100, -1, None]
+    )
+    @pytest.mark.parametrize(
         "repo",
         [
             {
@@ -72,7 +83,9 @@ class TestAptDebValidation:
             },
         ],
     )
-    def test_apt_deb_valid(self, repo):
+    def test_apt_deb_valid(self, repo, priority):
+        if priority is not None:
+            repo["priority"] = priority
         apt_deb = AptDeb.unmarshal(repo)
         assert apt_deb.type == "apt"
         assert apt_deb.url == "https://some/url"
@@ -131,3 +144,39 @@ class TestAptDebValidation:
             error = ".*unexpected value; permitted: 'deb', 'deb-src'"
             with pytest.raises(pydantic.ValidationError, match=error):
                 AptDeb.unmarshal(repo)
+
+
+# region Generic Apt model tests
+@pytest.mark.parametrize(
+    "subclass,value",
+    [
+        (AptPPA, {"type": "apt", "ppa": "ppa/ppa"}),
+        (
+            AptDeb,
+            {
+                "type": "apt",
+                "url": "https://deb.repo",
+                "key_id": "A" * 40,
+                "formats": ["deb"],
+            },
+        ),
+    ],
+)
+def test_apt_unmarshal_returns_correct_subclass(subclass, value):
+    model = Apt.unmarshal(value)
+
+    assert isinstance(model, subclass)
+
+
+@pytest.mark.parametrize(
+    "error_class,kwargs",
+    [
+        (errors.PackageRepositoryValidationError, {"type": "apt", "priority": 0}),
+    ],
+)
+def test_validation_failure(error_class, kwargs):
+    with pytest.raises(error_class):
+        Apt(**kwargs)
+
+
+# endregion

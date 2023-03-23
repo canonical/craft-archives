@@ -39,6 +39,11 @@ SAMPLE_PINS = (
 DATA_PATH = pathlib.Path(__file__).parent / "test_data"
 
 
+@pytest.fixture
+def manager(tmp_path):
+    yield AptPreferencesManager(path=tmp_path / "preferences")
+
+
 # region Preference
 @pytest.mark.parametrize("priority", VALID_PRIORITIES)
 @pytest.mark.parametrize("pin", SAMPLE_PINS)
@@ -152,10 +157,15 @@ def test_read_nonexistent_file(tmp_path):
                 Preference(pin='origin "apt_ppa.redhat.arch.mac"', priority=-1),
             ],
         ),
+        (DATA_PATH / "empty.preferences", []),
+        (DATA_PATH / "only_comment.preferences", []),
+        (DATA_PATH / "many_blank_lines.preferences", []),
     ],
 )
 def test_read_existing_preferences(pref_path, expected):
     manager = AptPreferencesManager(path=pref_path)
+
+    manager.read()
 
     assert manager._preferences == expected
 
@@ -182,9 +192,21 @@ def test_read_and_write_correct(pref_path, expected_path, tmp_path):
     shutil.copyfile(pref_path, actual_path)
     manager = AptPreferencesManager(path=actual_path)
 
+    manager.read()
     manager.write()
 
     assert actual_path.read_text() == expected_path.read_text()
+
+
+def test_write_empty_preferences_removes_file(tmp_path):
+    file = tmp_path / "pref.preferences"
+    file.touch()
+
+    manager = AptPreferencesManager(path=file)
+
+    # Still return true if the file was changed, even if that change was removal.
+    assert manager.write()
+    assert not file.exists()
 
 
 @pytest.mark.parametrize(

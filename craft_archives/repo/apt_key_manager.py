@@ -118,7 +118,9 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
-        response = _call_gpg("--show-keys", stdin=key.encode()).splitlines()
+        response = _call_gpg(
+            "--import-options", "show-only", "--import", stdin=key.encode()
+        ).splitlines()
         fingerprints: List[str] = []
         for line in response:
             if line.startswith(b"fpr:"):
@@ -168,10 +170,10 @@ class AptKeyManager:
             raise errors.AptGPGKeyInstallError(
                 "Key must be a single key, not multiple.", key=key
             )
+
+        self._create_keyrings_path()
+        keyring_path = get_keyring_path(fingerprints[0], base_path=self._keyrings_path)
         try:
-            keyring_path = get_keyring_path(
-                fingerprints[0], base_path=self._keyrings_path
-            )
             _call_gpg("--import", "-", keyring=keyring_path, stdin=key.encode())
         except subprocess.CalledProcessError as error:
             raise errors.AptGPGKeyInstallError(error.output.decode(), key=key)
@@ -190,6 +192,7 @@ class AptKeyManager:
 
         :raises: AptGPGKeyInstallError if unable to install key.
         """
+        self._create_keyrings_path()
         keyring_path = get_keyring_path(key_id, base_path=self._keyrings_path)
         try:
             with tempfile.TemporaryDirectory() as tmpdir_str:
@@ -256,3 +259,11 @@ class AptKeyManager:
             self.install_key_from_keyserver(key_id=key_id, key_server=key_server)
 
         return True
+
+    def _create_keyrings_path(self):
+        """Create the directory that will contain the keys, if necessary."""
+        if not self._keyrings_path.exists():
+            logger.debug(
+                f"Keyrings location {self._keyrings_path} doesn't exist; Attempting to create it."
+            )
+            self._keyrings_path.mkdir(mode=0o755, parents=False)

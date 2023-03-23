@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """Manage the host's apt preferences configurations."""
+import contextlib
 import dataclasses
 import io
 import logging
@@ -47,7 +48,8 @@ class Preference:
 
         :param input_str: The string containing a preferences paragraph
         :returns: a single Preference object
-        :raises: ValueError if unknown
+        :raises: ValueError if the string is not a preferences paragraph
+        :raises: AptPreferencesError if either pin or priority is missing
         """
         lines = input_str.splitlines(keepends=False)
         pin, priority = None, None
@@ -62,6 +64,8 @@ class Preference:
                 priority = int(value)
             else:
                 logger.warning(f"Unknown preference line: {line!r}")
+        if pin is None and priority is None:
+            raise ValueError("String is not a preferences paragraph.")
         if not pin:
             raise AptPreferencesError(
                 component="pin",
@@ -98,18 +102,20 @@ class AptPreferencesManager:
     """Manage an apt preferences file.
 
     :param path: Path to the preferences file
+    :param header: A comment string to act as the file header.
     """
 
     def __init__(
-        self, *, path: Path = _DEFAULT_PREFERENCES_FILE, header: str = _DEFAULT_HEADER
+        self,
+        *,
+        path: Path = _DEFAULT_PREFERENCES_FILE,
+        header: str = _DEFAULT_HEADER,
     ) -> None:
         self._header = header
         self._path = path
         self._preferences: typing.List[Preference] = []
 
-        self._read()
-
-    def _read(self) -> None:
+    def read(self) -> None:
         """Read the preferences file and populate Preferences objects."""
         if not self._path.exists():
             logger.debug("No preferences read.")
@@ -119,7 +125,10 @@ class AptPreferencesManager:
             # Strip and check for contents to ensure no empty paragraphs are included.
             if not paragraph.strip():
                 continue
-            self._preferences.append(Preference.from_string(paragraph))
+            with contextlib.suppress(ValueError):
+                preference = Preference.from_string(paragraph)
+                if preference not in self._preferences:
+                    self._preferences.append(preference)
         logger.debug(f"{len(self._preferences)} pin preferences read.")
 
     def write(self) -> bool:
@@ -127,6 +136,11 @@ class AptPreferencesManager:
 
         :returns: True if the preferences file was changed.
         """
+        if not self._preferences:
+            if self._path.exists():
+                self._path.unlink()
+                return True
+            return False
         with io.StringIO() as config:
             print(self._header, file=config)
             for preference in self._preferences:

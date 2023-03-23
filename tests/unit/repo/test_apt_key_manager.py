@@ -121,7 +121,9 @@ def test_get_key_fingerprints(
                 "--batch",
                 "--no-default-keyring",
                 "--with-colons",
-                "--show-keys",
+                "--import-options",
+                "show-only",
+                "--import",
             ],
             input=b"8" * 40,
             capture_output=True,
@@ -211,7 +213,9 @@ def test_install_key(
                 "--batch",
                 "--no-default-keyring",
                 "--with-colons",
-                "--show-keys",
+                "--import-options",
+                "show-only",
+                "--import",
             ],
             input=SAMPLE_KEY_BYTES,
             capture_output=True,
@@ -235,6 +239,20 @@ def test_install_key(
             env={"LANG": "C.UTF-8"},
         ),
     ]
+
+
+def test_install_key_missing_dir(mock_run, mock_chmod, tmp_path, key_assets):
+    keyrings_path = tmp_path / "keyrings"
+    assert not keyrings_path.exists()
+
+    apt_gpg = AptKeyManager(
+        keyrings_path=keyrings_path,
+        key_assets=key_assets,
+    )
+    mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
+
+    apt_gpg.install_key(key=SAMPLE_KEY)
+    assert keyrings_path.exists()
 
 
 def test_install_key_with_gpg_failure(apt_gpg, mock_run):
