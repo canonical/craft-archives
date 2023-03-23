@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Integration tests for AptKeyManager"""
-import subprocess
 from pathlib import Path
 
 import pytest
