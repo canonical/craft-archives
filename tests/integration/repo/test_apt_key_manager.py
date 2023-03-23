@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Integration tests for AptKeyManager"""
-
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -69,3 +69,9 @@ def test_install_key_from_keyserver(apt_gpg, tmp_path):
 
     assert expected_file.is_file()
     assert apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=tmp_path)
+
+
+def test_install_empty_key():
+    output = AptKeyManager.get_key_fingerprints(key="")
+
+    assert output == []

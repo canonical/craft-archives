@@ -118,6 +118,8 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
+        if not key:
+            return []
         response = _call_gpg("--show-keys", stdin=key.encode()).splitlines()
         fingerprints: List[str] = []
         for line in response:
@@ -161,7 +163,10 @@ class AptKeyManager:
         :raises: AptGPGKeyInstallError if unable to install key.
         """
         logger.debug(f"Importing key {key}")
-        fingerprints = self.get_key_fingerprints(key=key)
+        try:
+            fingerprints = self.get_key_fingerprints(key=key)
+        except subprocess.CalledProcessError as error:
+            raise errors.AptGPGKeyInstallError(error.output.decode(), key=key)
         if not fingerprints:
             raise errors.AptGPGKeyInstallError("Invalid GPG key", key=key)
         if len(fingerprints) != 1:

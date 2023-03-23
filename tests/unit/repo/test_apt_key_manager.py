@@ -237,13 +237,24 @@ def test_install_key(
     ]
 
 
-def test_install_key_with_gpg_failure(apt_gpg, mock_run):
+def test_install_key_with_gpg_import_failure(apt_gpg, mock_run):
     mock_run.side_effect = [
         subprocess.CompletedProcess(
             ["gpg", "--do-something"], returncode=0, stdout=SAMPLE_GPG_SHOW_KEY_OUTPUT
         ),
         subprocess.CalledProcessError(cmd=["foo"], returncode=1, output=b"some error"),
     ]
+
+    with pytest.raises(errors.AptGPGKeyInstallError) as raised:
+        apt_gpg.install_key(key="FAKEKEY")
+
+    assert str(raised.value) == "Failed to install GPG key: some error"
+
+
+def test_install_key_with_fingerprint_failure(apt_gpg, mock_run):
+    mock_run.side_effect = subprocess.CalledProcessError(
+        cmd=["gpg", "--show-fingerprint"], returncode=1, output=b"some error"
+    )
 
     with pytest.raises(errors.AptGPGKeyInstallError) as raised:
         apt_gpg.install_key(key="FAKEKEY")
