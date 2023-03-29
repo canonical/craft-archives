@@ -69,6 +69,16 @@ class AptPPAInstallError(PackageRepositoryError):
         )
 
 
+class AptUCAInstallError(PackageRepositoryError):
+    """Installation of an UCA repository failed."""
+
+    def __init__(self, cloud: str, pocket: str, reason: str) -> None:
+        super().__init__(
+            f"Failed to install UCA '{cloud}/{pocket}': {reason}",
+            resolution="Verify UCA is correct and try again",
+        )
+
+
 class AptGPGKeyringError(PackageRepositoryError):
     """GPG keyring for repository does not exist or not valid."""
 

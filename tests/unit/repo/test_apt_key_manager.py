@@ -20,11 +20,12 @@ from unittest import mock
 from unittest.mock import call
 
 import pytest
-from craft_archives.repo import apt_ppa, errors
+from craft_archives.repo import apt_ppa, errors, package_repository
 from craft_archives.repo.apt_key_manager import AptKeyManager
 from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
+    PackageRepositoryAptUCA,
 )
 
 with open(pathlib.Path(__file__).parent / "test_data/FC42E99D.asc") as _f:
@@ -60,6 +61,11 @@ def mock_apt_ppa_get_signing_key(mocker):
         spec=apt_ppa.get_launchpad_ppa_key_id,
         return_value="FAKE-PPA-SIGNING-KEY",
     )
+
+
+@pytest.fixture(autouse=True)
+def mock_apt_uca_key_id(mocker):
+    yield mocker.patch.object(package_repository, "UCA_KEY_ID", "FAKE-UCA-KEY-ID")
 
 
 @pytest.fixture()
@@ -429,4 +435,22 @@ def test_install_package_repository_key_ppa_from_keyserver(apt_gpg, mocker):
     assert updated is True
     assert mock_install_key_from_keyserver.mock_calls == [
         call(key_id="FAKE-PPA-SIGNING-KEY", key_server="keyserver.ubuntu.com")
+    ]
+
+
+def test_install_package_repository_key_uca_from_keyserver(apt_gpg, mocker):
+    mock_install_key_from_keyserver = mocker.patch(
+        "craft_archives.repo.apt_key_manager.AptKeyManager.install_key_from_keyserver"
+    )
+    mocker.patch(
+        "craft_archives.repo.apt_key_manager.AptKeyManager.is_key_installed",
+        return_value=False,
+    )
+
+    package_repo = PackageRepositoryAptUCA(cloud="antelope")
+    updated = apt_gpg.install_package_repository_key(package_repo=package_repo)
+
+    assert updated is True
+    assert mock_install_key_from_keyserver.mock_calls == [
+        call(key_id="FAKE-UCA-KEY-ID", key_server="keyserver.ubuntu.com")
     ]

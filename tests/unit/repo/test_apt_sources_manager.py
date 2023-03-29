@@ -15,14 +15,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import http
+import urllib.error
 from textwrap import dedent
-from unittest.mock import call
+from unittest.mock import call, patch
 
 import pytest
 from craft_archives.repo import apt_ppa, apt_sources_manager, errors
 from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
+    PackageRepositoryAptUCA,
 )
 
 
@@ -167,11 +170,27 @@ def apt_sources_mgr(tmp_path):
                 """
             ),
         ),
+        (
+            PackageRepositoryAptUCA(cloud="fake-cloud"),
+            "snapcraft-cloud-fake-cloud.sources",
+            dedent(
+                """\
+                Types: deb
+                URIs: http://ubuntu-cloud.archive.canonical.com/ubuntu
+                Suites: FAKE-CODENAME-updates/fake-cloud
+                Components: main
+                Architectures: FAKE-HOST-ARCH
+                Signed-By: {keyring_path}
+                """
+            ),
+        ),
     ],
 )
 def test_install(package_repo, name, content_template, apt_sources_mgr, mocker):
     run_mock = mocker.patch("subprocess.run")
+    mocker.patch("urllib.request.urlopen")
     sources_path = apt_sources_mgr._sources_list_d / name
+
     keyring_path = apt_sources_mgr._keyrings_dir / "craft-AAAAAAAA.gpg"
     keyring_path.touch(exist_ok=True)
     content = content_template.format(keyring_path=keyring_path).encode()
@@ -215,6 +234,20 @@ def test_install_ppa_invalid(apt_sources_mgr):
 
     assert str(raised.value) == (
         "Failed to install PPA 'ppa-missing-slash': invalid PPA format"
+    )
+
+
+@patch(
+    "urllib.request.urlopen",
+    side_effect=urllib.error.HTTPError("", http.HTTPStatus.NOT_FOUND, "", {}, None),  # type: ignore
+)
+def test_install_uca_invalid(urllib, apt_sources_mgr):
+    repo = PackageRepositoryAptUCA(cloud="FAKE-CLOUD")
+    with pytest.raises(errors.AptUCAInstallError) as raised:
+        apt_sources_mgr.install_package_repository_sources(package_repo=repo)
+
+    assert str(raised.value) == (
+        "Failed to install UCA 'FAKE-CLOUD/updates': not a valid release for 'FAKE-CODENAME'"
     )
 
 

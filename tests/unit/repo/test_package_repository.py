@@ -18,13 +18,21 @@
 import pytest
 from craft_archives.repo import errors
 from craft_archives.repo.package_repository import (
+    UCA_VALID_POCKETS,
     PackageRepository,
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
+    PackageRepositoryAptUCA,
 )
 
 # region Test data and fixtures
 BASIC_PPA_MARSHALLED = {"type": "apt", "ppa": "test/foo", "priority": 123}
+BASIC_UCA_MARSHALLED = {
+    "type": "apt",
+    "cloud": "antelope",
+    "pocket": "updates",
+    "priority": 123,
+}
 BASIC_APT_MARSHALLED = {
     "architectures": ["amd64", "i386"],
     "components": ["main", "multiverse"],
@@ -532,6 +540,124 @@ def test_unmarshal_package_repositories_invalid_data():
         "Verify 'package-repositories' configuration and ensure that "
         "the correct syntax is used."
     )
+
+
+# endregion
+# region PackageRepositoryAptCloud
+def test_uca_marshal():
+    repo = PackageRepositoryAptUCA(cloud="antelope", priority=123)
+
+    assert repo.marshal() == {
+        "type": "apt",
+        "cloud": "antelope",
+        "pocket": "updates",
+        "priority": 123,
+    }
+
+
+@pytest.mark.parametrize(
+    "cloud",
+    [
+        "",
+        None,
+    ],
+)
+def test_uca_invalid_cloud(cloud):
+    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
+        PackageRepositoryAptUCA(cloud=cloud)
+
+    err = raised.value
+    assert str(err) == (f"Invalid package repository for {cloud!r}: invalid cloud.")
+    assert err.details == "clouds must be non-empty strings."
+    assert err.resolution == (
+        "Verify repository configuration and ensure that 'cloud' is correctly specified."
+    )
+
+
+def test_uca_unmarshal_invalid_data():
+    test_dict = "not-a-dict"
+
+    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
+        PackageRepositoryAptUCA.unmarshal(test_dict)  # type: ignore
+
+    err = raised.value
+    assert str(err) == "Invalid package repository for 'not-a-dict': invalid object."
+    assert err.details == "Package repository must be a valid dictionary object."
+    assert err.resolution == (
+        "Verify repository configuration and ensure that the correct syntax is used."
+    )
+
+
+@pytest.mark.parametrize(
+    "cloud,error,details,resolution",
+    [
+        pytest.param(
+            {"type": "aptx", "cloud": "antelope"},
+            "Invalid package repository for 'antelope': unsupported type 'aptx'.",
+            "The only currently supported type is 'apt'.",
+            "Verify repository configuration and ensure that 'type' is correctly specified.",
+            id="invalid_type",
+        ),
+        pytest.param(
+            {"type": "apt", "cloud": "antelope", "test": "foo"},
+            "Invalid package repository for 'antelope': unsupported properties 'test'.",
+            None,
+            "Verify repository configuration and ensure that it is correct.",
+            id="extra_keys",
+        ),
+        pytest.param(
+            {"type": "apt", "cloud": "antelope", "pocket": "security_updates"},
+            "Invalid package repository for 'antelope': Invalid pocket 'security_updates'.",
+            f"pocket must be a valid string and comprised in {UCA_VALID_POCKETS!r}",
+            (
+                "Verify repository configuration and ensure that 'pocket' "
+                "is correctly specified."
+            ),
+            id="invalid_type",
+        ),
+    ],
+)
+def test_uca_unmarshal_error(check, cloud, error, details, resolution):
+    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
+        PackageRepositoryAptUCA.unmarshal(cloud)
+
+    check.equal(str(raised.value), error)
+    check.equal(raised.value.details, details)
+    check.equal(raised.value.resolution, resolution)
+
+
+@pytest.mark.parametrize(
+    "priority_str,priority_int",
+    [
+        ("always", 1000),
+        ("prefer", 990),
+        ("defer", 100),
+    ],
+)
+def test_uca_priority_correctly_converted(priority_str, priority_int):
+    repo_marshalled = BASIC_UCA_MARSHALLED.copy()
+    repo_marshalled["priority"] = priority_str
+    repo = PackageRepositoryAptUCA.unmarshal(repo_marshalled)
+
+    assert repo.priority == priority_int
+
+
+@pytest.mark.parametrize(
+    "cloud,pin",
+    [
+        ("antelope", 'origin "ubuntu-cloud.archive.canonical.com"'),
+        ("zed", 'origin "ubuntu-cloud.archive.canonical.com"'),
+    ],
+)
+def test_uca_pin_value(cloud, pin):
+    repo = PackageRepositoryAptUCA.unmarshal(
+        {
+            "type": "apt",
+            "cloud": cloud,
+        }
+    )
+
+    assert repo.pin == pin
 
 
 # endregion
