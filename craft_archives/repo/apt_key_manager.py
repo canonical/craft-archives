@@ -22,7 +22,8 @@ import logging
 import pathlib
 import subprocess
 import tempfile
-from typing import Iterable, List, Optional
+from contextlib import contextmanager
+from typing import Iterable, Iterator, List, Optional
 
 from . import apt_ppa, errors, package_repository
 
@@ -118,9 +119,15 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
-        response = _call_gpg(
-            "--import-options", "show-only", "--import", stdin=key.encode()
-        ).splitlines()
+        with _temporary_home_dir() as tmpdir:
+            response = _call_gpg(
+                "--homedir",
+                str(tmpdir),
+                "--import-options",
+                "show-only",
+                "--import",
+                stdin=key.encode(),
+            ).splitlines()
         fingerprints: List[str] = []
         for line in response:
             if line.startswith(b"fpr:"):
@@ -195,14 +202,12 @@ class AptKeyManager:
         self._create_keyrings_path()
         keyring_path = get_keyring_path(key_id, base_path=self._keyrings_path)
         try:
-            with tempfile.TemporaryDirectory() as tmpdir_str:
+            with _temporary_home_dir() as tmpdir:
                 # We use a tmpdir because gpg needs a "homedir" to place temporary
                 # files into during the download process.
-                tmpdir = pathlib.Path(tmpdir_str)
-                tmpdir.chmod(0o700)
                 _call_gpg(
                     "--homedir",
-                    tmpdir_str,
+                    str(tmpdir),
                     "--keyserver",
                     key_server,
                     "--recv-keys",
@@ -268,3 +273,12 @@ class AptKeyManager:
                 f"Keyrings location {self._keyrings_path} doesn't exist; Attempting to create it."
             )
             self._keyrings_path.mkdir(mode=0o755, parents=False)
+
+
+@contextmanager
+def _temporary_home_dir() -> Iterator[pathlib.Path]:
+    """Helper to yield a temporary directory with proper permissions for gpg."""
+    with tempfile.TemporaryDirectory() as tmpdir_str:
+        tmpdir = pathlib.Path(tmpdir_str)
+        tmpdir.chmod(0o700)
+        yield tmpdir
