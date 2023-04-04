@@ -140,9 +140,10 @@ def validate_repository(data: Dict[str, Any]) -> None:
     try:
         if "ppa" in data:
             AptPPA(**data)
-        elif "cloud" in data:
+            return
+        if "cloud" in data:
             AptUCA(**data)
-        return
+            return
     except pydantic.ValidationError:
         pass
 

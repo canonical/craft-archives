@@ -245,4 +245,9 @@ def test_validate_repository_invalid():
         validate_repository("invalid repository")  # type: ignore
 
 
+def test_validate_repository_empty_dict():
+    with pytest.raises(pydantic.ValidationError):
+        validate_repository({})
+
+
 # endregion
