@@ -27,6 +27,7 @@ from .package_repository import (
     PackageRepository,
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
+    PackageRepositoryAptUCA,
 )
 
 
@@ -55,7 +56,14 @@ def install(
             package_repo=package_repo
         )
         if (
-            isinstance(package_repo, (PackageRepositoryApt, PackageRepositoryAptPPA))
+            isinstance(
+                package_repo,
+                (
+                    PackageRepositoryApt,
+                    PackageRepositoryAptPPA,
+                    PackageRepositoryAptUCA,
+                ),
+            )
             and package_repo.priority is not None
         ):
             refresh_required |= preferences_manager.add(
@@ -96,6 +104,8 @@ def _unmarshal_repositories(
 
         if "ppa" in data:
             pkg_repo = PackageRepositoryAptPPA.unmarshal(data)
+        elif "cloud" in data:
+            pkg_repo = PackageRepositoryAptUCA.unmarshal(data)
         else:
             pkg_repo = PackageRepositoryApt.unmarshal(data)
 

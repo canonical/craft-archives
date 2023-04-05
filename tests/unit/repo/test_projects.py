@@ -17,12 +17,23 @@
 import pydantic
 import pytest
 from craft_archives.repo import errors
-from craft_archives.repo.projects import Apt, AptDeb, AptPPA
+from craft_archives.repo.projects import (
+    Apt,
+    AptDeb,
+    AptPPA,
+    AptUCA,
+    validate_repository,
+)
 
 
 @pytest.fixture
 def ppa_dict():
     return {"type": "apt", "ppa": "test/somerepo"}
+
+
+@pytest.fixture
+def uca_dict():
+    return {"type": "apt", "cloud": "antelope", "pocket": "updates"}
 
 
 class TestAptPPAValidation:
@@ -55,6 +66,38 @@ class TestAptPPAValidation:
         error = "unexpected value; permitted: 'apt'"
         with pytest.raises(pydantic.ValidationError, match=error):
             AptPPA.unmarshal(repo)
+
+
+class TestAptUCAValidation:
+    """AptUCA field validation."""
+
+    @pytest.mark.parametrize(
+        "priority", ["always", "prefer", "defer", 1000, 990, 500, 100, -1, None]
+    )
+    def test_apt_uca_valid(self, priority, uca_dict):
+        if priority is not None:
+            uca_dict["priority"] = priority
+        apt_uca = AptUCA.unmarshal(uca_dict)
+        assert apt_uca.type == "apt"
+        assert apt_uca.cloud == "antelope"
+        assert apt_uca.priority == priority
+
+    def test_apt_uca_repository_invalid(self):
+        repo = {
+            "cloud": "antelope",
+        }
+        error = r"type\s+field required"
+        with pytest.raises(pydantic.ValidationError, match=error):
+            AptUCA.unmarshal(repo)
+
+    def test_project_package_uca_repository_bad_type(self):
+        repo = {
+            "type": "invalid",
+            "cloud": "antelope",
+        }
+        error = "unexpected value; permitted: 'apt'"
+        with pytest.raises(pydantic.ValidationError, match=error):
+            AptUCA.unmarshal(repo)
 
 
 class TestAptDebValidation:
@@ -160,6 +203,7 @@ class TestAptDebValidation:
                 "formats": ["deb"],
             },
         ),
+        (AptUCA, {"type": "apt", "cloud": "antelope"}),
     ],
 )
 def test_apt_unmarshal_returns_correct_subclass(subclass, value):
@@ -177,6 +221,33 @@ def test_apt_unmarshal_returns_correct_subclass(subclass, value):
 def test_validation_failure(error_class, kwargs):
     with pytest.raises(error_class):
         Apt(**kwargs)
+
+
+@pytest.mark.parametrize(
+    "repo",
+    [
+        {"type": "apt", "ppa": "ppa/ppa"},
+        {
+            "type": "apt",
+            "url": "https://deb.repo",
+            "key-id": "A" * 40,
+            "formats": ["deb"],
+        },
+        {"type": "apt", "cloud": "antelope"},
+    ],
+)
+def test_validate_repository(repo):
+    validate_repository(repo)
+
+
+def test_validate_repository_invalid():
+    with pytest.raises(TypeError, match="must be a dictionary"):
+        validate_repository("invalid repository")  # type: ignore
+
+
+def test_validate_repository_empty_dict():
+    with pytest.raises(pydantic.ValidationError):
+        validate_repository({})
 
 
 # endregion

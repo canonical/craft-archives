@@ -22,6 +22,30 @@ The following properties are supported for PPA-type repositories:
       - ``ppa: snappy-devs/snapcraft-daily``
       - ``ppa: mozillateam/firefox-next``
 
+.. _uca-properties:
+
+The following properties are supported for UCA-type repositories:
+
+- type
+   - Type: enum[string]
+   - Description: Specifies type of package-repository, must currently be
+     ``apt``
+   - Examples: ``type: apt``
+- cloud
+   - Type: string
+   - Description: UCA release name
+   - Format: <uca-release>
+   - Examples:
+      - ``cloud: antelope``
+      - ``cloud: zed``
+- pocket
+   - Type: enum[string]
+   - Description: Pocket to get packages from, must be either ``updates``
+     or ``proposed``
+   - Default: If unspecified, pocket is assumed to be ``updates``
+   - Examples:
+      - ``pocket: updates``
+      - ``pocket: proposed``
 
 .. _deb-properties:
 
@@ -115,6 +139,23 @@ PPA repository using "ppa" property
    package-repositories:
      - type: apt
        ppa: snappy-dev/snapcraft-daily
+
+UCA repository using "cloud" property
+-------------------------------------
+
+.. code-block:: yaml
+   package-repositories:
+     - type: apt
+       cloud: antelope
+
+UCA repository using "pocket" property
+--------------------------------------
+
+.. code-block:: yaml
+   package-repositories:
+     - type: apt
+       cloud: antelope
+       pocket: updates
 
 Typical apt repository with components and suites
 -------------------------------------------------
