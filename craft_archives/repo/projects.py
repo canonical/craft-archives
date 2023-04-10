@@ -62,6 +62,7 @@ class Apt(abc.ABC, ProjectModel):
     # URL and PPA must be defined before priority so the validator can use their values
     url: Optional[str]
     ppa: Optional[str]
+    cloud: Optional[str]
     priority: Optional[PriorityValue]
 
     @classmethod
@@ -69,6 +70,8 @@ class Apt(abc.ABC, ProjectModel):
         """Create an Apt subclass object from a dictionary."""
         if "ppa" in data:
             return AptPPA.unmarshal(data)
+        if "cloud" in data:
+            return AptUCA.unmarshal(data)
         return AptDeb.unmarshal(data)
 
     @validator("priority")
@@ -78,7 +81,7 @@ class Apt(abc.ABC, ProjectModel):
         """Priority cannot be zero per apt Preferences specification."""
         if priority == 0:
             raise errors.PackageRepositoryValidationError(
-                url=str(values.get("url") or values.get("ppa")),
+                url=str(values.get("url") or values.get("ppa") or values.get("cloud")),
                 brief=f"invalid priority {priority}.",
                 details="Priority cannot be zero.",
                 resolution="Verify priority value.",
@@ -115,6 +118,18 @@ class AptPPA(Apt):
         return cls(**data)
 
 
+class AptUCA(Apt):
+    """Ubuntu Cloud Archive repository definition."""
+
+    cloud: str
+    pocket: Optional[str]
+
+    @classmethod
+    def unmarshal(cls, data: Dict[str, Any]) -> "AptUCA":
+        """Create an AptUCA object from dictionary data."""
+        return cls(**data)
+
+
 def validate_repository(data: Dict[str, Any]) -> None:
     """Validate a package repository.
 
@@ -122,10 +137,13 @@ def validate_repository(data: Dict[str, Any]) -> None:
     """
     if not isinstance(data, dict):  # pyright: reportUnnecessaryIsInstance=false
         raise TypeError("value must be a dictionary")
-
     try:
-        AptPPA(**data)
-        return
+        if "ppa" in data:
+            AptPPA(**data)
+            return
+        if "cloud" in data:
+            AptUCA(**data)
+            return
     except pydantic.ValidationError:
         pass
 

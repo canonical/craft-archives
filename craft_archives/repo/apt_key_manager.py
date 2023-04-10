@@ -241,6 +241,8 @@ class AptKeyManager:
         key_server = DEFAULT_APT_KEYSERVER
         if isinstance(package_repo, package_repository.PackageRepositoryAptPPA):
             key_id = apt_ppa.get_launchpad_ppa_key_id(ppa=package_repo.ppa)
+        elif isinstance(package_repo, package_repository.PackageRepositoryAptUCA):
+            key_id = package_repository.UCA_KEY_ID
         elif isinstance(package_repo, package_repository.PackageRepositoryApt):
             key_id = package_repo.key_id
             if package_repo.key_server:

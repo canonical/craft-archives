@@ -28,7 +28,7 @@ framework that need to provide support for additional software archives.
 
    .. grid-item-card:: :ref:`Tutorial <tutorial>`
 
-      **Get started** with a hands-on introduction to craft=archives
+      **Get started** with a hands-on introduction to Craft Archives
 
    .. grid-item-card:: :ref:`How-to guides <howto>`
 
@@ -39,7 +39,7 @@ framework that need to provide support for additional software archives.
 
    .. grid-item-card:: :ref:`Reference <reference>`
 
-      **Technical information** about craft_archives
+      **Technical information** about Craft Archives
 
    .. grid-item-card:: :ref:`Explanation <explanation>`
 
@@ -48,12 +48,12 @@ framework that need to provide support for additional software archives.
 Project and community
 =====================
 
-craft_archives is a member of the Canonical family. It's an open source project
+Craft Archives is a member of the Canonical family. It's an open source project
 that warmly welcomes community projects, contributions, suggestions, fixes
 and constructive feedback.
 
 * `Ubuntu Code of Conduct <https://ubuntu.com/community/code-of-conduct>`_.
-* `Canonical contributor licenses agreement
+* `Canonical contributor licence agreement
   <https://ubuntu.com/legal/contributors>`_.
 
 Indices and tables

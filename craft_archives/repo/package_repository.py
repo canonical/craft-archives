@@ -27,6 +27,12 @@ from overrides import overrides  # pyright: reportUnknownVariableType=false
 
 from . import errors
 
+UCA_ARCHIVE = "http://ubuntu-cloud.archive.canonical.com/ubuntu"
+UCA_NETLOC = urlparse(UCA_ARCHIVE).netloc
+UCA_VALID_POCKETS = ["updates", "proposed"]
+UCA_DEFAULT_POCKET = UCA_VALID_POCKETS[0]
+UCA_KEY_ID = "391A9AA2147192839E9DB0315EDB1B62EC4926EA"
+
 
 class PriorityString(enum.IntEnum):
     """Convenience values that represent common deb priorities."""
@@ -213,6 +219,154 @@ class PackageRepositoryAptPPA(PackageRepository):
         """The pin string for this repository if needed."""
         ppa_origin = self.ppa.replace("/", "-")
         return f"release o=LP-PPA-{ppa_origin}"
+
+
+class PackageRepositoryAptUCA(PackageRepository):
+    """A cloud package repository."""
+
+    def __init__(
+        self,
+        *,
+        cloud: str,
+        pocket: str = UCA_DEFAULT_POCKET,
+        priority: Optional[int] = None,
+    ) -> None:
+        self.type = "apt"
+        self.cloud = cloud
+        self.pocket = pocket
+        self.priority = priority
+
+        self.validate()
+
+    @overrides
+    def marshal(self) -> Dict[str, Union[str, int]]:
+        """Return the package repository data as a dictionary."""
+        data: Dict[str, Union[str, int]] = {
+            "type": "apt",
+            "cloud": self.cloud,
+            "pocket": self.pocket,
+        }
+        if self.priority is not None:
+            data["priority"] = self.priority
+        return data
+
+    def validate(self) -> None:
+        """Ensure the current repository data is valid."""
+        if not self.cloud:
+            raise errors.PackageRepositoryValidationError(
+                url=self.cloud,
+                brief="invalid cloud.",
+                details="clouds must be non-empty strings.",
+                resolution=(
+                    "Verify repository configuration and ensure that "
+                    "'cloud' is correctly specified."
+                ),
+            )
+        if self.priority == 0:
+            raise errors.PackageRepositoryValidationError(
+                url=self.cloud,
+                brief=f"invalid priority {self.priority}.",
+                details=("Priority cannot be zero."),
+                resolution="Verify priority value.",
+            )
+
+    @classmethod
+    @overrides
+    def unmarshal(cls, data: Mapping[str, str]) -> "PackageRepositoryAptUCA":
+        """Create a package repository object from the given data."""
+        if not isinstance(data, dict):
+            raise errors.PackageRepositoryValidationError(
+                url=str(data),
+                brief="invalid object.",
+                details="Package repository must be a valid dictionary object.",
+                resolution=(
+                    "Verify repository configuration and ensure that the correct "
+                    "syntax is used."
+                ),
+            )
+
+        data_copy = deepcopy(data)
+
+        cloud = data_copy.pop("cloud", "")
+        pocket = data_copy.pop("pocket", UCA_DEFAULT_POCKET)
+        repo_type = data_copy.pop("type", None)
+        priority = data_copy.pop("priority", None)
+
+        if repo_type != "apt":
+            raise errors.PackageRepositoryValidationError(
+                url=cloud,
+                brief=f"unsupported type {repo_type!r}.",
+                details="The only currently supported type is 'apt'.",
+                resolution=(
+                    "Verify repository configuration and ensure that 'type' "
+                    "is correctly specified."
+                ),
+            )
+
+        if not isinstance(cloud, str):
+            raise errors.PackageRepositoryValidationError(
+                url=cloud,
+                brief="Invalid cloud {cloud!r}",
+                details="cloud is not a valid cloud archive.",
+                resolution=(
+                    "Verify repository configuration and ensure that 'cloud' "
+                    "is a valid cloud archive."
+                ),
+            )
+
+        if pocket not in UCA_VALID_POCKETS:
+            raise errors.PackageRepositoryValidationError(
+                url=cloud,
+                brief=f"Invalid pocket {pocket!r}.",
+                details=f"pocket must be a valid string and comprised in {UCA_VALID_POCKETS!r}",
+                resolution=(
+                    "Verify repository configuration and ensure that 'pocket' "
+                    "is correctly specified."
+                ),
+            )
+
+        if isinstance(priority, str):
+            priority = priority.upper()
+            if priority in PriorityString.__members__:
+                priority = PriorityString[priority]
+            else:
+                raise errors.PackageRepositoryValidationError(
+                    url=str(cloud),
+                    brief=f"invalid priority {priority!r}.",
+                    details=(
+                        "Priority must be 'always', 'prefer', 'defer' or a nonzero integer."
+                    ),
+                    resolution="Verify priority value.",
+                )
+        elif priority is not None:
+            try:
+                priority = int(priority)
+            except TypeError:
+                raise errors.PackageRepositoryValidationError(
+                    url=cloud,
+                    brief=f"invalid priority {priority!r}.",
+                    details=(
+                        "Priority must be 'always', 'prefer', 'defer' or a nonzero integer."
+                    ),
+                    resolution="Verify priority value.",
+                )
+
+        if data_copy:
+            keys = ", ".join([repr(k) for k in data_copy.keys()])
+            raise errors.PackageRepositoryValidationError(
+                url=cloud,
+                brief=f"unsupported properties {keys}.",
+                resolution=(
+                    "Verify repository configuration and ensure that it is correct."
+                ),
+            )
+
+        return cls(cloud=cloud, pocket=pocket, priority=priority)
+
+    @property
+    def pin(self) -> str:
+        """The pin string for this repository if needed."""
+        return f'origin "{UCA_NETLOC}"'
 
 
 class PackageRepositoryApt(PackageRepository):

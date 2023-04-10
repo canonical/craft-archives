@@ -18,6 +18,7 @@ from craft_archives.repo import installer
 from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
+    PackageRepositoryAptUCA,
 )
 
 
@@ -43,10 +44,15 @@ def test_unmarshal_repositories():
             "key-id": "ABCDE12345" * 4,
             "priority": -2,
         },
+        {
+            "type": "apt",
+            "cloud": "antelope",
+            "pocket": "proposed",
+        },
     ]
 
     pkg_repos = installer._unmarshal_repositories(data)
-    assert len(pkg_repos) == 4
+    assert len(pkg_repos) == 5
     assert isinstance(pkg_repos[0], PackageRepositoryAptPPA)
     assert pkg_repos[0].ppa == "test/somerepo"
     assert pkg_repos[0].priority is None
@@ -58,3 +64,6 @@ def test_unmarshal_repositories():
     assert isinstance(pkg_repos[3], PackageRepositoryApt)
     assert pkg_repos[2].priority == -1
     assert pkg_repos[3].priority == -2
+    assert isinstance(pkg_repos[4], PackageRepositoryAptUCA)
+    assert pkg_repos[4].cloud == "antelope"
+    assert pkg_repos[4].pocket == "proposed"

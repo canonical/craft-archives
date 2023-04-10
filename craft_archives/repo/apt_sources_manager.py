@@ -26,7 +26,7 @@ from typing import List, Optional
 
 from craft_archives import os_release, utils
 
-from . import apt_key_manager, apt_ppa, errors, package_repository
+from . import apt_key_manager, apt_ppa, apt_uca, errors, package_repository
 
 logger = logging.getLogger(__name__)
 
@@ -216,6 +216,38 @@ class AptSourcesManager:
             keyring_path=keyring_path,
         )
 
+    def _install_sources_uca(
+        self, *, package_repo: package_repository.PackageRepositoryAptUCA
+    ) -> bool:
+        """Install UCA formatted repository.
+
+        Create a sources list config by:
+        - Looking up the codename of the host OS and using it as the "suites"
+          entry.
+        - Formulate deb URL to point to UCA.
+        - Enable only "deb" formats.
+
+        :returns: True if source configuration was changed.
+        """
+        cloud = package_repo.cloud
+        pocket = package_repo.pocket
+
+        codename = os_release.OsRelease().version_codename()
+        apt_uca.check_release_compatibility(codename, cloud, pocket)
+
+        key_id = package_repository.UCA_KEY_ID
+        keyring_path = apt_key_manager.get_keyring_path(
+            key_id, base_path=self._keyrings_dir
+        )
+        return self._install_sources(
+            components=["main"],
+            formats=["deb"],
+            name=f"cloud-{cloud}",
+            suites=[f"{codename}-{pocket}/{cloud}"],
+            url=package_repository.UCA_ARCHIVE,
+            keyring_path=keyring_path,
+        )
+
     def install_package_repository_sources(
         self,
         *,
@@ -230,6 +262,9 @@ class AptSourcesManager:
         logger.debug(f"Processing repo: {package_repo!r}")
         if isinstance(package_repo, package_repository.PackageRepositoryAptPPA):
             return self._install_sources_ppa(package_repo=package_repo)
+
+        if isinstance(package_repo, package_repository.PackageRepositoryAptUCA):
+            return self._install_sources_uca(package_repo=package_repo)
 
         if isinstance(package_repo, package_repository.PackageRepositoryApt):
             changed = self._install_sources_apt(package_repo=package_repo)
