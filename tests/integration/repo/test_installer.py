@@ -206,7 +206,7 @@ def check_sources(etc_apt_dir: Path) -> None:
     assert len(list(keyrings_location.iterdir())) == len(source_to_contents)
 
     for source_repo, expected_contents in source_to_contents.items():
-        source_file = sources_dir / f"snapcraft-{source_repo}.sources"
+        source_file = sources_dir / f"craft-{source_repo}.sources"
         assert source_file.is_file()
         assert source_file.read_text() == expected_contents
 
