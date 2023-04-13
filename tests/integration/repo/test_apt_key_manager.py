@@ -58,6 +58,10 @@ def test_install_key(apt_gpg, tmp_path, test_keys_dir):
     assert expected_file.is_file()
     assert apt_gpg.is_key_installed(key_id="FC42E99D")
 
+    # Check that gpg's backup file has been removed
+    backup_file = expected_file.with_suffix(expected_file.suffix + "~")
+    assert not backup_file.is_file()
+
 
 def test_install_key_from_keyserver(apt_gpg, tmp_path):
     expected_file = tmp_path / "craft-FC42E99D.gpg"
