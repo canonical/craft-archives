@@ -80,6 +80,15 @@ def get_keyring_path(
     return base_path.joinpath(file_base).with_suffix(".asc" if is_ascii else ".gpg")
 
 
+def _configure_keyring_file(keyring_file: pathlib.Path) -> None:
+    """Configure a newly created keyring file."""
+    # Change the permissions on the file so that APT itself can read it later
+    keyring_file.chmod(0o644)
+    # Also remove the backup file, if gpg created it
+    backup = keyring_file.with_suffix(keyring_file.suffix + "~")
+    backup.unlink(missing_ok=True)
+
+
 class AptKeyManager:
     """Manage APT repository keys."""
 
@@ -182,8 +191,7 @@ class AptKeyManager:
         except subprocess.CalledProcessError as error:
             raise errors.AptGPGKeyInstallError(error.output.decode(), key=key)
 
-        # Change the permissions on the file so that APT itself can read it later
-        keyring_path.chmod(0o644)
+        _configure_keyring_file(keyring_path)
         logger.debug(f"Installed apt repository key:\n{key}")
 
     def install_key_from_keyserver(
@@ -211,7 +219,7 @@ class AptKeyManager:
                     key_id,
                     keyring=keyring_path,
                 )
-            keyring_path.chmod(0o644)
+            _configure_keyring_file(keyring_path)
         except subprocess.CalledProcessError as error:
             raise errors.AptGPGKeyInstallError(
                 error.output.decode(), key_id=key_id, key_server=key_server
