@@ -86,10 +86,10 @@ class AptKeyManager:
     def __init__(
         self,
         *,
-        keyrings_path: pathlib.Path = KEYRINGS_PATH,
+        keyrings_path: Optional[pathlib.Path] = None,
         key_assets: pathlib.Path,
     ) -> None:
-        self._keyrings_path = keyrings_path
+        self._keyrings_path = keyrings_path or KEYRINGS_PATH
         self._key_assets = key_assets
 
     def find_asset_with_key_id(self, *, key_id: str) -> Optional[pathlib.Path]:

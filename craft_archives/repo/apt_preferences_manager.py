@@ -108,11 +108,11 @@ class AptPreferencesManager:
     def __init__(
         self,
         *,
-        path: Path = _DEFAULT_PREFERENCES_FILE,
+        path: typing.Optional[Path] = None,
         header: str = _DEFAULT_HEADER,
     ) -> None:
         self._header = header
-        self._path = path
+        self._path = path or _DEFAULT_PREFERENCES_FILE
         self._preferences: typing.List[Preference] = []
 
     def read(self) -> None:
