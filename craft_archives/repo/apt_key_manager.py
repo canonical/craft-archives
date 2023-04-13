@@ -134,18 +134,15 @@ class AptKeyManager:
                 fingerprints.append(line[4:].decode().strip(":"))
         return fingerprints
 
-    @classmethod
-    def is_key_installed(
-        cls, *, key_id: str, keyring_path: pathlib.Path = KEYRINGS_PATH
-    ) -> bool:
+    def is_key_installed(self, *, key_id: str) -> bool:
         """Check if specified key_id is installed.
 
-        :param key_id: Key ID to check for.
-        :param keyring_path: An optional override to check for the keyring.
+        :param key_id: Key ID to check for. The key will be looked for in the
+          AptKeyManager's configured keyrings path.
 
         :returns: True if key is installed.
         """
-        keyring_file = get_keyring_path(key_id, base_path=keyring_path)
+        keyring_file = get_keyring_path(key_id, base_path=self._keyrings_path)
         # Check if the keyring file exists first, otherwise the gpg check itself
         # creates it.
         if not keyring_file.is_file():
