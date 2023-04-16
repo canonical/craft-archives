@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """APT key management helpers."""
-import contextlib
+
 # pyright: reportMissingTypeStubs=false
 
 import logging
@@ -268,7 +268,7 @@ class AptKeyManager:
 
         return True
 
-    def _create_keyrings_path(self):
+    def _create_keyrings_path(self) -> None:
         """Create the directory that will contain the keys, if necessary."""
         if not self._keyrings_path.exists():
             logger.debug(
@@ -279,7 +279,7 @@ class AptKeyManager:
 
 @contextmanager
 def _temporary_home_dir() -> Iterator[pathlib.Path]:
-    """Helper to yield a temporary directory with proper permissions for gpg."""
+    """Yield a temporary directory with proper permissions for gpg."""
     with tempfile.TemporaryDirectory() as tmpdir_str:
         tmpdir = pathlib.Path(tmpdir_str)
         tmpdir.chmod(0o700)
