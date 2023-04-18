@@ -50,25 +50,29 @@ def apt_gpg(key_assets, tmp_path):
 def test_install_key(apt_gpg, tmp_path, test_keys_dir):
     expected_file = tmp_path / "craft-FC42E99D.gpg"
     assert not expected_file.exists()
-    assert not apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=tmp_path)
+    assert not apt_gpg.is_key_installed(key_id="FC42E99D")
 
     keypath = test_keys_dir / "FC42E99D.asc"
     apt_gpg.install_key(key=keypath.read_text())
 
     assert expected_file.is_file()
-    assert apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=tmp_path)
+    assert apt_gpg.is_key_installed(key_id="FC42E99D")
+
+    # Check that gpg's backup file has been removed
+    backup_file = expected_file.with_suffix(expected_file.suffix + "~")
+    assert not backup_file.is_file()
 
 
 def test_install_key_from_keyserver(apt_gpg, tmp_path):
     expected_file = tmp_path / "craft-FC42E99D.gpg"
     assert not expected_file.exists()
-    assert not apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=tmp_path)
+    assert not apt_gpg.is_key_installed(key_id="FC42E99D")
 
     key_id = "78E1918602959B9C59103100F1831DDAFC42E99D"
     apt_gpg.install_key_from_keyserver(key_id=key_id)
 
     assert expected_file.is_file()
-    assert apt_gpg.is_key_installed(key_id="FC42E99D", keyring_path=tmp_path)
+    assert apt_gpg.is_key_installed(key_id="FC42E99D")
 
 
 def test_install_key_missing_directory(key_assets, tmp_path, test_keys_dir):

@@ -88,7 +88,7 @@ def apt_sources_mgr(tmp_path):
                 suites=["test-suite1", "test-suite2"],
                 url="http://test.url/ubuntu",
             ),
-            "snapcraft-http_test_url_ubuntu.sources",
+            "craft-http_test_url_ubuntu.sources",
             dedent(
                 """\
                 Types: deb deb-src
@@ -109,7 +109,7 @@ def apt_sources_mgr(tmp_path):
                 suites=["test-suite1", "test-suite2"],
                 url="http://test.url/ubuntu",
             ),
-            "snapcraft-NO-FORMAT.sources",
+            "craft-NO-FORMAT.sources",
             dedent(
                 """\
                 Types: deb
@@ -128,7 +128,7 @@ def apt_sources_mgr(tmp_path):
                 path="some-path",
                 url="http://test.url/ubuntu",
             ),
-            "snapcraft-WITH-PATH.sources",
+            "craft-WITH-PATH.sources",
             dedent(
                 """\
                 Types: deb
@@ -145,7 +145,7 @@ def apt_sources_mgr(tmp_path):
                 name="IMPLIED-PATH",
                 url="http://test.url/ubuntu",
             ),
-            "snapcraft-IMPLIED-PATH.sources",
+            "craft-IMPLIED-PATH.sources",
             dedent(
                 """\
                 Types: deb
@@ -158,7 +158,7 @@ def apt_sources_mgr(tmp_path):
         ),
         (
             PackageRepositoryAptPPA(ppa="test/ppa"),
-            "snapcraft-ppa-test_ppa.sources",
+            "craft-ppa-test_ppa.sources",
             dedent(
                 """\
                 Types: deb
@@ -172,7 +172,7 @@ def apt_sources_mgr(tmp_path):
         ),
         (
             PackageRepositoryAptUCA(cloud="fake-cloud"),
-            "snapcraft-cloud-fake-cloud.sources",
+            "craft-cloud-fake-cloud.sources",
             dedent(
                 """\
                 Types: deb

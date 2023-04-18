@@ -162,11 +162,11 @@ def test_is_key_installed(
 
     # If the keyring file doesn't exist at all the function should exit early,
     # with no gpg calls
-    assert not apt_gpg.is_key_installed(key_id="foo", keyring_path=keyring_path)
+    assert not apt_gpg.is_key_installed(key_id="foo")
     assert mock_run.mock_calls == []
 
     keyring_path.touch()
-    is_installed = apt_gpg.is_key_installed(key_id="foo", keyring_path=tmp_path)
+    is_installed = apt_gpg.is_key_installed(key_id="foo")
 
     assert is_installed is expected_is_installed
     assert mock_run.mock_calls == [
@@ -199,7 +199,7 @@ def test_is_key_installed_with_gpg_failure(
         cmd=["gpg"], returncode=return_code, output=b"some error"
     )
 
-    is_installed = apt_gpg.is_key_installed(key_id="foo", keyring_path=tmp_path)
+    is_installed = apt_gpg.is_key_installed(key_id="foo")
 
     assert is_installed is False
     mock_logger.warning.assert_called_once_with("gpg error: some error")

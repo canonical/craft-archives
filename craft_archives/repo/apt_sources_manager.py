@@ -82,11 +82,11 @@ class AptSourcesManager:
     def __init__(
         self,
         *,
-        sources_list_d: Path = _DEFAULT_SOURCES_DIRECTORY,
-        keyrings_dir: Path = apt_key_manager.KEYRINGS_PATH,
+        sources_list_d: Optional[Path] = None,
+        keyrings_dir: Optional[Path] = None,
     ) -> None:
-        self._sources_list_d = sources_list_d
-        self._keyrings_dir = keyrings_dir
+        self._sources_list_d = sources_list_d or _DEFAULT_SOURCES_DIRECTORY
+        self._keyrings_dir = keyrings_dir or apt_key_manager.KEYRINGS_PATH
 
     def _install_sources(
         self,
@@ -102,7 +102,7 @@ class AptSourcesManager:
         """Install sources list configuration.
 
         Write config to:
-        /etc/apt/sources.list.d/snapcraft-<name>.sources
+        /etc/apt/sources.list.d/craft-<name>.sources
 
         :returns: True if configuration was changed.
         """
@@ -119,7 +119,7 @@ class AptSourcesManager:
         )
 
         if name not in ["default", "default-security"]:
-            name = "snapcraft-" + name
+            name = "craft-" + name
 
         config_path = self._sources_list_d / f"{name}.sources"
         if config_path.exists() and config_path.read_text() == config:
