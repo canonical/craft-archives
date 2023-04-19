@@ -28,6 +28,8 @@ from craft_archives.repo.package_repository import (
     PackageRepositoryAptUCA,
 )
 
+# pyright: reportGeneralTypeIssues=false
+
 with open(pathlib.Path(__file__).parent / "test_data/FC42E99D.asc") as _f:
     SAMPLE_KEY = _f.read()
 SAMPLE_KEY_BYTES = SAMPLE_KEY.encode()
@@ -355,6 +357,7 @@ def test_install_package_repository_key_already_installed(
         return_value=is_installed,
     )
     package_repo = PackageRepositoryApt(
+        type="apt",
         components=["main", "multiverse"],
         key_id="8" * 40,
         key_server="xkeyserver.com",
@@ -381,6 +384,7 @@ def test_install_package_repository_key_from_asset(apt_gpg, key_assets, mocker):
     expected_key_path.write_text("key-data")
 
     package_repo = PackageRepositoryApt(
+        type="apt",
         components=["main", "multiverse"],
         key_id=key_id,
         suites=["xenial"],
@@ -405,6 +409,7 @@ def test_install_package_repository_key_apt_from_keyserver(apt_gpg, mocker):
     key_id = "8" * 40
 
     package_repo = PackageRepositoryApt(
+        type="apt",
         components=["main", "multiverse"],
         key_id=key_id,
         key_server="key.server",
@@ -429,7 +434,7 @@ def test_install_package_repository_key_ppa_from_keyserver(apt_gpg, mocker):
         return_value=False,
     )
 
-    package_repo = PackageRepositoryAptPPA(ppa="test/ppa")
+    package_repo = PackageRepositoryAptPPA(type="apt", ppa="test/ppa")
     updated = apt_gpg.install_package_repository_key(package_repo=package_repo)
 
     assert updated is True
@@ -447,7 +452,7 @@ def test_install_package_repository_key_uca_from_keyserver(apt_gpg, mocker):
         return_value=False,
     )
 
-    package_repo = PackageRepositoryAptUCA(cloud="antelope")
+    package_repo = PackageRepositoryAptUCA(type="apt", cloud="antelope")
     updated = apt_gpg.install_package_repository_key(package_repo=package_repo)
 
     assert updated is True

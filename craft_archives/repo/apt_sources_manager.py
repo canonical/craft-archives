@@ -22,7 +22,7 @@ import pathlib
 import re
 import subprocess
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, cast
 
 from craft_archives import os_release, utils
 
@@ -179,7 +179,7 @@ class AptSourcesManager:
         return self._install_sources(
             architectures=package_repo.architectures,
             components=package_repo.components,
-            formats=package_repo.formats,
+            formats=cast(Optional[List[str]], package_repo.formats),
             name=name,
             suites=suites,
             url=package_repo.url,
