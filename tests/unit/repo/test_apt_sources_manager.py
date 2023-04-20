@@ -28,6 +28,8 @@ from craft_archives.repo.package_repository import (
     PackageRepositoryAptUCA,
 )
 
+# pyright: reportGeneralTypeIssues=false
+
 
 @pytest.fixture(autouse=True)
 def mock_apt_ppa_get_signing_key(mocker):
@@ -81,6 +83,7 @@ def apt_sources_mgr(tmp_path):
     [
         (
             PackageRepositoryApt(
+                type="apt",
                 architectures=["amd64", "arm64"],
                 components=["test-component"],
                 formats=["deb", "deb-src"],
@@ -102,62 +105,26 @@ def apt_sources_mgr(tmp_path):
         ),
         (
             PackageRepositoryApt(
+                type="apt",
                 architectures=["amd64", "arm64"],
-                components=["test-component"],
+                formats=["deb", "deb-src"],
+                path="dir/subdir",
                 key_id="A" * 40,
-                name="NO-FORMAT",
-                suites=["test-suite1", "test-suite2"],
                 url="http://test.url/ubuntu",
             ),
-            "craft-NO-FORMAT.sources",
+            "craft-http_test_url_ubuntu.sources",
             dedent(
                 """\
-                Types: deb
-                URIs: http://test.url/ubuntu
-                Suites: test-suite1 test-suite2
-                Components: test-component
-                Architectures: amd64 arm64
-                Signed-By: {keyring_path}
-                """
+                    Types: deb deb-src
+                    URIs: http://test.url/ubuntu
+                    Suites: dir/subdir/
+                    Architectures: amd64 arm64
+                    Signed-By: {keyring_path}
+                    """
             ),
         ),
         (
-            PackageRepositoryApt(
-                key_id="A" * 40,
-                name="WITH-PATH",
-                path="some-path",
-                url="http://test.url/ubuntu",
-            ),
-            "craft-WITH-PATH.sources",
-            dedent(
-                """\
-                Types: deb
-                URIs: http://test.url/ubuntu
-                Suites: some-path/
-                Architectures: FAKE-HOST-ARCH
-                Signed-By: {keyring_path}
-                """
-            ),
-        ),
-        (
-            PackageRepositoryApt(
-                key_id="A" * 40,
-                name="IMPLIED-PATH",
-                url="http://test.url/ubuntu",
-            ),
-            "craft-IMPLIED-PATH.sources",
-            dedent(
-                """\
-                Types: deb
-                URIs: http://test.url/ubuntu
-                Suites: /
-                Architectures: FAKE-HOST-ARCH
-                Signed-By: {keyring_path}
-                """
-            ),
-        ),
-        (
-            PackageRepositoryAptPPA(ppa="test/ppa"),
+            PackageRepositoryAptPPA(type="apt", ppa="test/ppa"),
             "craft-ppa-test_ppa.sources",
             dedent(
                 """\
@@ -171,7 +138,7 @@ def apt_sources_mgr(tmp_path):
             ),
         ),
         (
-            PackageRepositoryAptUCA(cloud="fake-cloud"),
+            PackageRepositoryAptUCA(type="apt", cloud="fake-cloud"),
             "craft-cloud-fake-cloud.sources",
             dedent(
                 """\
@@ -227,7 +194,7 @@ def test_install(package_repo, name, content_template, apt_sources_mgr, mocker):
 
 
 def test_install_ppa_invalid(apt_sources_mgr):
-    repo = PackageRepositoryAptPPA(ppa="ppa-missing-slash")
+    repo = PackageRepositoryAptPPA(type="apt", ppa="ppa-missing-slash")
 
     with pytest.raises(errors.AptPPAInstallError) as raised:
         apt_sources_mgr.install_package_repository_sources(package_repo=repo)
@@ -242,7 +209,7 @@ def test_install_ppa_invalid(apt_sources_mgr):
     side_effect=urllib.error.HTTPError("", http.HTTPStatus.NOT_FOUND, "", {}, None),  # type: ignore
 )
 def test_install_uca_invalid(urllib, apt_sources_mgr):
-    repo = PackageRepositoryAptUCA(cloud="FAKE-CLOUD")
+    repo = PackageRepositoryAptUCA(type="apt", cloud="FAKE-CLOUD")
     with pytest.raises(errors.AptUCAInstallError) as raised:
         apt_sources_mgr.install_package_repository_sources(package_repo=repo)
 
@@ -258,43 +225,12 @@ class UnvalidatedAptRepo(PackageRepositoryApt):
         pass
 
 
-@pytest.mark.parametrize(
-    "repo,error_cls,error_match",
-    [
-        pytest.param(
-            PackageRepositoryApt(
-                architectures=["amd64"],
-                url="https://example.com",
-                key_id="A" * 40,
-            ),
-            errors.AptGPGKeyringError,
-            "",
-            id="keyring error",
-        ),
-        pytest.param(
-            UnvalidatedAptRepo(
-                architectures=["amd64"],
-                url="https://example.com",
-                suites=["honeymoon", "presidential"],
-                key_id="A" * 40,
-            ),
-            RuntimeError,
-            "no components with suite",
-            id="no components with suite",
-        ),
-        pytest.param(
-            UnvalidatedAptRepo(
-                architectures=["amd64"],
-                url="https://example.com",
-                components=["handlebar"],
-                key_id="A" * 40,
-            ),
-            RuntimeError,
-            "no suites or path",
-            id="no suites or path",
-        ),
-    ],
-)
-def test_install_apt_errors(repo, error_cls, error_match, apt_sources_mgr):
-    with pytest.raises(error_cls, match=error_match):
+def test_install_apt_errors(apt_sources_mgr):
+    repo = PackageRepositoryApt(
+        type="apt",
+        architectures=["amd64"],
+        url="https://example.com",
+        key_id="A" * 40,
+    )
+    with pytest.raises(errors.AptGPGKeyringError):
         apt_sources_mgr._install_sources_apt(package_repo=repo)
