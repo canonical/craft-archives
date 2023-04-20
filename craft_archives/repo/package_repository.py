@@ -19,12 +19,12 @@
 import abc
 import enum
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Literal, Mapping, Optional, Union
+from typing import Any, Dict, List, Literal, Mapping, Optional, Union
 from urllib.parse import urlparse
 
 import pydantic
 from overrides import overrides  # pyright: reportUnknownVariableType=false
-from pydantic import constr, root_validator, validator
+from pydantic import AnyUrl, ConstrainedStr, root_validator, validator
 
 from . import errors
 
@@ -34,12 +34,13 @@ UCA_VALID_POCKETS = ["updates", "proposed"]
 UCA_DEFAULT_POCKET = UCA_VALID_POCKETS[0]
 UCA_KEY_ID = "391A9AA2147192839E9DB0315EDB1B62EC4926EA"
 
-# Workaround for mypy
-# see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
-if TYPE_CHECKING:
-    KeyIdStr = str
-else:
-    KeyIdStr = constr(regex=r"^[0-9A-F]{40}$")
+
+class KeyIdStr(ConstrainedStr):
+    """A constrained string for a GPG key ID."""
+
+    min_length = 40
+    max_length = 40
+    regex = re.compile(r"^[0-9A-F]{40}$")
 
 
 class PriorityString(enum.IntEnum):
@@ -209,7 +210,7 @@ class PackageRepositoryAptUCA(PackageRepository):
 class PackageRepositoryApt(PackageRepository):
     """An APT package repository."""
 
-    url: str
+    url: AnyUrl
     key_id: KeyIdStr = pydantic.Field(alias="key-id")
     architectures: Optional[List[str]]
     formats: Optional[List[Literal["deb", "deb-src"]]]
@@ -218,17 +219,15 @@ class PackageRepositoryApt(PackageRepository):
     key_server: Optional[str] = pydantic.Field(alias="key-server")
     suites: Optional[List[str]]
 
+    # Customize some of the validation error messages
+    class Config(PackageRepository.Config):
+        error_msg_templates = {
+            "value_error.any_str.min_length": "Invalid URL; URLs must be non-empty strings"
+        }
+
     @property
     def name(self):
         return re.sub(r"\W+", "_", self.url)
-
-    @validator("url")
-    def url_non_empty(cls, url: str):
-        if not url:
-            raise _create_validation_error(
-                message="Invalid URL; URLs must be non-empty strings."
-            )
-        return url
 
     @validator("path")
     def path_non_empty(

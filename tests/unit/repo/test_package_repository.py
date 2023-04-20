@@ -232,27 +232,30 @@ def test_apt_invalid_suites_as_path():
     assert expected_message in str(err)
 
 
+def test_apt_key_id_valid():
+    key_id = "ABCDE12345" * 4
+    repo = {
+        "type": "apt",
+        "url": "https://some/url",
+        "key-id": key_id,
+    }
+    apt_deb = PackageRepositoryApt.unmarshal(repo)
+    assert apt_deb.key_id == key_id
+
+
 @pytest.mark.parametrize(
-    "key_id,error",
-    [
-        ("ABCDE12345" * 4, None),
-        ("KEYID12345" * 4, "string does not match regex"),
-        ("abcde12345" * 4, "string does not match regex"),
-    ],
+    "key_id",
+    ("KEYID12345" * 4, "abcde12345" * 4),
 )
-def test_apt_key_id(key_id, error):
+def test_apt_key_id_invalid(key_id):
     repo = {
         "type": "apt",
         "url": "https://some/url",
         "key-id": key_id,
     }
 
-    if not error:
-        apt_deb = PackageRepositoryApt.unmarshal(repo)
-        assert apt_deb.key_id == key_id
-    else:
-        with pytest.raises(pydantic.ValidationError, match=error):
-            PackageRepositoryApt.unmarshal(repo)
+    with pytest.raises(pydantic.ValidationError, match="string does not match regex"):
+        PackageRepositoryApt.unmarshal(repo)
 
 
 @pytest.mark.parametrize(
