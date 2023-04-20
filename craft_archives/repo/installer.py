@@ -67,7 +67,7 @@ def install(
             and package_repo.priority is not None
         ):
             refresh_required |= preferences_manager.add(
-                pin=package_repo.pin, priority=package_repo.priority
+                pin=package_repo.pin, priority=int(package_repo.priority)
             )
 
     refresh_required |= preferences_manager.write()

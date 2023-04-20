@@ -13,17 +13,17 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
+import pydantic
 import pytest
 from craft_archives.repo import errors
 from craft_archives.repo.package_repository import (
-    UCA_VALID_POCKETS,
     PackageRepository,
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
     PackageRepositoryAptUCA,
 )
+
+# pyright: reportGeneralTypeIssues=false
 
 # region Test data and fixtures
 BASIC_PPA_MARSHALLED = {"type": "apt", "ppa": "test/foo", "priority": 123}
@@ -39,7 +39,6 @@ BASIC_APT_MARSHALLED = {
     "formats": ["deb", "deb-src"],
     "key-id": "A" * 40,
     "key-server": "keyserver.ubuntu.com",
-    "name": "test-name",
     "suites": ["xenial", "xenial-updates"],
     "type": "apt",
     "url": "http://archive.ubuntu.com/ubuntu",
@@ -50,12 +49,13 @@ BASIC_APT_MARSHALLED = {
 @pytest.fixture
 def apt_repository():
     yield PackageRepositoryApt(
+        type="apt",
         architectures=["amd64", "i386"],
         components=["main", "multiverse"],
         formats=["deb", "deb-src"],
         key_id="A" * 40,
         key_server="keyserver.ubuntu.com",
-        name="test-name",
+        # name="test-name",
         suites=["xenial", "xenial-updates"],
         url="http://archive.ubuntu.com/ubuntu",
         priority=123,
@@ -64,8 +64,12 @@ def apt_repository():
 
 # endregion
 # region PackageRepositoryApt
+def create_apt(**kwargs) -> PackageRepositoryApt:
+    return PackageRepositoryApt(type="apt", **kwargs)
+
+
 def test_apt_name():
-    repo = PackageRepositoryApt(
+    repo = create_apt(
         key_id="A" * 40,
         url="http://archive.ubuntu.com/ubuntu",
     )
@@ -73,150 +77,211 @@ def test_apt_name():
 
 
 @pytest.mark.parametrize(
+    "priority", ["always", "prefer", "defer", 1000, 990, 500, 100, -1, None]
+)
+@pytest.mark.parametrize(
+    "repo",
+    [
+        {
+            "type": "apt",
+            "url": "https://some/url",
+            "key-id": "BCDEF12345" * 4,
+            "path": "my/path",
+        },
+        {
+            "type": "apt",
+            "url": "https://some/url",
+            "key-id": "BCDEF12345" * 4,
+            "formats": ["deb"],
+            "components": ["some", "components"],
+            "key-server": "my-key-server",
+            "suites": ["some", "suites"],
+        },
+    ],
+)
+def test_apt_valid(repo, priority):
+    if priority is not None:
+        repo["priority"] = priority
+    apt_deb = PackageRepositoryApt.unmarshal(repo)
+    assert apt_deb.type == "apt"
+    assert apt_deb.url == "https://some/url"
+    assert apt_deb.key_id == "BCDEF12345" * 4
+    assert apt_deb.formats == (["deb"] if "formats" in repo else None)
+    assert apt_deb.components == (
+        ["some", "components"] if "components" in repo else None
+    )
+    assert apt_deb.key_server == ("my-key-server" if "key-server" in repo else None)
+    assert apt_deb.path == ("my/path" if "path" in repo else None)
+    assert apt_deb.suites == (["some", "suites"] if "suites" in repo else None)
+
+
+@pytest.mark.parametrize(
     "arch", ["amd64", "armhf", "arm64", "i386", "ppc64el", "riscv", "s390x"]
 )
 def test_apt_valid_architectures(arch):
-    package_repo = PackageRepositoryApt(
-        key_id="A" * 40, url="http://test", architectures=[arch]
-    )
+    package_repo = create_apt(key_id="A" * 40, url="http://test", architectures=[arch])
 
     assert package_repo.architectures == [arch]
 
 
 def test_apt_invalid_url():
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryApt(
+    with pytest.raises(
+        pydantic.ValidationError, match="Invalid URL; URLs must be non-empty strings"
+    ):
+        create_apt(
             key_id="A" * 40,
             url="",
         )
 
-    err = raised.value
-    assert str(err) == "Invalid package repository for '': invalid URL."
-    assert err.details == "URLs must be non-empty strings."
-    assert err.resolution == (
-        "Verify the repository configuration and ensure that 'url' "
-        "is correctly specified."
-    )
-
 
 def test_apt_invalid_path():
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryApt(
+    with pytest.raises(
+        pydantic.ValidationError, match="Invalid path; Paths must be non-empty strings."
+    ):
+        create_apt(
             key_id="A" * 40,
             path="",
             url="http://archive.ubuntu.com/ubuntu",
         )
 
-    err = raised.value
-    assert str(err) == (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
-        "invalid path ''."
-    )
-    assert err.details == "Paths must be non-empty strings."
-    assert err.resolution == (
-        "Verify the repository configuration and ensure that 'path' "
-        "is a non-empty string such as '/'."
-    )
-
 
 def test_apt_invalid_path_with_suites():
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryApt(
+    with pytest.raises(pydantic.ValidationError) as raised:
+        create_apt(
             key_id="A" * 40,
             path="/",
             suites=["xenial", "xenial-updates"],
             url="http://archive.ubuntu.com/ubuntu",
         )
 
-    err = raised.value
-    assert str(err) == (
+    expected_message = (
         "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
-        "suites ['xenial', 'xenial-updates'] cannot be combined with path '/'."
+        "suites ['xenial', 'xenial-updates'] cannot be combined with path '/'"
     )
-    assert err.details == "Path and suites are incomptiable options."
-    assert err.resolution == (
-        "Verify the repository configuration and remove 'path' or 'suites'."
-    )
+
+    err = raised.value
+    assert expected_message in str(err)
 
 
 def test_apt_invalid_path_with_components():
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryApt(
+    with pytest.raises(pydantic.ValidationError) as raised:
+        create_apt(
             key_id="A" * 40,
             path="/",
             components=["main"],
             url="http://archive.ubuntu.com/ubuntu",
         )
 
-    err = raised.value
-    assert str(err) == (
+    expected_message = (
         "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
         "components ['main'] cannot be combined with path '/'."
     )
-    assert err.details == "Path and components are incomptiable options."
-    assert err.resolution == (
-        "Verify the repository configuration and remove 'path' or 'components'."
-    )
+
+    err = raised.value
+    assert expected_message in str(err)
 
 
 def test_apt_invalid_missing_components():
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryApt(
+    with pytest.raises(pydantic.ValidationError) as raised:
+        create_apt(
             key_id="A" * 40,
             suites=["xenial", "xenial-updates"],
             url="http://archive.ubuntu.com/ubuntu",
         )
 
-    err = raised.value
-    assert str(err) == (
+    expected_message = (
         "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
-        "no components specified."
+        "components must be specified when using suites."
     )
-    assert err.details == "Components are required when using suites."
-    assert err.resolution == (
-        "Verify the repository configuration and ensure that 'components' "
-        "is correctly specified."
-    )
+
+    err = raised.value
+    assert expected_message in str(err)
 
 
 def test_apt_invalid_missing_suites():
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryApt(
+    with pytest.raises(pydantic.ValidationError) as raised:
+        create_apt(
             key_id="A" * 40,
             components=["main"],
             url="http://archive.ubuntu.com/ubuntu",
         )
 
-    err = raised.value
-    assert str(err) == (
+    expected_message = (
         "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
-        "no suites specified."
+        "suites must be specified when using components."
     )
-    assert err.details == "Suites are required when using components."
-    assert err.resolution == (
-        "Verify the repository configuration and ensure that 'suites' "
-        "is correctly specified."
-    )
+
+    err = raised.value
+    assert expected_message in str(err)
 
 
 def test_apt_invalid_suites_as_path():
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryApt(
+    with pytest.raises(pydantic.ValidationError) as raised:
+        create_apt(
             key_id="A" * 40,
             suites=["my-suite/"],
             url="http://archive.ubuntu.com/ubuntu",
         )
 
-    err = raised.value
-    assert str(err) == (
+    expected_message = (
         "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
-        "invalid suite 'my-suite/'."
+        "invalid suite 'my-suite/'. Suites must not end with a '/'."
     )
-    assert err.details == "Suites must not end with a '/'."
-    assert err.resolution == (
-        "Verify the repository configuration and remove the trailing '/' "
-        "from suites or use the 'path' property to define a path."
-    )
+
+    err = raised.value
+    assert expected_message in str(err)
+
+
+def test_apt_key_id_valid():
+    key_id = "ABCDE12345" * 4
+    repo = {
+        "type": "apt",
+        "url": "https://some/url",
+        "key-id": key_id,
+    }
+    apt_deb = PackageRepositoryApt.unmarshal(repo)
+    assert apt_deb.key_id == key_id
+
+
+@pytest.mark.parametrize(
+    "key_id",
+    ("KEYID12345" * 4, "abcde12345" * 4),
+)
+def test_apt_key_id_invalid(key_id):
+    repo = {
+        "type": "apt",
+        "url": "https://some/url",
+        "key-id": key_id,
+    }
+
+    with pytest.raises(pydantic.ValidationError, match="string does not match regex"):
+        PackageRepositoryApt.unmarshal(repo)
+
+
+@pytest.mark.parametrize(
+    "formats",
+    [
+        ["deb"],
+        ["deb-src"],
+        ["deb", "deb-src"],
+        ["_invalid"],
+    ],
+)
+def test_apt_formats(formats):
+    repo = {
+        "type": "apt",
+        "url": "https://some/url",
+        "key-id": "ABCDE12345" * 4,
+        "formats": formats,
+    }
+
+    if formats != ["_invalid"]:
+        apt_deb = PackageRepositoryApt.unmarshal(repo)
+        assert apt_deb.formats == formats
+    else:
+        error = ".*unexpected value; permitted: 'deb', 'deb-src'"
+        with pytest.raises(pydantic.ValidationError, match=error):
+            PackageRepositoryApt.unmarshal(repo)
 
 
 def test_apt_marshal(apt_repository):
@@ -239,30 +304,8 @@ def test_apt_unmarshal_invalid_extra_keys():
         "foo2": "bar",
     }
 
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
+    with pytest.raises(pydantic.ValidationError):
         PackageRepositoryApt.unmarshal(test_dict)
-
-    err = raised.value
-    assert str(err) == (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
-        "unsupported properties 'foo', 'foo2'."
-    )
-    assert err.details is None
-    assert err.resolution == "Verify repository configuration and ensure it is correct."
-
-
-def test_apt_unmarshal_invalid_data():
-    test_dict = "not-a-dict"
-
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryApt.unmarshal(test_dict)  # type: ignore
-
-    err = raised.value
-    assert str(err) == "Invalid package repository for 'not-a-dict': invalid object."
-    assert err.details == "Package repository must be a valid dictionary object."
-    assert err.resolution == (
-        "Verify repository configuration and ensure that the correct syntax is used."
-    )
 
 
 def test_apt_unmarshal_invalid_type():
@@ -272,25 +315,15 @@ def test_apt_unmarshal_invalid_type():
         "formats": ["deb", "deb-src"],
         "key-id": "A" * 40,
         "key-server": "keyserver.ubuntu.com",
-        "name": "test-name",
+        # "name": "test-name",
         "suites": ["xenial", "xenial-updates"],
         "type": "aptx",
         "url": "http://archive.ubuntu.com/ubuntu",
         "priority": "always",
     }
 
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
+    with pytest.raises(pydantic.ValidationError):
         PackageRepositoryApt.unmarshal(test_dict)
-
-    err = raised.value
-    assert str(err) == (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
-        "unsupported type 'aptx'."
-    )
-    assert err.details == "The only currently supported type is 'apt'."
-    assert err.resolution == (
-        "Verify repository configuration and ensure that 'type' is correctly specified."
-    )
 
 
 @pytest.mark.parametrize(
@@ -301,52 +334,30 @@ def test_apt_unmarshal_invalid_type():
             "type": "apt",
             "key-id": "A" * 40,
             "url": "https://example.com",
-            "name": "test",
         },
         {
             "type": "apt",
             "key-id": "A" * 40,
             "url": "https://example.com",
-            "name": "test",
             "architectures": ["spookyarch"],
         },
         {
             "type": "apt",
             "key-id": "A" * 40,
             "url": "https://example.com",
-            "name": "test",
             "components": ["main"],
             "suites": ["jammy"],
-        },
-        pytest.param(
-            {
-                "type": "apt",
-                "key-id": "A" * 40,
-                "url": "https://example.com",
-                "name": "test",
-                "path": "/dev/null",
-            },
-            marks=pytest.mark.xfail(
-                reason=(
-                    "PackageRepositoryApt does not unmarshal a path. "
-                    "https://github.com/canonical/craft-archives/issues/37"
-                )
-            ),
-        ),
-        {
-            "type": "apt",
-            "key-id": "A" * 40,
-            "url": "https://example.com",
-            "name": "test",
-            "components": ["main"],
-            "suites": ["jammy"],
-            "priority": "always",
         },
         {
             "type": "apt",
             "key-id": "A" * 40,
             "url": "https://example.com",
-            "name": "test",
+            "path": "/dev/null",
+        },
+        {
+            "type": "apt",
+            "key-id": "A" * 40,
+            "url": "https://example.com",
             "components": ["main"],
             "suites": ["jammy"],
             "priority": 1234,
@@ -355,6 +366,19 @@ def test_apt_unmarshal_invalid_type():
 )
 def test_apt_marshal_unmarshal_inverses(repository):
     assert PackageRepositoryApt.unmarshal(repository).marshal() == repository
+
+
+def test_apt_invalid_priority():
+    with pytest.raises(pydantic.ValidationError) as raised:
+        create_apt(key_id="A" * 40, url="http://test", priority=0)
+
+    expected_message = (
+        "Invalid package repository for 'http://test': "
+        "invalid priority: Priority cannot be zero."
+    )
+
+    err = raised.value
+    assert expected_message in str(err)
 
 
 @pytest.mark.parametrize(
@@ -394,71 +418,23 @@ def test_pin_value(url, pin):
 
 # endregion
 # region PackageRepositoryAptPPA
+def create_ppa(**kwargs) -> PackageRepositoryAptPPA:
+    return PackageRepositoryAptPPA(type="apt", **kwargs)
+
+
 def test_ppa_marshal():
-    repo = PackageRepositoryAptPPA(ppa="test/ppa", priority=123)
+    repo = create_ppa(ppa="test/ppa", priority=123)
 
     assert repo.marshal() == {"type": "apt", "ppa": "test/ppa", "priority": 123}
 
 
-@pytest.mark.parametrize(
-    "ppa",
-    [
-        "",
-        None,
-    ],
-)
-def test_ppa_invalid_ppa(ppa):
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryAptPPA(ppa=ppa)
+def test_ppa_invalid_ppa():
+    with pytest.raises(pydantic.ValidationError) as raised:
+        create_ppa(ppa="")
 
+    expected_message = "Invalid PPA: PPAs must be non-empty strings."
     err = raised.value
-    assert str(err) == f"Invalid package repository for {ppa!r}: invalid PPA."
-    assert err.details == "PPAs must be non-empty strings."
-    assert err.resolution == (
-        "Verify repository configuration and ensure that 'ppa' is correctly specified."
-    )
-
-
-def test_ppa_unmarshal_invalid_data():
-    test_dict = "not-a-dict"
-
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryAptPPA.unmarshal(test_dict)  # type: ignore
-
-    err = raised.value
-    assert str(err) == "Invalid package repository for 'not-a-dict': invalid object."
-    assert err.details == "Package repository must be a valid dictionary object."
-    assert err.resolution == (
-        "Verify repository configuration and ensure that the correct syntax is used."
-    )
-
-
-@pytest.mark.parametrize(
-    "ppa,error,details,resolution",
-    [
-        pytest.param(
-            {"type": "aptx", "ppa": "test/ppa"},
-            "Invalid package repository for 'test/ppa': unsupported type 'aptx'.",
-            "The only currently supported type is 'apt'.",
-            "Verify repository configuration and ensure that 'type' is correctly specified.",
-            id="invalid_type",
-        ),
-        pytest.param(
-            {"type": "apt", "ppa": "test/ppa", "test": "foo"},
-            "Invalid package repository for 'test/ppa': unsupported properties 'test'.",
-            None,
-            "Verify repository configuration and ensure that it is correct.",
-            id="extra_keys",
-        ),
-    ],
-)
-def test_ppa_unmarshal_error(check, ppa, error, details, resolution):
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryAptPPA.unmarshal(ppa)
-
-    check.equal(str(raised.value), error)
-    check.equal(raised.value.details, details)
-    check.equal(raised.value.resolution, resolution)
+    assert expected_message in str(err)
 
 
 @pytest.mark.parametrize(
@@ -544,8 +520,12 @@ def test_unmarshal_package_repositories_invalid_data():
 
 # endregion
 # region PackageRepositoryAptCloud
+def create_uca(**kwargs) -> PackageRepositoryAptUCA:
+    return PackageRepositoryAptUCA(type="apt", **kwargs)
+
+
 def test_uca_marshal():
-    repo = PackageRepositoryAptUCA(cloud="antelope", priority=123)
+    repo = create_uca(cloud="antelope", priority=123)
 
     assert repo.marshal() == {
         "type": "apt",
@@ -555,75 +535,14 @@ def test_uca_marshal():
     }
 
 
-@pytest.mark.parametrize(
-    "cloud",
-    [
-        "",
-        None,
-    ],
-)
-def test_uca_invalid_cloud(cloud):
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryAptUCA(cloud=cloud)
+def test_uca_invalid_cloud():
+    with pytest.raises(pydantic.ValidationError) as raised:
+        create_uca(cloud="")
+
+    expected_message = "clouds must be non-empty strings."
 
     err = raised.value
-    assert str(err) == (f"Invalid package repository for {cloud!r}: invalid cloud.")
-    assert err.details == "clouds must be non-empty strings."
-    assert err.resolution == (
-        "Verify repository configuration and ensure that 'cloud' is correctly specified."
-    )
-
-
-def test_uca_unmarshal_invalid_data():
-    test_dict = "not-a-dict"
-
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryAptUCA.unmarshal(test_dict)  # type: ignore
-
-    err = raised.value
-    assert str(err) == "Invalid package repository for 'not-a-dict': invalid object."
-    assert err.details == "Package repository must be a valid dictionary object."
-    assert err.resolution == (
-        "Verify repository configuration and ensure that the correct syntax is used."
-    )
-
-
-@pytest.mark.parametrize(
-    "cloud,error,details,resolution",
-    [
-        pytest.param(
-            {"type": "aptx", "cloud": "antelope"},
-            "Invalid package repository for 'antelope': unsupported type 'aptx'.",
-            "The only currently supported type is 'apt'.",
-            "Verify repository configuration and ensure that 'type' is correctly specified.",
-            id="invalid_type",
-        ),
-        pytest.param(
-            {"type": "apt", "cloud": "antelope", "test": "foo"},
-            "Invalid package repository for 'antelope': unsupported properties 'test'.",
-            None,
-            "Verify repository configuration and ensure that it is correct.",
-            id="extra_keys",
-        ),
-        pytest.param(
-            {"type": "apt", "cloud": "antelope", "pocket": "security_updates"},
-            "Invalid package repository for 'antelope': Invalid pocket 'security_updates'.",
-            f"pocket must be a valid string and comprised in {UCA_VALID_POCKETS!r}",
-            (
-                "Verify repository configuration and ensure that 'pocket' "
-                "is correctly specified."
-            ),
-            id="invalid_type",
-        ),
-    ],
-)
-def test_uca_unmarshal_error(check, cloud, error, details, resolution):
-    with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepositoryAptUCA.unmarshal(cloud)
-
-    check.equal(str(raised.value), error)
-    check.equal(raised.value.details, details)
-    check.equal(raised.value.resolution, resolution)
+    assert expected_message in str(err)
 
 
 @pytest.mark.parametrize(
