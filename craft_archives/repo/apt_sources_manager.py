@@ -19,7 +19,6 @@
 import io
 import logging
 import pathlib
-import re
 import subprocess
 from pathlib import Path
 from typing import List, Optional, cast
@@ -162,15 +161,10 @@ class AptSourcesManager:
             suites = [path]
         elif package_repo.suites:
             suites = package_repo.suites
-            if not package_repo.components:
-                raise RuntimeError("no components with suite")
-        else:
+        else:  # pragma: no cover
             raise RuntimeError("no suites or path")
 
-        if package_repo.name:
-            name = package_repo.name
-        else:
-            name = re.sub(r"\W+", "_", package_repo.url)
+        name = package_repo.name
 
         keyring_path = apt_key_manager.get_keyring_path(
             package_repo.key_id, base_path=self._keyrings_dir

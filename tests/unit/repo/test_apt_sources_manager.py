@@ -104,6 +104,26 @@ def apt_sources_mgr(tmp_path):
             ),
         ),
         (
+            PackageRepositoryApt(
+                type="apt",
+                architectures=["amd64", "arm64"],
+                formats=["deb", "deb-src"],
+                path="dir/subdir",
+                key_id="A" * 40,
+                url="http://test.url/ubuntu",
+            ),
+            "craft-http_test_url_ubuntu.sources",
+            dedent(
+                """\
+                    Types: deb deb-src
+                    URIs: http://test.url/ubuntu
+                    Suites: dir/subdir/
+                    Architectures: amd64 arm64
+                    Signed-By: {keyring_path}
+                    """
+            ),
+        ),
+        (
             PackageRepositoryAptPPA(type="apt", ppa="test/ppa"),
             "craft-ppa-test_ppa.sources",
             dedent(
