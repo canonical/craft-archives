@@ -272,7 +272,7 @@ def test_install_package_repository_key_missing_dir(
 ):
     keyrings_path = tmp_path / "keyrings"
     assert not keyrings_path.exists()
-    repo = PackageRepositoryAptPPA(ppa="snappy-dev/snapcraft-daily")
+    repo = PackageRepositoryAptPPA(ppa="snappy-dev/snapcraft-daily", type="apt")
     mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
     apt_gpg = AptKeyManager(keyrings_path=keyrings_path, key_assets=key_assets)
 
