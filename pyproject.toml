@@ -132,10 +132,6 @@ no_implicit_optional = true
 module = ["tests.*"]
 strict = false
 
-[[tool.mypy.overrides]]
-module = ["pydantic.*"]
-report_unknown_variable_type = false
-
 [tool.ruff]
 line-length = 88
 target-version = "py38"
