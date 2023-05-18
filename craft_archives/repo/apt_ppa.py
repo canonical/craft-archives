@@ -17,9 +17,11 @@
 """Personal Package Archive helpers."""
 
 # pyright: reportMissingTypeStubs=false
+# Eliminate launchpadlib typing issues:
+# pyright: reportUnknownMemberType=false
 
 import logging
-from typing import Tuple
+from typing import Tuple, cast
 
 import lazr.restfulclient.errors  # type: ignore
 from launchpadlib.launchpad import Launchpad  # type: ignore
@@ -39,14 +41,13 @@ def split_ppa_parts(*, ppa: str) -> Tuple[str, str]:
 
 def get_launchpad_ppa_key_id(*, ppa: str) -> str:
     """Query Launchpad for PPA's key ID."""
-    # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
     owner, name = split_ppa_parts(ppa=ppa)
     launchpad = Launchpad.login_anonymously("snapcraft", "production")
     launchpad_url = f"~{owner}/+archive/{name}"
 
     logger.debug(f"Loading launchpad url: {launchpad_url}")
     try:
-        key_id: str = launchpad.load(launchpad_url).signing_key_fingerprint
+        key_id: str = cast(str, launchpad.load(launchpad_url).signing_key_fingerprint)
     except lazr.restfulclient.errors.NotFound as error:
         raise errors.AptPPAInstallError(ppa, "not found on launchpad") from error
 

@@ -23,8 +23,13 @@ from typing import Any, Dict, List, Literal, Mapping, Optional, Union
 from urllib.parse import urlparse
 
 import pydantic
-from overrides import overrides  # pyright: reportUnknownVariableType=false
-from pydantic import AnyUrl, ConstrainedStr, root_validator, validator
+from overrides import overrides  # pyright: ignore[reportUnknownVariableType]
+from pydantic import (
+    AnyUrl,
+    ConstrainedStr,
+    root_validator,  # pyright: ignore[reportUnknownVariableType]
+    validator,  # pyright: ignore[reportUnknownVariableType]
+)
 
 from . import errors
 
@@ -54,20 +59,20 @@ class PriorityString(enum.IntEnum):
 PriorityValue = Union[int, Literal["always", "prefer", "defer"]]
 
 
+def _alias_generator(value: str) -> str:
+    return value.replace("_", "-")
+
+
 class PackageRepository(pydantic.BaseModel, abc.ABC):
     """The base class for package repositories."""
 
     class Config:  # pylint: disable=too-few-public-methods
         """Pydantic model configuration."""
 
-        # pyright: reportUnknownMemberType=false
-        # pyright: reportUnknownVariableType=false
-        # pyright: reportUnknownLambdaType=false
-
         validate_assignment = True
         allow_mutation = False
         allow_population_by_field_name = True
-        alias_generator = lambda s: s.replace("_", "-")  # noqa: E731
+        alias_generator = _alias_generator
         extra = "forbid"
 
     type: Literal["apt"]
@@ -113,7 +118,7 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
     @classmethod
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepository":
         """Create a package repository object from the given data."""
-        if not isinstance(data, dict):  # pyright: reportUnnecessaryIsInstance=false
+        if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
             raise errors.PackageRepositoryValidationError(
                 url=str(data),
                 brief="invalid object.",
@@ -133,13 +138,15 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
 
     @classmethod
     def unmarshal_package_repositories(
-        cls, data: Optional[List[Any]]
+        cls, data: Optional[List[Dict[str, Any]]]
     ) -> List["PackageRepository"]:
         """Create multiple package repositories from the given data."""
         repositories: List[PackageRepository] = []
 
         if data is not None:
-            if not isinstance(data, list):
+            if not isinstance(
+                data, list
+            ):  # pyright: ignore[reportUnnecessaryIsInstance]
                 raise errors.PackageRepositoryValidationError(
                     url=str(data),
                     brief="invalid list object.",
