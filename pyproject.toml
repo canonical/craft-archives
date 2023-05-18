@@ -105,7 +105,7 @@ strict = ["craft_archives"]
 pythonVersion = "3.8"
 pythonPlatform = "Linux"
 venvPath = ".tox"
-venv = "py38"
+venv = "typing"
 
 [tool.mypy]
 python_version = "3.8"

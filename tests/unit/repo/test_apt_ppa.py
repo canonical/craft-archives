@@ -17,14 +17,13 @@
 
 from unittest.mock import call
 
-import launchpadlib
+import launchpadlib.launchpad
 import pytest
 from craft_archives.repo import apt_ppa, errors
 
 
 @pytest.fixture(autouse=True)
 def mock_launchpad(mocker):
-    # pyright: reportGeneralTypeIssues=false
     m = mocker.patch(
         "craft_archives.repo.apt_ppa.Launchpad", spec=launchpadlib.launchpad.Launchpad
     )
