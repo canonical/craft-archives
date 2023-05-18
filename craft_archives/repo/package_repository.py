@@ -22,8 +22,8 @@ import re
 from typing import Any, Dict, List, Literal, Mapping, Optional, Union
 from urllib.parse import urlparse
 
+from overrides import overrides  # pyright: ignore[reportUnknownVariableType]
 import pydantic
-from overrides import overrides  # pyright: reportUnknownVariableType=false
 from pydantic import AnyUrl, ConstrainedStr, root_validator, validator
 
 from . import errors
@@ -113,7 +113,7 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
     @classmethod
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepository":
         """Create a package repository object from the given data."""
-        if not isinstance(data, dict):  # pyright: reportUnnecessaryIsInstance=false
+        if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
             raise errors.PackageRepositoryValidationError(
                 url=str(data),
                 brief="invalid object.",
@@ -133,13 +133,13 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
 
     @classmethod
     def unmarshal_package_repositories(
-        cls, data: Optional[List[Any]]
+        cls, data: Optional[List[Dict[str, Any]]]
     ) -> List["PackageRepository"]:
         """Create multiple package repositories from the given data."""
         repositories: List[PackageRepository] = []
 
         if data is not None:
-            if not isinstance(data, list):
+            if not isinstance(data, list):  # pyright: ignore[reportUnnecessaryIsInstance]
                 raise errors.PackageRepositoryValidationError(
                     url=str(data),
                     brief="invalid list object.",
