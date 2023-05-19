@@ -141,7 +141,8 @@ extend-exclude = [
     "__pycache__",
 ]
 pep8-naming.classmethod-decorators = [
-    "pydantic.validator"
+    "pydantic.validator",
+    "pydantic.root_validator"
 ]
 
 # Follow ST063 - Maintaining and updating linting specifications for updating these.
