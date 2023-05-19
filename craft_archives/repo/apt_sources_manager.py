@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_SOURCES_DIRECTORY = Path("/etc/apt/sources.list.d")
 
 
-def _construct_deb822_source(
+def _construct_deb822_source(  # noqa: PLR0913
     *,
     architectures: Optional[List[str]] = None,
     components: Optional[List[str]] = None,
@@ -87,7 +87,7 @@ class AptSourcesManager:
         self._sources_list_d = sources_list_d or _DEFAULT_SOURCES_DIRECTORY
         self._keyrings_dir = keyrings_dir or apt_key_manager.KEYRINGS_PATH
 
-    def _install_sources(
+    def _install_sources(  # noqa: PLR0913
         self,
         *,
         architectures: Optional[List[str]] = None,

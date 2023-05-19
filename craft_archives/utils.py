@@ -62,7 +62,7 @@ _32BIT_USERSPACE_ARCHITECTURE = {
 
 
 def get_os_platform(
-    filepath: Path = Path("/etc/os-release"),  # noqa: B008
+    filepath: Path = Path("/etc/os-release"),
 ) -> OSPlatform:
     """Determine a system/release combo for an OS using /etc/os-release if available."""
     system = platform.system()
