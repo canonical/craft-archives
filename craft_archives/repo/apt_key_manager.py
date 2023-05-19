@@ -262,7 +262,8 @@ class AptKeyManager:
         # If the keyring exists but does not contain the key, remove it and
         # install a fresh one.
         keyring_path = get_keyring_path(key_id, base_path=self._keyrings_path)
-        keyring_path.unlink(missing_ok=True)
+        if keyring_path.parent.is_dir():
+            keyring_path.unlink(missing_ok=True)
 
         key_path = self.find_asset_with_key_id(key_id=key_id)
         if key_path is not None:
@@ -272,7 +273,7 @@ class AptKeyManager:
 
         return True
 
-    def _create_keyrings_path(self):
+    def _create_keyrings_path(self) -> None:
         """Create the directory that will contain the keys, if necessary."""
         if not self._keyrings_path.exists():
             logger.debug(
@@ -283,7 +284,7 @@ class AptKeyManager:
 
 @contextmanager
 def _temporary_home_dir() -> Iterator[pathlib.Path]:
-    """Helper to yield a temporary directory with proper permissions for gpg."""
+    """Yield a temporary directory with proper permissions for gpg."""
     with tempfile.TemporaryDirectory() as tmpdir_str:
         tmpdir = pathlib.Path(tmpdir_str)
         tmpdir.chmod(0o700)
