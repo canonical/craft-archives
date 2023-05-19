@@ -18,8 +18,10 @@
 import http
 import urllib.error
 from textwrap import dedent
+from unittest import mock
 from unittest.mock import call, patch
 
+import distro
 import pytest
 from craft_archives.repo import apt_ppa, apt_sources_manager, errors
 from craft_archives.repo.package_repository import (
@@ -59,11 +61,10 @@ def mock_run(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_version_codename(mocker):
-    yield mocker.patch(
-        "craft_archives.os_release.OsRelease.version_codename",
-        return_value="FAKE-CODENAME",
-    )
+def mock_version_codename(monkeypatch):
+    mock_codename = mock.Mock(return_value="FAKE-CODENAME")
+    monkeypatch.setattr(distro, "codename", mock_codename)
+    yield mock_codename
 
 
 @pytest.fixture

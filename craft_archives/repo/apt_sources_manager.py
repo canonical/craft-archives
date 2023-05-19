@@ -23,7 +23,9 @@ import subprocess
 from pathlib import Path
 from typing import List, Optional, cast
 
-from craft_archives import os_release, utils
+import distro
+
+from craft_archives import utils
 
 from . import apt_key_manager, apt_ppa, apt_uca, errors, package_repository
 
@@ -194,7 +196,7 @@ class AptSourcesManager:
         :returns: True if source configuration was changed.
         """
         owner, name = apt_ppa.split_ppa_parts(ppa=package_repo.ppa)
-        codename = os_release.OsRelease().version_codename()
+        codename = distro.codename()
 
         key_id = apt_ppa.get_launchpad_ppa_key_id(ppa=package_repo.ppa)
         keyring_path = apt_key_manager.get_keyring_path(
@@ -226,7 +228,7 @@ class AptSourcesManager:
         cloud = package_repo.cloud
         pocket = package_repo.pocket
 
-        codename = os_release.OsRelease().version_codename()
+        codename = distro.codename()
         apt_uca.check_release_compatibility(codename, cloud, pocket)
 
         key_id = package_repository.UCA_KEY_ID

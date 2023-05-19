@@ -21,8 +21,9 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, List
 
+import distro
 import pytest
-from craft_archives import os_release, repo
+from craft_archives import repo
 
 APT_SOURCES = dedent(
     """
@@ -35,7 +36,7 @@ APT_SOURCES = dedent(
     """
 ).lstrip()
 
-VERSION_CODENAME = os_release.OsRelease().version_codename()
+VERSION_CODENAME = distro.codename()
 
 PPA_SOURCES = dedent(
     """

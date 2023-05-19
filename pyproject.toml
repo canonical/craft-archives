@@ -3,6 +3,7 @@ name = "craft-archives"
 version = "0.0.4"
 readme = "README.rst"
 dependencies = [
+    "distro>=1.3.0",
     "gnupg",
     "launchpadlib",
     "lazr.restfulclient",
