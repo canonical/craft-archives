@@ -6,7 +6,11 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+<<<<<<< HEAD
 project = "craft-archives"
+=======
+project = "starcraft"
+>>>>>>> starbase/main
 copyright = "2023, Canonical"
 author = "Canonical"
 
@@ -57,6 +61,10 @@ always_document_param_types = True
 
 # Github config
 github_username = "canonical"
+<<<<<<< HEAD
 github_repository = "craft-archives"
+=======
+github_repository = "starcraft-base"
+>>>>>>> starbase/main
 
 # endregion

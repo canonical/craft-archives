@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 .. craft-archives documentation root file
 
 Craft Archives
@@ -14,6 +15,12 @@ that other tools and packages can use to work with software archives.
 
 This package is most useful for implementers of tools using the Craft Parts
 framework that need to provide support for additional software archives.
+=======
+.. starcraft documentation root file
+
+StarCraft
+=========
+>>>>>>> starbase/main
 
 .. toctree::
    :maxdepth: 1
@@ -28,7 +35,11 @@ framework that need to provide support for additional software archives.
 
    .. grid-item-card:: :ref:`Tutorial <tutorial>`
 
+<<<<<<< HEAD
       **Get started** with a hands-on introduction to Craft Archives
+=======
+      **Get started** with a hands-on introduction to Starcraft
+>>>>>>> starbase/main
 
    .. grid-item-card:: :ref:`How-to guides <howto>`
 
@@ -39,7 +50,11 @@ framework that need to provide support for additional software archives.
 
    .. grid-item-card:: :ref:`Reference <reference>`
 
+<<<<<<< HEAD
       **Technical information** about Craft Archives
+=======
+      **Technical information** about Starcraft
+>>>>>>> starbase/main
 
    .. grid-item-card:: :ref:`Explanation <explanation>`
 
@@ -48,12 +63,20 @@ framework that need to provide support for additional software archives.
 Project and community
 =====================
 
+<<<<<<< HEAD
 Craft Archives is a member of the Canonical family. It's an open source project
+=======
+Starcraft is a member of the Canonical family. It's an open source project
+>>>>>>> starbase/main
 that warmly welcomes community projects, contributions, suggestions, fixes
 and constructive feedback.
 
 * `Ubuntu Code of Conduct <https://ubuntu.com/community/code-of-conduct>`_.
+<<<<<<< HEAD
 * `Canonical contributor licence agreement
+=======
+* `Canonical contributor licenses agreement
+>>>>>>> starbase/main
   <https://ubuntu.com/legal/contributors>`_.
 
 Indices and tables

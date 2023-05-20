@@ -8,6 +8,7 @@ on:
 
 jobs:
   update_release_draft:
+<<<<<<< HEAD
     permissions:
       # write permission is required to create a github release
       contents: write
@@ -18,5 +19,11 @@ jobs:
     steps:
       - name: Release Drafter
         uses: release-drafter/release-drafter@v5
+=======
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release Drafter
+        uses: release-drafter/release-drafter@v5.23.0
+>>>>>>> starbase/main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

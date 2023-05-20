@@ -1,18 +1,31 @@
+<<<<<<< HEAD
  {
+=======
+{
+>>>>>>> starbase/main
   // Configuration file for RenovateBot: https://docs.renovatebot.com/configuration-options
   extends: ["config:base"],
   labels: ["dependencies"],  // For convenient searching in GitHub
   pip_requirements: {
+<<<<<<< HEAD
     fileMatch: ["^tox.ini$"]
   },
   pip_setup: {
     fileMatch: ["^pyproject.toml$", "(^|/)setup\\.py$"]
+=======
+    fileMatch: ["^tox.ini$", "(^|/)requirements([\\w-]*)\\.txt$"]
+>>>>>>> starbase/main
   },
    packageRules: [
     {
       // Automerge patches, pin changes and digest changes.
       // Also groups these changes together.
+<<<<<<< HEAD
       groupName: "patch updates",
+=======
+      groupName: "bugfixes",
+      excludePackagePrefixes: ["dev", "lint", "types"],
+>>>>>>> starbase/main
       matchUpdateTypes: ["patch", "pin", "digest"],
       prPriority: 3, // Patches should go first!
       automerge: true
@@ -28,28 +41,70 @@
       // GitHub Actions are higher priority to update than most dependencies.
       groupName: "GitHub Actions",
       matchManagers: ["github-actions"],
+<<<<<<< HEAD
       prPriority: 1
+=======
+      prPriority: 1,
+      automerge: true,
+>>>>>>> starbase/main
     },
     // Everything not in one of these rules gets priority 0 and falls here.
     {
       // Minor changes can be grouped and automerged for dev dependencies, but are also deprioritised.
+<<<<<<< HEAD
       groupName: "development dependencies (minor and patch)",
       groupSlug: "dev-dependencies",
       matchDepTypes: ["devDependencies"],
+=======
+      groupName: "development dependencies (non-major)",
+      groupSlug: "dev-dependencies",
+      matchPackagePrefixes: [
+        "dev",
+        "lint",
+        "types"
+      ],
+      excludePackagePatterns: ["ruff"],
+>>>>>>> starbase/main
       matchUpdateTypes: ["minor", "patch", "pin", "digest"],
       prPriority: -1,
       automerge: true
     },
     {
+<<<<<<< HEAD
+=======
+      // Documentation related updates
+      groupName: "documentation dependencies",
+      groupSlug: "doc-dependencies",
+      matchPackageNames: ["Sphinx"],
+      matchPackagePatterns: ["^[Ss]phinx.*$", "^furo$"],
+      matchPackagePrefixes: ["docs"],
+    },
+    {
+>>>>>>> starbase/main
       // Other major dependencies get deprioritised below minor dev dependencies.
       matchUpdateTypes: ["major"],
       prPriority: -2
     },
     {
+<<<<<<< HEAD
       // Major dev dependencies are stone last.
       matchDepTypes: ["devDependencies"],
       matchUpdateTypes: ["major"],
       prPriority: -3
+=======
+      // Major dev dependencies are stone last, but grouped.
+      groupName: "development dependencies (major versions)",
+      groupSlug: "dev-dependencies",
+      matchDepTypes: ["devDependencies"],
+      matchUpdateTypes: ["major"],
+      prPriority: -3
+    },
+    {
+      // Ruff is still unstable, so update it separately.
+      groupName: "ruff",
+      matchPackagePatterns: ["^(lint/)?ruff$"],
+      prPriority: -3
+>>>>>>> starbase/main
     }
   ],
   regexManagers: [
@@ -58,14 +113,32 @@
       fileMatch: ["tox.ini"],
       depTypeTemplate: "devDependencies",
       matchStrings: [
+<<<<<<< HEAD
         "# renovate: datasource=(?<datasource>\S+)\n\s+(?<depName>.*?)(\[[\w]*\])*[=><]=?(?<currentValue>.*?)\n"
+=======
+        "# renovate: datasource=(?<datasource>\\S+)\n\\s+(?<depName>.*?)(\\[[\\w]*\\])*[=><]=?(?<currentValue>.*?)\n"
+      ]
+    },
+    {
+      // .pre-commit-config.yaml version updates
+      fileMatch: [".pre-commit-config.yaml"],
+      depTypeTemplate: "devDependencies",
+      matchStrings: [
+        "# renovate: datasource=(?<datasource>\\S+);\\s*depName=(?<depName>.*?)\n\s+rev: \"v?(?<currentValue>.*?)\""
+>>>>>>> starbase/main
       ]
     }
   ],
   timezone: "Etc/UTC",
+<<<<<<< HEAD
   automergeSchedule: "after 1 am and before 7 am",
   schedule: "every weekend",
   prConcurrentLimit: 5, // No more than 5 open PRs at a time.
+=======
+  automergeSchedule: "every weekend",
+  schedule: "every weekend",
+  prConcurrentLimit: 2, // No more than 2 open PRs at a time.
+>>>>>>> starbase/main
   prCreation: "not-pending", // Wait until status checks have completed before raising the PR
   prNotPendingHours: 4, // ...unless the status checks have been running for 4+ hours.
   prHourlyLimit: 1, // No more than 1 PR per hour.

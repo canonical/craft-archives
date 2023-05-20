@@ -1,4 +1,5 @@
 [project]
+<<<<<<< HEAD
 name = "craft-archives"
 version = "0.0.4"
 readme = "README.rst"
@@ -9,20 +10,30 @@ dependencies = [
     "lazr.uri",
     "overrides",
     "pydantic",
+=======
+name = "starcraft"
+dynamic = ["version", "readme"]
+dependencies = [
+
+>>>>>>> starbase/main
 ]
 classifiers = [
     "Development Status :: 1 - Planning",
     "License :: OSI Approved :: GNU General Public License (GPL)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
+<<<<<<< HEAD
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+=======
+>>>>>>> starbase/main
 ]
 requires-python = ">=3.8"
 
 [project.scripts]
+<<<<<<< HEAD
 
 [project.optional-dependencies]
 dev = [
@@ -46,6 +57,33 @@ docs = [
     "sphinx-autobuild==2021.3.14",
     "sphinx-copybutton==0.5.1",
     "sphinx-design==0.3.0",
+=======
+starcraft-hello = "starcraft:hello"
+
+[project.optional-dependencies]
+dev = [
+    "coverage[toml]==7.2.5",
+    "pytest==7.3.1",
+    "pytest-cov==4.0.0",
+    "pytest-mock==3.10.0",
+]
+lint = [
+    "black==23.3.0",
+    "codespell[toml]==2.2.4",
+    "ruff==0.0.269",
+    "yamllint==1.31.0"
+]
+types = [
+    "mypy[reports]==1.3.0",
+    "pyright==1.1.309",
+]
+docs = [
+    "furo==2023.3.27",
+    "sphinx>=6.2.1,<7.0",
+    "sphinx-autobuild==2021.3.14",
+    "sphinx-copybutton==0.5.2",
+    "sphinx-design==0.4.1",
+>>>>>>> starbase/main
     "sphinx-pydantic==0.1.1",
     "sphinx-toolbox==3.4.0",
     "sphinx-lint==0.6.7",
@@ -53,27 +91,51 @@ docs = [
 
 [build-system]
 requires = [
+<<<<<<< HEAD
     "setuptools==67.6.0",
 ]
 build-backend = "setuptools.build_meta"
 
+=======
+    "setuptools==67.7.2",
+    "setuptools_scm[toml]>=7.1"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+readme = {file = "README.rst"}
+
+>>>>>>> starbase/main
 [tool.setuptools.packages.find]
 exclude = [
     "dist",
     "docs",
     "results",
+<<<<<<< HEAD
     "test*",
 ]
 
+=======
+    "tests",
+]
+
+
+>>>>>>> starbase/main
 [tool.black]
 target-version = ["py38"]
 
 [tool.codespell]
 ignore-words-list = "buildd,crate,keyserver,comandos,ro,dedent,dedented"
+<<<<<<< HEAD
 skip = ".tox,.git,build,.*_cache,__pycache__,*.tar,*.snap,*.png,./node_modules,./docs/_build"
 quiet-level = 3
 check-filenames = true
 exclude-file = ".codespell_ignore_lines"
+=======
+skip = ".tox,.git,build,.*_cache,__pycache__,*.tar,*.snap,*.png,./node_modules,./docs/_build,.direnv,.venv,venv,.vscode"
+quiet-level = 3
+check-filenames = true
+>>>>>>> starbase/main
 
 [tool.isort]
 multi_line_output = 3
@@ -91,6 +153,7 @@ xfail_strict = true
 [tool.coverage.run]
 branch = true
 parallel = true
+<<<<<<< HEAD
 omit = [
     "tests/**",
     "craft_archives/os_release.py",
@@ -106,6 +169,18 @@ pythonVersion = "3.8"
 pythonPlatform = "Linux"
 venvPath = ".tox"
 venv = "typing"
+=======
+omit = ["tests/**"]
+
+[tool.coverage.report]
+skip_empty = true
+fail_under = 80
+
+[tool.pyright]
+strict = ["starcraft"]
+pythonVersion = "3.8"
+pythonPlatform = "Linux"
+>>>>>>> starbase/main
 
 [tool.mypy]
 python_version = "3.8"
@@ -124,7 +199,11 @@ disallow_untyped_decorators = true
 disallow_any_generics = true
 
 [[tool.mypy.overrides]]
+<<<<<<< HEAD
 module = ["craft_archives"]
+=======
+module = ["starcraft"]
+>>>>>>> starbase/main
 disallow_untyped_defs = true
 no_implicit_optional = true
 
@@ -135,15 +214,22 @@ strict = false
 [tool.ruff]
 line-length = 88
 target-version = "py38"
+<<<<<<< HEAD
 src = ["craft_archives", "tests"]
+=======
+src = ["starcraft", "tests"]
+>>>>>>> starbase/main
 extend-exclude = [
     "docs",
     "__pycache__",
 ]
+<<<<<<< HEAD
 pep8-naming.classmethod-decorators = [
     "pydantic.validator"
 ]
 
+=======
+>>>>>>> starbase/main
 # Follow ST063 - Maintaining and updating linting specifications for updating these.
 select = [  # Base linting rule selections.
     # See the internal document for discussion:
@@ -165,7 +251,12 @@ select = [  # Base linting rule selections.
     "ISC",  # Implicit string concatenation that can cause subtle issues
     "ICN",  # Only use common conventions for import aliases.
     "Q",  # Consistent quotations
+<<<<<<< HEAD
     "RET"  # Simpler logic after return, raise, continue or break
+=======
+    "RET",  # Simpler logic after return, raise, continue or break
+    "UP018", "C408",  # Convert type calls to literals. The latest pylint enforces this, but ruff has auto-fixes.
+>>>>>>> starbase/main
 ]
 extend-select = [
     # These sets are still frequently getting new rules.
@@ -212,8 +303,12 @@ ignore = [
     "S101",  # Allow assertions in tests
     "S103", # Allow `os.chmod` setting a permissive mask `0o555` on file or directory
     "S108", # Allow Probable insecure usage of temporary file or directory
+<<<<<<< HEAD
     "PLR0913", # Too many arguments to function
     "PLR2004", # Allow magic values used in comparisons
+=======
+    "PLR0913",  # Allow many arguments for test functions
+>>>>>>> starbase/main
 ]
 # isort leaves init files alone by default, this makes ruff ignore them too.
 "__init__.py" = ["I001"]
