@@ -1,5 +1,11 @@
 name: Documentation
 on:
+  push:
+    branches:
+      - "main"
+      - "feature/*"
+      - "hotfix/*"
+      - "release/*"
   pull_request:
     paths:
       - "docs/**"
