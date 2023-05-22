@@ -16,15 +16,9 @@
 
 """Integration tests for AptKeyManager"""
 
-from pathlib import Path
 
 import pytest
 from craft_archives.repo.apt_key_manager import AptKeyManager
-
-
-@pytest.fixture
-def test_keys_dir() -> Path:
-    return Path(__file__).parent / "test_keys"
 
 
 @pytest.fixture
@@ -47,12 +41,12 @@ def apt_gpg(key_assets, tmp_path):
     )
 
 
-def test_install_key(apt_gpg, tmp_path, test_keys_dir):
+def test_install_key(apt_gpg, tmp_path, test_data_dir):
     expected_file = tmp_path / "craft-FC42E99D.gpg"
     assert not expected_file.exists()
     assert not apt_gpg.is_key_installed(key_id="FC42E99D")
 
-    keypath = test_keys_dir / "FC42E99D.asc"
+    keypath = test_data_dir / "FC42E99D.asc"
     apt_gpg.install_key(key=keypath.read_text())
 
     assert expected_file.is_file()
@@ -75,7 +69,7 @@ def test_install_key_from_keyserver(apt_gpg, tmp_path):
     assert apt_gpg.is_key_installed(key_id="FC42E99D")
 
 
-def test_install_key_missing_directory(key_assets, tmp_path, test_keys_dir):
+def test_install_key_missing_directory(key_assets, tmp_path, test_data_dir):
     keyrings_path = tmp_path / "keyrings"
     assert not keyrings_path.exists()
 
@@ -84,7 +78,7 @@ def test_install_key_missing_directory(key_assets, tmp_path, test_keys_dir):
         key_assets=key_assets,
     )
 
-    keypath = test_keys_dir / "FC42E99D.asc"
+    keypath = test_data_dir / "FC42E99D.asc"
     apt_gpg.install_key(key=keypath.read_text())
 
     assert keyrings_path.exists()
