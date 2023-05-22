@@ -21,8 +21,9 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any, Dict, List
 
+import distro
 import pytest
-from craft_archives import os_release, repo
+from craft_archives import repo
 
 APT_SOURCES = dedent(
     """
@@ -35,7 +36,7 @@ APT_SOURCES = dedent(
     """
 ).lstrip()
 
-VERSION_CODENAME = os_release.OsRelease().version_codename()
+VERSION_CODENAME = distro.codename()
 
 PPA_SOURCES = dedent(
     """
@@ -144,16 +145,11 @@ def all_repo_types() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def test_keys_dir(tmp_path) -> Path:
-    source_dir = Path(__file__).parent / "test_keys"
-
-    key = source_dir / "FC42E99D.asc"
-    assert key.is_file()
-
+def test_keys_dir(tmp_path, sample_key_path) -> Path:
     target_dir = tmp_path / "keys"
     target_dir.mkdir()
 
-    shutil.copy2(key, target_dir)
+    shutil.copy2(sample_key_path, target_dir)
 
     return target_dir
 

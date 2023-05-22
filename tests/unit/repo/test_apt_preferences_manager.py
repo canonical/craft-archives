@@ -15,7 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """Tests for apt_preferencs_manager"""
-import pathlib
 import shutil
 from textwrap import dedent
 
@@ -35,8 +34,6 @@ SAMPLE_PINS = (
     "release o=LP-PPA-deadsnakes-ppa-ppa",
     'origin "developer.download.nvidia.com"',
 )
-
-DATA_PATH = pathlib.Path(__file__).parent / "test_data"
 
 
 @pytest.fixture
@@ -141,28 +138,29 @@ def test_read_nonexistent_file(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "pref_path,expected",
+    "pref_file,expected",
     [
         (
-            DATA_PATH / "no_header.preferences",
+            "no_header.preferences",
             [
                 Preference(pin="release o=LP-PPA-safety-ppa", priority=99999),
                 Preference(pin='origin "apt_ppa.redhat.arch.mac"', priority=-1),
             ],
         ),
         (
-            DATA_PATH / "with_header.preferences",
+            "with_header.preferences",
             [
                 Preference(pin="release o=LP-PPA-safety-ppa", priority=99999),
                 Preference(pin='origin "apt_ppa.redhat.arch.mac"', priority=-1),
             ],
         ),
-        (DATA_PATH / "empty.preferences", []),
-        (DATA_PATH / "only_comment.preferences", []),
-        (DATA_PATH / "many_blank_lines.preferences", []),
+        ("empty.preferences", []),
+        ("only_comment.preferences", []),
+        ("many_blank_lines.preferences", []),
     ],
 )
-def test_read_existing_preferences(pref_path, expected):
+def test_read_existing_preferences(test_data_dir, pref_file, expected):
+    pref_path = test_data_dir / pref_file
     manager = AptPreferencesManager(path=pref_path)
 
     manager.read()
@@ -171,23 +169,25 @@ def test_read_existing_preferences(pref_path, expected):
 
 
 @pytest.mark.parametrize(
-    "pref_path,expected_path",
+    "pref_file,expected_file",
     [
         (
-            DATA_PATH / "no_header.preferences",
-            DATA_PATH / "expected.preferences",
+            "no_header.preferences",
+            "expected.preferences",
         ),
         (
-            DATA_PATH / "with_header.preferences",
-            DATA_PATH / "expected.preferences",
+            "with_header.preferences",
+            "expected.preferences",
         ),
         (
-            DATA_PATH / "expected.preferences",
-            DATA_PATH / "expected.preferences",
+            "expected.preferences",
+            "expected.preferences",
         ),
     ],
 )
-def test_read_and_write_correct(pref_path, expected_path, tmp_path):
+def test_read_and_write_correct(test_data_dir, pref_file, expected_file, tmp_path):
+    pref_path = test_data_dir / pref_file
+    expected_path = test_data_dir / expected_file
     actual_path = tmp_path / "pref"
     shutil.copyfile(pref_path, actual_path)
     manager = AptPreferencesManager(path=actual_path)
@@ -210,19 +210,20 @@ def test_write_empty_preferences_removes_file(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "preferences,expected_path",
+    "preferences,expected_file",
     [
         pytest.param(
             [  # Preferences
                 {"priority": 99999, "pin": "release o=LP-PPA-safety-ppa"},
                 {"priority": -1, "pin": 'origin "apt_ppa.redhat.arch.mac"'},
             ],
-            DATA_PATH / "expected.preferences",
+            "expected.preferences",
             id="basic_file",
         )
     ],
 )
-def test_preferences_added(tmp_path, preferences, expected_path):
+def test_preferences_added(test_data_dir, tmp_path, preferences, expected_file):
+    expected_path = test_data_dir / expected_file
     actual_path = tmp_path / "preferences"
     manager = AptPreferencesManager(path=actual_path)
 
