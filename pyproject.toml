@@ -4,7 +4,6 @@ version = "0.0.4"
 readme = "README.rst"
 dependencies = [
     "distro>=1.3.0",
-    "gnupg",
     "launchpadlib",
     "lazr.restfulclient",
     "lazr.uri",
@@ -12,14 +11,18 @@ dependencies = [
     "pydantic",
 ]
 classifiers = [
-    "Development Status :: 1 - Planning",
-    "License :: OSI Approved :: GNU General Public License (GPL)",
+    "Development Status :: 3 - Alpha",
+    "Operating System :: POSIX :: Linux",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Archiving :: Packaging",
 ]
 requires-python = ">=3.8"
 
