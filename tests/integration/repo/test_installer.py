@@ -145,16 +145,11 @@ def all_repo_types() -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def test_keys_dir(tmp_path) -> Path:
-    source_dir = Path(__file__).parent / "test_keys"
-
-    key = source_dir / "FC42E99D.asc"
-    assert key.is_file()
-
+def test_keys_dir(tmp_path, sample_key_path) -> Path:
     target_dir = tmp_path / "keys"
     target_dir.mkdir()
 
-    shutil.copy2(key, target_dir)
+    shutil.copy2(sample_key_path, target_dir)
 
     return target_dir
 

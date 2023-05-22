@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-import pathlib
 import subprocess
 from unittest import mock
 from unittest.mock import call
@@ -29,10 +28,6 @@ from craft_archives.repo.package_repository import (
 )
 
 # pyright: reportGeneralTypeIssues=false
-
-with open(pathlib.Path(__file__).parent / "test_data/FC42E99D.asc") as _f:
-    SAMPLE_KEY = _f.read()
-SAMPLE_KEY_BYTES = SAMPLE_KEY.encode()
 
 SAMPLE_GPG_SHOW_KEY_OUTPUT = b"""\
 pub:-:4096:1:F1831DDAFC42E99D:1416490823:::-:::scSC::::::23::0:
@@ -208,13 +203,11 @@ def test_is_key_installed_with_gpg_failure(
 
 
 def test_install_key(
-    apt_gpg,
-    mock_run,
-    mock_chmod,
+    apt_gpg, mock_run, mock_chmod, sample_key_string, sample_key_bytes
 ):
     mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
 
-    apt_gpg.install_key(key=SAMPLE_KEY)
+    apt_gpg.install_key(key=sample_key_string)
 
     assert mock_run.mock_calls == [
         call(
@@ -229,7 +222,7 @@ def test_install_key(
                 "show-only",
                 "--import",
             ],
-            input=SAMPLE_KEY_BYTES,
+            input=sample_key_bytes,
             capture_output=True,
             check=True,
             env={"LANG": "C.UTF-8"},
@@ -245,7 +238,7 @@ def test_install_key(
                 "--import",
                 "-",
             ],
-            input=SAMPLE_KEY_BYTES,
+            input=sample_key_bytes,
             capture_output=True,
             check=True,
             env={"LANG": "C.UTF-8"},
@@ -253,7 +246,9 @@ def test_install_key(
     ]
 
 
-def test_install_key_missing_dir(mock_run, mock_chmod, tmp_path, key_assets):
+def test_install_key_missing_dir(
+    sample_key_string, mock_run, mock_chmod, tmp_path, key_assets
+):
     keyrings_path = tmp_path / "keyrings"
     assert not keyrings_path.exists()
 
@@ -263,7 +258,7 @@ def test_install_key_missing_dir(mock_run, mock_chmod, tmp_path, key_assets):
     )
     mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
 
-    apt_gpg.install_key(key=SAMPLE_KEY)
+    apt_gpg.install_key(key=sample_key_string)
     assert keyrings_path.exists()
 
 
