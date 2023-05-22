@@ -238,7 +238,7 @@ class PackageRepositoryApt(PackageRepository):
     def _path_non_empty(
         cls, path: Optional[str], values: Dict[str, Any]
     ) -> Optional[str]:
-        if path is not None and path == "":
+        if path is not None and not path:
             raise _create_validation_error(
                 url=values.get("url"),
                 message="Invalid path; Paths must be non-empty strings.",
