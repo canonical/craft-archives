@@ -144,6 +144,7 @@ UCA repository using "cloud" property
 -------------------------------------
 
 .. code-block:: yaml
+
    package-repositories:
      - type: apt
        cloud: antelope
@@ -152,6 +153,7 @@ UCA repository using "pocket" property
 --------------------------------------
 
 .. code-block:: yaml
+
    package-repositories:
      - type: apt
        cloud: antelope
