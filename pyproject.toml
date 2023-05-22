@@ -33,13 +33,13 @@ dev = [
     "pytest==7.3.1",
     "pytest-cov==4.0.0",
     "pytest-check==2.1.4",
-    "coverage[toml]==7.2.1",
+    "coverage[toml]==7.2.5",
     "pytest-mock==3.10.0",
 ]
 dev-lint = [  # Static linting environment dependencies
     "black==23.1.0",
     "codespell[tomli]==2.2.4",
-    "ruff==0.0.254",
+    "ruff==0.0.269",
 ]
 types = [  # Dependencies for typing. Both types packages and mypy itself.
     "mypy[reports]==1.1.1",
