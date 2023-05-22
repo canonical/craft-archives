@@ -90,25 +90,22 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
         return values
 
     @validator("priority")
-    def convert_priority_to_int(
+    def _convert_priority_to_int(
         cls, priority: Optional[PriorityValue], values: Dict[str, Any]
     ) -> Optional[int]:
         if isinstance(priority, str):
             str_priority = priority.upper()
             if str_priority in PriorityString.__members__:
                 return PriorityString[str_priority]
-            else:
-                # This cannot happen; if it's a string but not one of the accepted
-                # ones Pydantic will fail early and won't call this validator.
-                raise _create_validation_error(
-                    url=str(
-                        values.get("url") or values.get("ppa") or values.get("cloud")
-                    ),
-                    message=(
-                        f"invalid priority {priority!r}. "
-                        "Priority must be 'always', 'prefer', 'defer' or a nonzero integer."
-                    ),
-                )
+            # This cannot happen; if it's a string but not one of the accepted
+            # ones Pydantic will fail early and won't call this validator.
+            raise _create_validation_error(
+                url=str(values.get("url") or values.get("ppa") or values.get("cloud")),
+                message=(
+                    f"invalid priority {priority!r}. "
+                    "Priority must be 'always', 'prefer', 'defer' or a nonzero integer."
+                ),
+            )
         return priority
 
     def marshal(self) -> Dict[str, Union[str, int]]:
@@ -170,7 +167,7 @@ class PackageRepositoryAptPPA(PackageRepository):
     ppa: str
 
     @validator("ppa")
-    def non_empty_ppa(cls, ppa: str):
+    def _non_empty_ppa(cls, ppa: str) -> str:
         if not ppa:
             raise _create_validation_error(
                 message="Invalid PPA: PPAs must be non-empty strings."
@@ -197,7 +194,7 @@ class PackageRepositoryAptUCA(PackageRepository):
     pocket: Literal["updates", "proposed"] = "updates"
 
     @validator("cloud")
-    def non_empty_cloud(cls, cloud: str) -> str:
+    def _non_empty_cloud(cls, cloud: str) -> str:
         if not cloud:
             raise _create_validation_error(message="clouds must be non-empty strings.")
         return cloud
@@ -227,17 +224,18 @@ class PackageRepositoryApt(PackageRepository):
     suites: Optional[List[str]]
 
     # Customize some of the validation error messages
-    class Config(PackageRepository.Config):
+    class Config(PackageRepository.Config):  # noqa: D106 - no docstring needed
         error_msg_templates = {
             "value_error.any_str.min_length": "Invalid URL; URLs must be non-empty strings"
         }
 
     @property
-    def name(self):
+    def name(self) -> str:
+        """Get the repository name."""
         return re.sub(r"\W+", "_", self.url)
 
     @validator("path")
-    def path_non_empty(
+    def _path_non_empty(
         cls, path: Optional[str], values: Dict[str, Any]
     ) -> Optional[str]:
         if path is not None and path == "":
@@ -248,9 +246,9 @@ class PackageRepositoryApt(PackageRepository):
         return path
 
     @validator("components")
-    def not_mixing_components_and_path(
+    def _not_mixing_components_and_path(
         cls, components: Optional[List[str]], values: Dict[str, Any]
-    ):
+    ) -> Optional[List[str]]:
         path = values.get("path")
         if components and path:
             raise _create_validation_error(
@@ -263,9 +261,9 @@ class PackageRepositoryApt(PackageRepository):
         return components
 
     @validator("suites")
-    def not_mixing_suites_and_path(
+    def _not_mixing_suites_and_path(
         cls, suites: Optional[List[str]], values: Dict[str, Any]
-    ):
+    ) -> Optional[List[str]]:
         path = values.get("path")
         if suites and path:
             message = f"suites {suites!r} cannot be combined with path {path!r}."
@@ -273,7 +271,7 @@ class PackageRepositoryApt(PackageRepository):
         return suites
 
     @validator("suites", each_item=True)
-    def suites_without_backslash(cls, suite: str, values: Dict[str, Any]) -> str:
+    def _suites_without_backslash(cls, suite: str, values: Dict[str, Any]) -> str:
         if suite.endswith("/"):
             raise _create_validation_error(
                 url=values.get("url"),
@@ -282,7 +280,7 @@ class PackageRepositoryApt(PackageRepository):
         return suite
 
     @root_validator
-    def missing_components_or_suites(cls, values: Dict[str, Any]):
+    def _missing_components_or_suites(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         suites = values.get("suites")
         components = values.get("components")
         url = values.get("url")
