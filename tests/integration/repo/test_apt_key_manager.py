@@ -82,4 +82,4 @@ def test_install_key_missing_directory(key_assets, tmp_path, test_data_dir):
     apt_gpg.install_key(key=keypath.read_text())
 
     assert keyrings_path.exists()
-    assert keyrings_path.stat().st_mode == 0o40755
+    assert keyrings_path.stat().st_mode == 0o40755  # noqa: PLR2004 magic value
