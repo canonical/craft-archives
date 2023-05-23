@@ -30,6 +30,11 @@ from pydantic import (
     root_validator,  # pyright: ignore[reportUnknownVariableType]
     validator,  # pyright: ignore[reportUnknownVariableType]
 )
+
+# NOTE: using this instead of typing.Literal because of this bad typing_extensions
+# interaction: https://github.com/pydantic/pydantic/issues/5821#issuecomment-1559196859
+# We can revisit this when typing_extensions >4.6.0 is released, and/or we no longer
+# have to support Python <3.10
 from typing_extensions import Literal
 
 from . import errors
