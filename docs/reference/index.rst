@@ -7,6 +7,7 @@ Reference
    :maxdepth: 1
 
    repo_properties
+   ../changelog
 
 Indices and tables
 ==================
