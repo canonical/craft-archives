@@ -19,7 +19,7 @@
 import abc
 import enum
 import re
-from typing import Any, Dict, List, Literal, Mapping, Optional, Union
+from typing import Any, Dict, List, Mapping, Optional, Union
 from urllib.parse import urlparse
 
 import pydantic
@@ -30,6 +30,7 @@ from pydantic import (
     root_validator,  # pyright: ignore[reportUnknownVariableType]
     validator,  # pyright: ignore[reportUnknownVariableType]
 )
+from typing_extensions import Literal
 
 from . import errors
 
