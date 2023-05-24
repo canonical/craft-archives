@@ -74,6 +74,9 @@ exclude = [
     "tests",
 ]
 
+[tool.setuptools_scm]
+write_to = "craft_archives/_version.py"
+
 [tool.black]
 target-version = ["py38"]
 
