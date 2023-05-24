@@ -18,8 +18,9 @@
 try:
     from ._version import __version__
 except ImportError:
+    from importlib.metadata import version, PackageNotFoundError
+
     try:
-        from importlib.metadata import version, PackageNotFoundError
         __version__ = version("craft-archives")
     except PackageNotFoundError:
         __version__ = "dev"
