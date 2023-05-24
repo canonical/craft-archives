@@ -17,7 +17,7 @@
 """Package repository installer."""
 
 import pathlib
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from . import errors
 from .apt_key_manager import AptKeyManager
@@ -41,9 +41,48 @@ def install(
 
     :return: Whether a package list refresh is required.
     """
-    key_manager = AptKeyManager(key_assets=key_assets)
-    sources_manager = AptSourcesManager()
-    preferences_manager = AptPreferencesManager()
+    return _install_repos(
+        project_repositories=project_repositories, key_assets=key_assets
+    )
+
+
+def install_in_root(
+    project_repositories: List[Dict[str, Any]],
+    root: pathlib.Path,
+    *,
+    key_assets: pathlib.Path,
+) -> bool:
+    """Add package repositories to the system located at ``root``.
+
+    :param project_repositories: A list of package repositories to install.
+    :param key_assets: The directory containing repository keys.
+    :param root: The directory containing the Apt-based system installation.
+
+    :return: Whether a package list refresh is required.
+    """
+    return _install_repos(
+        project_repositories=project_repositories, root=root, key_assets=key_assets
+    )
+
+
+def _install_repos(
+    *,
+    project_repositories: List[Dict[str, Any]],
+    root: Optional[pathlib.Path] = None,
+    key_assets: pathlib.Path,
+) -> bool:
+    keyrings_path = AptKeyManager.keyrings_path_for_root(root)
+    key_manager = AptKeyManager(keyrings_path=keyrings_path, key_assets=key_assets)
+
+    sources_list_d = AptSourcesManager.sources_path_for_root(root)
+    sources_manager = AptSourcesManager(
+        sources_list_d=sources_list_d,
+        keyrings_dir=keyrings_path,
+        signed_by_root=root,
+    )
+
+    preferences_path = AptPreferencesManager.preferences_path_for_root(root)
+    preferences_manager = AptPreferencesManager(path=preferences_path)
 
     package_repositories = _unmarshal_repositories(project_repositories)
 

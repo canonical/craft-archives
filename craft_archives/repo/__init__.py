@@ -16,10 +16,11 @@
 
 """Package repository helpers."""
 
-from .installer import install
+from .installer import install, install_in_root
 from .projects import validate_repository
 
 __all__ = [
     "install",
+    "install_in_root",
     "validate_repository",
 ]

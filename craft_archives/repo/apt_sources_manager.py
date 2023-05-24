@@ -32,6 +32,7 @@ from . import apt_key_manager, apt_ppa, apt_uca, errors, package_repository
 logger = logging.getLogger(__name__)
 
 _DEFAULT_SOURCES_DIRECTORY = Path("/etc/apt/sources.list.d")
+_DEFAULT_SIGNED_BY_ROOT = Path("/")
 
 
 def _construct_deb822_source(  # noqa: PLR0913
@@ -85,9 +86,31 @@ class AptSourcesManager:
         *,
         sources_list_d: Optional[Path] = None,
         keyrings_dir: Optional[Path] = None,
+        signed_by_root: Optional[Path] = None,
     ) -> None:
+        """Create a manager for Apt repository sources listings.
+
+        :param sources_list_d: The path to the directory containing the sources listings.
+        :param keyrings_dir: The path to the directory containing the (already installed)
+          keyrings.
+        :param signed_by_root: The path that should be considered as "system root" when
+          filling the "Signed-By" field in the sources listings. Used to configure an
+          Apt-based system that will eventually be chrooted into.
+        """
         self._sources_list_d = sources_list_d or _DEFAULT_SOURCES_DIRECTORY
         self._keyrings_dir = keyrings_dir or apt_key_manager.KEYRINGS_PATH
+        self._signed_by_root = signed_by_root or _DEFAULT_SIGNED_BY_ROOT
+
+    @classmethod
+    def sources_path_for_root(cls, root: Optional[Path] = None) -> Path:
+        """Get the location for Apt source listings with ``root`` as the system root.
+
+        :param root: The optional system root to consider, or None to return the
+          default ``_DEFAULT_SOURCES_DIRECTORY``.
+        """
+        if root is None:
+            return _DEFAULT_SOURCES_DIRECTORY
+        return root / "etc/apt/sources.list.d"
 
     def _install_sources(  # noqa: PLR0913
         self,
@@ -109,6 +132,8 @@ class AptSourcesManager:
         """
         if keyring_path and not keyring_path.is_file():
             raise errors.AptGPGKeyringError(keyring_path)
+
+        keyring_path = Path("/") / keyring_path.relative_to(self._signed_by_root)
 
         config = _construct_deb822_source(
             architectures=architectures,
@@ -266,14 +291,17 @@ class AptSourcesManager:
             changed = self._install_sources_apt(package_repo=package_repo)
             architectures = package_repo.architectures
             if changed and architectures:
-                _add_architecture(architectures)
+                _add_architecture(architectures, root=self._signed_by_root)
             return changed
 
         raise RuntimeError(f"unhandled package repository: {package_repository!r}")
 
 
-def _add_architecture(architectures: List[str]) -> None:
+def _add_architecture(architectures: List[str], root: Path) -> None:
     """Add package repository architecture."""
     for arch in architectures:
         logger.info(f"Add repository architecture: {arch}")
-        subprocess.run(["dpkg", "--add-architecture", arch], check=True)
+        subprocess.run(
+            ["dpkg", "--add-architecture", arch, "--root", str(root)],
+            check=True,
+        )

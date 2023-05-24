@@ -115,6 +115,17 @@ class AptPreferencesManager:
         self._path = path or _DEFAULT_PREFERENCES_FILE
         self._preferences: typing.List[Preference] = []
 
+    @classmethod
+    def preferences_path_for_root(cls, root: typing.Optional[Path] = None) -> Path:
+        """Get the location for the Apt preferences file with ``root`` as the system root.
+
+        :param root: The optional system root to consider, or None to return the
+          default ``_DEFAULT_PREFERENCES_FILE``.
+        """
+        if root is None:
+            return _DEFAULT_PREFERENCES_FILE
+        return root / "etc/apt/preferences.d/craft-archives"
+
     def read(self) -> None:
         """Read the preferences file and populate Preferences objects."""
         if not self._path.exists():
