@@ -14,3 +14,16 @@
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
 """craft-archives package demo."""
+
+try:
+    from ._version import __version__
+except ImportError:
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        __version__ = version("craft-archives")
+    except PackageNotFoundError:
+        __version__ = "dev"
+
+__all__ = [
+    "__version__",
+]
