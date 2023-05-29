@@ -126,8 +126,8 @@ class AptKeyManager:
     ) -> pathlib.Path:
         """Get the location for Apt keyrings with ``root`` as the system root.
 
-        :param root: The optional system root to consider, or None to return the
-          default ``KEYRINGS_PATH``.
+        :param root: The optional system root to consider, or None to assume the standard
+          system root "/".
         """
         if root is None:
             return KEYRINGS_PATH

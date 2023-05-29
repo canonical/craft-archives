@@ -119,8 +119,8 @@ class AptPreferencesManager:
     def preferences_path_for_root(cls, root: typing.Optional[Path] = None) -> Path:
         """Get the location for the Apt preferences file with ``root`` as the system root.
 
-        :param root: The optional system root to consider, or None to return the
-          default ``_DEFAULT_PREFERENCES_FILE``.
+        :param root: The optional system root to consider, or None to assume the standard
+          system root "/".
         """
         if root is None:
             return _DEFAULT_PREFERENCES_FILE
