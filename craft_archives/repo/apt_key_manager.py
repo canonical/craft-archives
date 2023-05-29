@@ -121,6 +121,19 @@ class AptKeyManager:
         return None
 
     @classmethod
+    def keyrings_path_for_root(
+        cls, root: Optional[pathlib.Path] = None
+    ) -> pathlib.Path:
+        """Get the location for Apt keyrings with ``root`` as the system root.
+
+        :param root: The optional system root to consider, or None to assume the standard
+          system root "/".
+        """
+        if root is None:
+            return KEYRINGS_PATH
+        return root / "etc/apt/keyrings"
+
+    @classmethod
     def get_key_fingerprints(cls, *, key: str) -> List[str]:
         """List fingerprints found in specified key.
 

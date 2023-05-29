@@ -17,6 +17,7 @@
 
 import http
 import urllib.error
+from pathlib import Path
 from textwrap import dedent
 from unittest import mock
 from unittest.mock import call, patch
@@ -24,6 +25,10 @@ from unittest.mock import call, patch
 import distro
 import pytest
 from craft_archives.repo import apt_ppa, apt_sources_manager, errors
+from craft_archives.repo.apt_sources_manager import (
+    _DEFAULT_SOURCES_DIRECTORY,
+    AptSourcesManager,
+)
 from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
@@ -75,10 +80,29 @@ def apt_sources_mgr(tmp_path):
     keyrings_dir.mkdir(parents=True)
 
     yield apt_sources_manager.AptSourcesManager(
-        sources_list_d=sources_list_d, keyrings_dir=keyrings_dir
+        sources_list_d=sources_list_d,
+        keyrings_dir=keyrings_dir,
     )
 
 
+def create_apt_sources_mgr(tmp_path: Path, *, use_signed_by_root: bool):
+    signed_by_root = None
+    if use_signed_by_root:
+        signed_by_root = tmp_path
+
+    sources_list_d = tmp_path / "sources.list.d"
+    sources_list_d.mkdir(parents=True)
+    keyrings_dir = tmp_path / "keyrings"
+    keyrings_dir.mkdir(parents=True)
+
+    return apt_sources_manager.AptSourcesManager(
+        sources_list_d=sources_list_d,
+        keyrings_dir=keyrings_dir,
+        signed_by_root=signed_by_root,
+    )
+
+
+@pytest.mark.parametrize("use_signed_by_root", [False, True])
 @pytest.mark.parametrize(
     "package_repo,name,content_template",
     [
@@ -154,14 +178,31 @@ def apt_sources_mgr(tmp_path):
         ),
     ],
 )
-def test_install(package_repo, name, content_template, apt_sources_mgr, mocker):
+def test_install(
+    tmp_path,
+    package_repo,
+    name,
+    content_template,
+    use_signed_by_root,
+    mocker,
+):
     run_mock = mocker.patch("subprocess.run")
     mocker.patch("urllib.request.urlopen")
+
+    apt_sources_mgr = create_apt_sources_mgr(
+        tmp_path, use_signed_by_root=use_signed_by_root
+    )
     sources_path = apt_sources_mgr._sources_list_d / name
 
     keyring_path = apt_sources_mgr._keyrings_dir / "craft-AAAAAAAA.gpg"
     keyring_path.touch(exist_ok=True)
-    content = content_template.format(keyring_path=keyring_path).encode()
+
+    if use_signed_by_root:
+        signed_by_path = "/keyrings/craft-AAAAAAAA.gpg"
+    else:
+        signed_by_path = str(keyring_path)
+
+    content = content_template.format(keyring_path=signed_by_path).encode()
     mock_keyring_path = mocker.patch(
         "craft_archives.repo.apt_key_manager.get_keyring_path"
     )
@@ -174,10 +215,21 @@ def test_install(package_repo, name, content_template, apt_sources_mgr, mocker):
     assert changed is True
     assert sources_path.read_bytes() == content
 
+    if use_signed_by_root:
+        expected_root = str(tmp_path)
+    else:
+        expected_root = "/"
+
     if isinstance(package_repo, PackageRepositoryApt) and package_repo.architectures:
         assert run_mock.mock_calls == [
-            call(["dpkg", "--add-architecture", "amd64"], check=True),
-            call(["dpkg", "--add-architecture", "arm64"], check=True),
+            call(
+                ["dpkg", "--add-architecture", "amd64", "--root", expected_root],
+                check=True,
+            ),
+            call(
+                ["dpkg", "--add-architecture", "arm64", "--root", expected_root],
+                check=True,
+            ),
         ]
     else:
         assert run_mock.mock_calls == []
@@ -235,3 +287,10 @@ def test_install_apt_errors(apt_sources_mgr):
     )
     with pytest.raises(errors.AptGPGKeyringError):
         apt_sources_mgr._install_sources_apt(package_repo=repo)
+
+
+def test_preferences_path_for_root():
+    assert AptSourcesManager.sources_path_for_root() == _DEFAULT_SOURCES_DIRECTORY
+    assert AptSourcesManager.sources_path_for_root(Path("/my/root")) == Path(
+        "/my/root/etc/apt/sources.list.d"
+    )

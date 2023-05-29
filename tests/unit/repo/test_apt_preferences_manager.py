@@ -16,10 +16,12 @@
 #
 """Tests for apt_preferencs_manager"""
 import shutil
+from pathlib import Path
 from textwrap import dedent
 
 import pytest
 from craft_archives.repo.apt_preferences_manager import (
+    _DEFAULT_PREFERENCES_FILE,
     AptPreferencesManager,
     Preference,
 )
@@ -232,6 +234,15 @@ def test_preferences_added(test_data_dir, tmp_path, preferences, expected_file):
     manager.write()
 
     assert actual_path.read_text() == expected_path.read_text()
+
+
+def test_preferences_path_for_root():
+    assert (
+        AptPreferencesManager.preferences_path_for_root() == _DEFAULT_PREFERENCES_FILE
+    )
+    assert AptPreferencesManager.preferences_path_for_root(Path("/my/root")) == Path(
+        "/my/root/etc/apt/preferences.d/craft-archives"
+    )
 
 
 # endregion

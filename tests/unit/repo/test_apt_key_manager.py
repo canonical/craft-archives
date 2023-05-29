@@ -15,12 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 import subprocess
+from pathlib import Path
 from unittest import mock
 from unittest.mock import call
 
 import pytest
 from craft_archives.repo import apt_ppa, errors, package_repository
-from craft_archives.repo.apt_key_manager import AptKeyManager
+from craft_archives.repo.apt_key_manager import KEYRINGS_PATH, AptKeyManager
 from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
@@ -468,3 +469,10 @@ def test_install_package_repository_key_uca_from_keyserver(apt_gpg, mocker):
     assert mock_install_key_from_keyserver.mock_calls == [
         call(key_id="FAKE-UCA-KEY-ID", key_server="keyserver.ubuntu.com")
     ]
+
+
+def test_keyrings_path_for_root():
+    assert AptKeyManager.keyrings_path_for_root() == KEYRINGS_PATH
+    assert AptKeyManager.keyrings_path_for_root(Path("/my/root")) == Path(
+        "/my/root/etc/apt/keyrings"
+    )

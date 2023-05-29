@@ -13,8 +13,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+import pytest
 from craft_archives.repo import installer
+from craft_archives.repo.apt_key_manager import AptKeyManager
+from craft_archives.repo.apt_preferences_manager import AptPreferencesManager
+from craft_archives.repo.apt_sources_manager import AptSourcesManager
 from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
@@ -69,3 +72,59 @@ def test_unmarshal_repositories():
     assert isinstance(pkg_repos[4], PackageRepositoryAptUCA)
     assert pkg_repos[4].cloud == "antelope"
     assert pkg_repos[4].pocket == "proposed"
+
+
+@pytest.fixture
+def manager_mocks(mocker, tmp_path):
+    mock_install_package_repository_key = mocker.patch.object(
+        AptKeyManager,
+        "install_package_repository_key",
+        return_value=True,
+    )
+    mock_install_package_repository_sources = mocker.patch.object(
+        AptSourcesManager,
+        "install_package_repository_sources",
+        return_value=True,
+    )
+    mock_preferences_add = mocker.patch.object(
+        AptPreferencesManager,
+        "add",
+    )
+    mock_preferences_write = mocker.patch.object(
+        AptPreferencesManager,
+        "write",
+        return_value=True,
+    )
+
+    repo_dict = {
+        "type": "apt",
+        "ppa": "test/somerepo",
+        "priority": 999,
+    }
+    repo_ppa = PackageRepositoryAptPPA.unmarshal(repo_dict)
+    yield [repo_dict]
+
+    mock_install_package_repository_key.assert_called_once_with(package_repo=repo_ppa)
+    mock_install_package_repository_sources.assert_called_once_with(
+        package_repo=repo_ppa
+    )
+    mock_preferences_add.assert_called_once_with(
+        pin="release o=LP-PPA-test-somerepo", priority=999
+    )
+    assert mock_preferences_write.called
+
+
+def test_install(tmp_path, manager_mocks):
+    """Smokish test that checks that installer.install() makes the expected calls."""
+    project_repositories = manager_mocks
+    assert installer.install(
+        project_repositories=project_repositories, key_assets=tmp_path
+    )
+
+
+def test_install_in_root(tmp_path, manager_mocks):
+    """Smokish test that checks that installer.install_in_root() makes the expected calls."""
+    project_repositories = manager_mocks
+    assert installer.install_in_root(
+        project_repositories=project_repositories, key_assets=tmp_path, root=tmp_path
+    )

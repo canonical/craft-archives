@@ -87,25 +87,35 @@ PREFERENCES = dedent(
 ).lstrip()
 
 
-@pytest.fixture
-def fake_etc_apt(tmp_path, mocker) -> Path:
-    """Mock the default paths used to store keys, sources and preferences."""
-    etc_apt = tmp_path / "etc/apt"
+def create_etc_apt_dirs(etc_apt: Path):
     etc_apt.mkdir(parents=True)
 
     keyrings_dir = etc_apt / "keyrings"
     keyrings_dir.mkdir()
-    mocker.patch("craft_archives.repo.apt_key_manager.KEYRINGS_PATH", new=keyrings_dir)
 
     sources_dir = etc_apt / "sources.list.d"
     sources_dir.mkdir()
+
+    preferences_dir = etc_apt / "preferences.d"
+    preferences_dir.mkdir()
+
+
+@pytest.fixture
+def fake_etc_apt(tmp_path, mocker) -> Path:
+    """Mock the default paths used to store keys, sources and preferences."""
+    etc_apt = tmp_path / "etc/apt"
+    create_etc_apt_dirs(etc_apt)
+
+    keyrings_dir = etc_apt / "keyrings"
+    mocker.patch("craft_archives.repo.apt_key_manager.KEYRINGS_PATH", new=keyrings_dir)
+
+    sources_dir = etc_apt / "sources.list.d"
     mocker.patch(
         "craft_archives.repo.apt_sources_manager._DEFAULT_SOURCES_DIRECTORY",
         new=sources_dir,
     )
 
     preferences_dir = etc_apt / "preferences.d"
-    preferences_dir.mkdir()
     preferences_dir = preferences_dir / "craft-archives"
     mocker.patch(
         "craft_archives.repo.apt_preferences_manager._DEFAULT_PREFERENCES_FILE",
@@ -160,8 +170,22 @@ def test_install(fake_etc_apt, all_repo_types, test_keys_dir):
     assert repo.install(project_repositories=all_repo_types, key_assets=test_keys_dir)
 
     check_keyrings(fake_etc_apt)
-    check_sources(fake_etc_apt)
+    check_sources(fake_etc_apt, signed_by_location=fake_etc_apt / "keyrings")
     check_preferences(fake_etc_apt)
+
+
+def test_install_in_root(tmp_path, all_repo_types, test_keys_dir):
+    """Integrated test that checks the configuration of keys, sources and pins."""
+    etc_apt = tmp_path / "etc/apt"
+    create_etc_apt_dirs(etc_apt)
+
+    assert repo.install_in_root(
+        project_repositories=all_repo_types, key_assets=test_keys_dir, root=tmp_path
+    )
+
+    check_keyrings(etc_apt)
+    check_sources(etc_apt, signed_by_location=Path("/etc/apt/keyrings"))
+    check_preferences(etc_apt)
 
 
 def check_keyrings(etc_apt_dir: Path) -> None:
@@ -176,10 +200,10 @@ def check_keyrings(etc_apt_dir: Path) -> None:
         assert keyring_file.is_file()
 
 
-def check_sources(etc_apt_dir: Path) -> None:
+def check_sources(etc_apt_dir: Path, signed_by_location: Path) -> None:
     sources_dir = etc_apt_dir / "sources.list.d"
 
-    keyrings_location = etc_apt_dir / "keyrings"
+    keyrings_on_fs = etc_apt_dir / "keyrings"
 
     cloud_name = CLOUD_DATA["cloud"]
     codename = CLOUD_DATA["codename"]
@@ -187,19 +211,19 @@ def check_sources(etc_apt_dir: Path) -> None:
     # Must have exactly these sources files, one for each repo
     source_to_contents = {
         "http_ppa_launchpad_net_snappy_dev_snapcraft_daily_ubuntu": APT_SOURCES.format(
-            key_location=keyrings_location
+            key_location=signed_by_location
         ),
         "ppa-deadsnakes_ppa": PPA_SOURCES.format(
-            codename=VERSION_CODENAME, key_location=keyrings_location
+            codename=VERSION_CODENAME, key_location=signed_by_location
         ),
         f"cloud-{cloud_name}": CLOUD_SOURCES.format(
             cloud=cloud_name,
             codename=codename,
-            key_location=keyrings_location,
+            key_location=signed_by_location,
         ),
     }
 
-    assert len(list(keyrings_location.iterdir())) == len(source_to_contents)
+    assert len(list(keyrings_on_fs.iterdir())) == len(source_to_contents)
 
     for source_repo, expected_contents in source_to_contents.items():
         source_file = sources_dir / f"craft-{source_repo}.sources"
