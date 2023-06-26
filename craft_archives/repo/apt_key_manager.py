@@ -135,7 +135,10 @@ class AptKeyManager:
 
     @classmethod
     def get_key_fingerprints(cls, *, key: str) -> List[str]:
-        """List fingerprints found in specified key.
+        """List fingerprints found in the specified key.
+
+        Fingerprints for subkeys are not returned. Fingerprints for primary keys are
+        returned in the order that they are found, even if the keys are expired.
 
         :param key: Key data (string) to parse.
 
@@ -151,8 +154,14 @@ class AptKeyManager:
                 stdin=key.encode(),
             ).splitlines()
         fingerprints: List[str] = []
+        # Only export fingerprints for primary keys.
+        is_primary = False
         for line in response:
-            if line.startswith(b"fpr:"):
+            if line.startswith(b"pub:"):
+                is_primary = True
+            elif line.startswith(b"sub:"):
+                is_primary = False
+            if line.startswith(b"fpr:") and is_primary:
                 fingerprints.append(line[4:].decode().strip(":"))
         return fingerprints
 
