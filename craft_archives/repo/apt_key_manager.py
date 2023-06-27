@@ -43,6 +43,7 @@ def _call_gpg(
     keyring: Optional[pathlib.Path] = None,
     base_parameters: Iterable[str] = _GPG_PREFIX,
     stdin: Optional[bytes] = None,
+    log: bool = False,
 ) -> bytes:
     if keyring:
         command = [*base_parameters, "--keyring", f"gnupg-ring:{keyring}", *parameters]
@@ -50,19 +51,21 @@ def _call_gpg(
         command = [*base_parameters, *parameters]
     logger.debug(f"Executing command: {command}")
     env = {"LANG": "C.UTF-8"}
-    process = subprocess.run(
-        command,
-        input=stdin,
-        capture_output=True,
-        check=True,
-        env=env,
-    )
-    logger.debug(">> gpg import finished OK")
-    logger.debug(">>> stdout:")
-    logger.debug(process.stdout)
-    logger.debug(">>> stderr:")
-    logger.debug(process.stderr)
-    return process.stdout
+    try:
+        process = subprocess.run(
+            command,
+            input=stdin,
+            capture_output=True,
+            check=True,
+            env=env,
+        )
+        if log:
+            _log_gpg(process)
+        return process.stdout
+    except subprocess.CalledProcessError as error:
+        if log:
+            _log_gpg(error)
+        raise
 
 
 def get_keyring_path(
@@ -220,37 +223,30 @@ class AptKeyManager:
         target_id = key_id or fingerprints[0]
         keyring_path = get_keyring_path(target_id, base_path=self._keyrings_path)
 
-        error: Optional[subprocess.CalledProcessError] = None
-        try:
-            _call_gpg("--import", "-", keyring=keyring_path, stdin=key.encode())
-        except subprocess.CalledProcessError as called_error:
-            # non-zero return codes in gpg imports are not necessarily fatal - they
-            # might mean that the provided key contents have issues in *other* keys.
-            error = called_error
-            logger.debug(">> gpg import finished with ERROR")
-            logger.debug(">>> stdout:")
-            logger.debug(called_error.stdout)
-            logger.debug(">>> stderr:")
-            logger.debug(called_error.stderr)
+        # Note: use a temporary homedir because otherwise local configuration can influence
+        # how GPG behaves when importing keys.
+        with _temporary_home_dir() as tmpdir:
+            try:
+                _call_gpg(
+                    "--homedir",
+                    str(tmpdir),
+                    "--import",
+                    "-",
+                    keyring=keyring_path,
+                    stdin=key.encode(),
+                    log=True,
+                )
+            except subprocess.CalledProcessError as error:
+                raise errors.AptGPGKeyInstallError(error.stderr.decode(), key=key)
 
-        valid = False
         if key_id is not None:
-            # Make sure the imported key has the expected key_id, which means that the
-            # import was successful even if it might have raised an error.
-            if keyring_path.is_file():
-                imported_keyring = keyring_path.read_bytes()
-                valid = key_id in self.get_key_fingerprints(key=imported_keyring)
-
-        if error:
-            error_log = error.stderr.decode()
-            if valid:
-                logger.debug(f"GPG key {key_id} imported, but errors were generated:")
-                logger.debug(error_log)
-            else:
-                raise errors.AptGPGKeyInstallError(error_log, key=key)
+            # Make sure the imported key has the expected key_id
+            imported_keyring = keyring_path.read_bytes()
+            if key_id not in self.get_key_fingerprints(key=imported_keyring):
+                raise errors.AptGPGKeyInstallError(f"key-id {key_id} not imported.")
 
         _configure_keyring_file(keyring_path)
-        logger.debug(f"Installed apt repository key:\n{key}")
+        logger.debug(f"Installed apt repository key:\n{key_id or key}")
 
     def install_key_from_keyserver(
         self, *, key_id: str, key_server: str = DEFAULT_APT_KEYSERVER
@@ -347,3 +343,14 @@ def _temporary_home_dir() -> Iterator[pathlib.Path]:
         tmpdir = pathlib.Path(tmpdir_str)
         tmpdir.chmod(0o700)
         yield tmpdir
+
+
+def _log_gpg(
+    entity: Union[subprocess.CompletedProcess[bytes], subprocess.CalledProcessError]
+) -> None:
+    if entity.stdout:
+        logger.debug("gpg stdout:")
+        logger.debug(entity.stdout.decode())
+    if entity.stderr:
+        logger.debug("gpg stderr:")
+        logger.debug(entity.stderr.decode())

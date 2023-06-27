@@ -260,6 +260,7 @@ def test_install_key(
     apt_gpg, mock_run, mock_chmod, sample_key_string, sample_key_bytes
 ):
     mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
+    mock_run.return_value.stderr = None
 
     apt_gpg.install_key(key=sample_key_string)
 
@@ -288,6 +289,8 @@ def test_install_key(
                 "--no-default-keyring",
                 "--with-colons",
                 "--keyring",
+                mock.ANY,
+                "--homedir",
                 mock.ANY,
                 "--import",
                 "-",
