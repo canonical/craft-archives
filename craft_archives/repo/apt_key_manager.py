@@ -23,7 +23,7 @@ import pathlib
 import subprocess
 import tempfile
 from contextlib import contextmanager
-from typing import Iterable, Iterator, List, Optional
+from typing import Iterable, Iterator, List, Optional, Union
 
 from . import apt_ppa, errors, package_repository
 
@@ -134,7 +134,7 @@ class AptKeyManager:
         return root / "etc/apt/keyrings"
 
     @classmethod
-    def get_key_fingerprints(cls, *, key: str) -> List[str]:
+    def get_key_fingerprints(cls, *, key: Union[str, bytes]) -> List[str]:
         """List fingerprints found in the specified key.
 
         Fingerprints for subkeys are not returned. Fingerprints for primary keys are
@@ -144,6 +144,11 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
+        if isinstance(key, str):
+            key_bytes = key.encode()
+        else:
+            key_bytes = key
+
         with _temporary_home_dir() as tmpdir:
             response = _call_gpg(
                 "--homedir",
@@ -151,7 +156,7 @@ class AptKeyManager:
                 "--import-options",
                 "show-only",
                 "--import",
-                stdin=key.encode(),
+                stdin=key_bytes,
             ).splitlines()
         fingerprints: List[str] = []
         # Only export fingerprints for primary keys.
@@ -190,10 +195,14 @@ class AptKeyManager:
         else:
             return True
 
-    def install_key(self, *, key: str) -> None:
+    def install_key(self, *, key: str, key_id: Optional[str] = None) -> None:
         """Install given key.
 
-        :param key: Key to install.
+        :param key: Contents of key to install.
+        :param key_id: The optional fingerprint of the desired primary key in ``key``.
+            If provided, this fingerprint will be checked after the import is done to
+            ensure that it is present, and the imported file will use this fingerprint
+            for its filename (short id).
 
         :raises: AptGPGKeyInstallError if unable to install key.
         """
@@ -201,17 +210,34 @@ class AptKeyManager:
         fingerprints = self.get_key_fingerprints(key=key)
         if not fingerprints:
             raise errors.AptGPGKeyInstallError("Invalid GPG key", key=key)
-        if len(fingerprints) != 1:
-            raise errors.AptGPGKeyInstallError(
-                "Key must be a single key, not multiple.", key=key
-            )
 
         self._create_keyrings_path()
-        keyring_path = get_keyring_path(fingerprints[0], base_path=self._keyrings_path)
+        target_id = key_id or fingerprints[0]
+        keyring_path = get_keyring_path(target_id, base_path=self._keyrings_path)
+
+        error: Optional[subprocess.CalledProcessError] = None
         try:
             _call_gpg("--import", "-", keyring=keyring_path, stdin=key.encode())
-        except subprocess.CalledProcessError as error:
-            raise errors.AptGPGKeyInstallError(error.output.decode(), key=key)
+        except subprocess.CalledProcessError as called_error:
+            # non-zero return codes in gpg imports are not necessarily fatal - they
+            # might mean that the provided key contents have issues in *other* keys.
+            error = called_error
+
+        valid = False
+        if key_id is not None:
+            # Make sure the imported key has the expected key_id, which means that the
+            # import was successful even if it might have raised an error.
+            if keyring_path.is_file():
+                imported_keyring = keyring_path.read_bytes()
+                valid = key_id in self.get_key_fingerprints(key=imported_keyring)
+
+        if error:
+            error_log = error.stderr.decode()
+            if valid:
+                logger.debug(f"GPG key {key_id} imported, but errors were generated:")
+                logger.debug(error_log)
+            else:
+                raise errors.AptGPGKeyInstallError(error_log, key=key)
 
         _configure_keyring_file(keyring_path)
         logger.debug(f"Installed apt repository key:\n{key}")

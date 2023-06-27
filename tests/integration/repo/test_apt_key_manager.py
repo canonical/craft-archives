@@ -15,11 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Integration tests for AptKeyManager"""
+import logging
 import tempfile
 from typing import List
 
 import gnupg
 import pytest
+from craft_archives.repo import errors
 from craft_archives.repo.apt_key_manager import AptKeyManager
 
 
@@ -85,6 +87,48 @@ def test_install_key_missing_directory(key_assets, tmp_path, test_data_dir):
 
     assert keyrings_path.exists()
     assert keyrings_path.stat().st_mode == 0o40755  # noqa: PLR2004 magic value
+
+
+def test_install_key_gpg_errors_valid(apt_gpg, tmp_path, test_data_dir, caplog):
+    """Test that install_key() succeeds even if gpg has a non-zero return code, *if* a
+    key-id (fingerprint) is provided and is then found in the imported keyring file."""
+
+    problem_key = test_data_dir / "multi-keys/9E61EF26.asc"
+    key_id = "D6811ED3ADEEB8441AF5AA8F4528B6CD9E61EF26"
+
+    caplog.set_level(logging.DEBUG)
+    apt_gpg.install_key(key=problem_key.read_text(), key_id=key_id)
+
+    # Check that the key was successfully imported, even with the errors
+    expected_file = tmp_path / "craft-9E61EF26.gpg"
+    assert expected_file.is_file()
+    assert key_id in AptKeyManager.get_key_fingerprints(key=expected_file.read_bytes())
+
+    # Check that log messages containing gpg's output were generated
+    marker = caplog.messages.index(
+        "GPG key D6811ED3ADEEB8441AF5AA8F4528B6CD9E61EF26 imported, but errors were generated:"
+    )
+    gpg_log = caplog.messages[marker + 1]
+    expected_gpg_log = (
+        "gpg: public key of ultimately trusted key F307DB6B62E04E2D not found"
+    )
+    assert expected_gpg_log in gpg_log
+
+
+@pytest.mark.parametrize("key_id", (None, "NOT-IN-KEY"))
+def test_install_key_gpg_errors_invalid(apt_gpg, tmp_path, test_data_dir, key_id):
+    """Test that install_key() fails if gpg has a non-zero return code and the key_id
+    is not found in the imported file (or not provided at all)."""
+
+    problem_key = test_data_dir / "multi-keys/9E61EF26.asc"
+
+    with pytest.raises(errors.AptGPGKeyInstallError) as exc:
+        apt_gpg.install_key(key=problem_key.read_text(), key_id=key_id)
+
+    expected_message = (
+        "gpg: key 7F438280EF8D349F: 8 signatures not checked due to missing keys"
+    )
+    assert expected_message in str(exc.value)
 
 
 def get_fingerprints_via_python_gnupg(key: str) -> List[str]:
