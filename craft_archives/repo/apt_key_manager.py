@@ -57,6 +57,11 @@ def _call_gpg(
         check=True,
         env=env,
     )
+    logger.debug(">> gpg import finished OK")
+    logger.debug(">>> stdout:")
+    logger.debug(process.stdout)
+    logger.debug(">>> stderr:")
+    logger.debug(process.stderr)
     return process.stdout
 
 
@@ -222,6 +227,11 @@ class AptKeyManager:
             # non-zero return codes in gpg imports are not necessarily fatal - they
             # might mean that the provided key contents have issues in *other* keys.
             error = called_error
+            logger.debug(">> gpg import finished with ERROR")
+            logger.debug(">>> stdout:")
+            logger.debug(called_error.stdout)
+            logger.debug(">>> stderr:")
+            logger.debug(called_error.stderr)
 
         valid = False
         if key_id is not None:
