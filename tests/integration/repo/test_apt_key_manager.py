@@ -15,8 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Integration tests for AptKeyManager"""
+import tempfile
+from typing import List
 
-
+import gnupg
 import pytest
 from craft_archives.repo.apt_key_manager import AptKeyManager
 
@@ -83,3 +85,25 @@ def test_install_key_missing_directory(key_assets, tmp_path, test_data_dir):
 
     assert keyrings_path.exists()
     assert keyrings_path.stat().st_mode == 0o40755  # noqa: PLR2004 magic value
+
+
+def get_fingerprints_via_python_gnupg(key: str) -> List[str]:
+    with tempfile.NamedTemporaryFile(suffix="keyring") as temp_file:
+        return gnupg.GPG(keyring=temp_file.name).import_keys(key_data=key).fingerprints
+
+
+@pytest.mark.parametrize(
+    "keyfile", ["multi-keys/9E61EF26.asc", "multi-keys/0264B26D.asc", "FC42E99D.asc"]
+)
+def test_fingerprint_compat(test_data_dir, keyfile):
+    """Test that ``AptKeyManager.get_key_fingerprints()`` returns the same values
+    as python-gnupg (including expired keys)"""
+
+    key_file = test_data_dir / keyfile
+    key = key_file.read_text()
+
+    python_gnupg_fingerprints = get_fingerprints_via_python_gnupg(key)
+    our_fingerprints = AptKeyManager.get_key_fingerprints(key=key)
+    assert len(our_fingerprints) > 0
+
+    assert our_fingerprints == python_gnupg_fingerprints
