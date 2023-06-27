@@ -15,11 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Integration tests for AptKeyManager"""
+import logging
 import tempfile
 from typing import List
 
 import gnupg
 import pytest
+from craft_archives.repo import errors
 from craft_archives.repo.apt_key_manager import AptKeyManager
 
 
@@ -85,6 +87,66 @@ def test_install_key_missing_directory(key_assets, tmp_path, test_data_dir):
 
     assert keyrings_path.exists()
     assert keyrings_path.stat().st_mode == 0o40755  # noqa: PLR2004 magic value
+
+
+@pytest.mark.parametrize(
+    "key_id, expected_keyfile",
+    (
+        # Desired key-id is provided: imported file has its shortid
+        ("D6811ED3ADEEB8441AF5AA8F4528B6CD9E61EF26", "craft-9E61EF26.gpg"),
+        # Desired key-id is *not* provided: imported file has the shortid of the
+        # first fingerprint in the original file.
+        (None, "craft-07BB6C57.gpg"),
+    ),
+)
+def test_install_key_gpg_errors_valid(
+    apt_gpg, tmp_path, test_data_dir, key_id, expected_keyfile, caplog
+):
+    """Test that install_key() succeeds even if gpg emits errors to stderr."""
+    caplog.set_level(logging.DEBUG)
+
+    problem_key = test_data_dir / "multi-keys/9E61EF26.asc"
+
+    apt_gpg.install_key(key=problem_key.read_text(), key_id=key_id)
+
+    # Check that the key was successfully imported, even with the errors
+    expected_file = tmp_path / expected_keyfile
+    assert expected_file.is_file()
+    if key_id is not None:
+        assert key_id in AptKeyManager.get_key_fingerprints(
+            key=expected_file.read_bytes()
+        )
+
+    # Check that log messages containing gpg's output were generated
+    marker = caplog.messages.index("gpg stderr:")
+    gpg_log = caplog.messages[marker + 1]
+    expected_gpg_log = (
+        "gpg: key 7F438280EF8D349F: 8 signatures not checked due to missing keys"
+    )
+    assert expected_gpg_log in gpg_log
+
+
+def test_install_key_gpg_errors_invalid_key_id(
+    apt_gpg, tmp_path, test_data_dir, caplog
+):
+    """Test that install_key() fails if the key contents are imported successfully but
+    the key_id is *not* found in the imported file."""
+    caplog.set_level(logging.DEBUG)
+
+    key_id = "NOT-IN-KEY"
+    problem_key = test_data_dir / "multi-keys/9E61EF26.asc"
+
+    expected_message = "Failed to install GPG key: key-id NOT-IN-KEY not imported."
+    with pytest.raises(errors.AptGPGKeyInstallError, match=expected_message):
+        apt_gpg.install_key(key=problem_key.read_text(), key_id=key_id)
+
+    # Check that log messages containing gpg's output were generated
+    marker = caplog.messages.index("gpg stderr:")
+    gpg_log = caplog.messages[marker + 1]
+    expected_gpg_log = (
+        "gpg: key 7F438280EF8D349F: 8 signatures not checked due to missing keys"
+    )
+    assert expected_gpg_log in gpg_log
 
 
 def get_fingerprints_via_python_gnupg(key: str) -> List[str]:

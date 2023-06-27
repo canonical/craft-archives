@@ -17,13 +17,14 @@
 """APT key management helpers."""
 
 # pyright: reportMissingTypeStubs=false
+from __future__ import annotations
 
 import logging
 import pathlib
 import subprocess
 import tempfile
 from contextlib import contextmanager
-from typing import Iterable, Iterator, List, Optional
+from typing import Iterable, Iterator, List, Optional, Union
 
 from . import apt_ppa, errors, package_repository
 
@@ -43,6 +44,7 @@ def _call_gpg(
     keyring: Optional[pathlib.Path] = None,
     base_parameters: Iterable[str] = _GPG_PREFIX,
     stdin: Optional[bytes] = None,
+    log: bool = False,
 ) -> bytes:
     if keyring:
         command = [*base_parameters, "--keyring", f"gnupg-ring:{keyring}", *parameters]
@@ -50,14 +52,21 @@ def _call_gpg(
         command = [*base_parameters, *parameters]
     logger.debug(f"Executing command: {command}")
     env = {"LANG": "C.UTF-8"}
-    process = subprocess.run(
-        command,
-        input=stdin,
-        capture_output=True,
-        check=True,
-        env=env,
-    )
-    return process.stdout
+    try:
+        process = subprocess.run(
+            command,
+            input=stdin,
+            capture_output=True,
+            check=True,
+            env=env,
+        )
+        if log:
+            _log_gpg(process)
+        return process.stdout
+    except subprocess.CalledProcessError as error:
+        if log:
+            _log_gpg(error)
+        raise
 
 
 def get_keyring_path(
@@ -134,7 +143,7 @@ class AptKeyManager:
         return root / "etc/apt/keyrings"
 
     @classmethod
-    def get_key_fingerprints(cls, *, key: str) -> List[str]:
+    def get_key_fingerprints(cls, *, key: Union[str, bytes]) -> List[str]:
         """List fingerprints found in the specified key.
 
         Fingerprints for subkeys are not returned. Fingerprints for primary keys are
@@ -144,6 +153,11 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
+        if isinstance(key, str):
+            key_bytes = key.encode()
+        else:
+            key_bytes = key
+
         with _temporary_home_dir() as tmpdir:
             response = _call_gpg(
                 "--homedir",
@@ -151,7 +165,7 @@ class AptKeyManager:
                 "--import-options",
                 "show-only",
                 "--import",
-                stdin=key.encode(),
+                stdin=key_bytes,
             ).splitlines()
         fingerprints: List[str] = []
         # Only export fingerprints for primary keys.
@@ -190,10 +204,14 @@ class AptKeyManager:
         else:
             return True
 
-    def install_key(self, *, key: str) -> None:
+    def install_key(self, *, key: str, key_id: Optional[str] = None) -> None:
         """Install given key.
 
-        :param key: Key to install.
+        :param key: Contents of key to install.
+        :param key_id: The optional fingerprint of the desired primary key in ``key``.
+            If provided, this fingerprint will be checked after the import is done to
+            ensure that it is present, and the imported file will use this fingerprint
+            for its filename (short id).
 
         :raises: AptGPGKeyInstallError if unable to install key.
         """
@@ -201,20 +219,35 @@ class AptKeyManager:
         fingerprints = self.get_key_fingerprints(key=key)
         if not fingerprints:
             raise errors.AptGPGKeyInstallError("Invalid GPG key", key=key)
-        if len(fingerprints) != 1:
-            raise errors.AptGPGKeyInstallError(
-                "Key must be a single key, not multiple.", key=key
-            )
 
         self._create_keyrings_path()
-        keyring_path = get_keyring_path(fingerprints[0], base_path=self._keyrings_path)
-        try:
-            _call_gpg("--import", "-", keyring=keyring_path, stdin=key.encode())
-        except subprocess.CalledProcessError as error:
-            raise errors.AptGPGKeyInstallError(error.output.decode(), key=key)
+        target_id = key_id or fingerprints[0]
+        keyring_path = get_keyring_path(target_id, base_path=self._keyrings_path)
+
+        # Note: use a temporary homedir because otherwise local configuration can influence
+        # how GPG behaves when importing keys.
+        with _temporary_home_dir() as tmpdir:
+            try:
+                _call_gpg(
+                    "--homedir",
+                    str(tmpdir),
+                    "--import",
+                    "-",
+                    keyring=keyring_path,
+                    stdin=key.encode(),
+                    log=True,
+                )
+            except subprocess.CalledProcessError as error:
+                raise errors.AptGPGKeyInstallError(error.stderr.decode(), key=key)
+
+        if key_id is not None:
+            # Make sure the imported key has the expected key_id
+            imported_keyring = keyring_path.read_bytes()
+            if key_id not in self.get_key_fingerprints(key=imported_keyring):
+                raise errors.AptGPGKeyInstallError(f"key-id {key_id} not imported.")
 
         _configure_keyring_file(keyring_path)
-        logger.debug(f"Installed apt repository key:\n{key}")
+        logger.debug(f"Installed apt repository key:\n{key_id or key}")
 
     def install_key_from_keyserver(
         self, *, key_id: str, key_server: str = DEFAULT_APT_KEYSERVER
@@ -311,3 +344,14 @@ def _temporary_home_dir() -> Iterator[pathlib.Path]:
         tmpdir = pathlib.Path(tmpdir_str)
         tmpdir.chmod(0o700)
         yield tmpdir
+
+
+def _log_gpg(
+    entity: Union[subprocess.CompletedProcess[bytes], subprocess.CalledProcessError]
+) -> None:
+    if entity.stdout:
+        logger.debug("gpg stdout:")
+        logger.debug(entity.stdout.decode())
+    if entity.stderr:
+        logger.debug("gpg stderr:")
+        logger.debug(entity.stderr.decode())

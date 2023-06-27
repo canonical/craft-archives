@@ -260,6 +260,7 @@ def test_install_key(
     apt_gpg, mock_run, mock_chmod, sample_key_string, sample_key_bytes
 ):
     mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
+    mock_run.return_value.stderr = None
 
     apt_gpg.install_key(key=sample_key_string)
 
@@ -288,6 +289,8 @@ def test_install_key(
                 "--no-default-keyring",
                 "--with-colons",
                 "--keyring",
+                mock.ANY,
+                "--homedir",
                 mock.ANY,
                 "--import",
                 "-",
@@ -335,7 +338,7 @@ def test_install_key_with_gpg_failure(apt_gpg, mock_run):
         subprocess.CompletedProcess(
             ["gpg", "--do-something"], returncode=0, stdout=SAMPLE_GPG_SHOW_KEY_OUTPUT
         ),
-        subprocess.CalledProcessError(cmd=["foo"], returncode=1, output=b"some error"),
+        subprocess.CalledProcessError(cmd=["foo"], returncode=1, stderr=b"some error"),
     ]
 
     with pytest.raises(errors.AptGPGKeyInstallError) as raised:
@@ -348,11 +351,6 @@ def test_install_key_with_gpg_failure(apt_gpg, mock_run):
     "fingerprints,error",
     [
         pytest.param([], "Invalid GPG key", id="no keys"),
-        pytest.param(
-            ["finger1", "finger2"],
-            "Key must be a single key, not multiple.",
-            id="multiple keys",
-        ),
     ],
 )
 def test_install_key_with_key_issue(apt_gpg, mocker, fingerprints, error):
