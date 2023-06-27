@@ -327,7 +327,7 @@ class AptKeyManager:
 
         key_path = self.find_asset_with_key_id(key_id=key_id)
         if key_path is not None:
-            self.install_key(key=key_path.read_text())
+            self.install_key(key=key_path.read_text(), key_id=key_id)
         else:
             self.install_key_from_keyserver(key_id=key_id, key_server=key_server)
 
