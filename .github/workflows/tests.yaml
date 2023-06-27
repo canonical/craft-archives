@@ -22,6 +22,8 @@ jobs:
           python-version: '3.10'
       - name: Configure environment
         run: |
+          apt info gpg
+          apt info gnupg
           echo "::group::Begin snap install"
           echo "Installing snaps in the background while running apt and pip..."
           sudo snap install --no-wait --classic pyright
