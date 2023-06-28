@@ -127,18 +127,37 @@ def test_install_key_gpg_errors_valid(
 
 
 def test_install_key_gpg_errors_invalid_key_id(
-    apt_gpg, tmp_path, test_data_dir, caplog
+    apt_gpg, tmp_path, test_data_dir, caplog, mocker
 ):
     """Test that install_key() fails if the key contents are imported successfully but
     the key_id is *not* found in the imported file."""
     caplog.set_level(logging.DEBUG)
 
-    key_id = "NOT-IN-KEY"
+    missing_key_id = "NOT-IN-KEY"
     problem_key = test_data_dir / "multi-keys/9E61EF26.asc"
+    key_contents = problem_key.read_text()
+
+    original_get_fingerprints = AptKeyManager.get_key_fingerprints
+
+    # This is tricky: We want the install_key() to fail *after* the key is imported, but
+    # AptKeyManager.get_key_fingerprints() is called twice: once before, and once after,
+    # the actual installation. So this mock adds the missing key for the first call and
+    # not the second.
+    # A better test would need a key file that actually has this behavior, but we don't
+    # have one right now.
+    def fake_get_fingerprints(*, key: str) -> List[str]:
+        result = original_get_fingerprints(key=key)
+        if key is key_contents:
+            result.append(missing_key_id)
+        return result
+
+    mocker.patch.object(
+        AptKeyManager, "get_key_fingerprints", side_effect=fake_get_fingerprints
+    )
 
     expected_message = "Failed to install GPG key: key-id NOT-IN-KEY not imported."
     with pytest.raises(errors.AptGPGKeyInstallError, match=expected_message):
-        apt_gpg.install_key(key=problem_key.read_text(), key_id=key_id)
+        apt_gpg.install_key(key=key_contents, key_id=missing_key_id)
 
     # Check that log messages containing gpg's output were generated
     marker = caplog.messages.index("gpg stderr:")

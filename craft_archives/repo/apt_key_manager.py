@@ -220,6 +220,11 @@ class AptKeyManager:
         if not fingerprints:
             raise errors.AptGPGKeyInstallError("Invalid GPG key", key=key)
 
+        if key_id and key_id not in fingerprints:
+            raise errors.AptGPGKeyInstallError(
+                "Desired key_id not found in fingerprints", key=key
+            )
+
         self._create_keyrings_path()
         target_id = key_id or fingerprints[0]
         keyring_path = get_keyring_path(target_id, base_path=self._keyrings_path)
