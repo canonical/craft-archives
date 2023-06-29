@@ -256,12 +256,18 @@ def test_is_key_installed_with_gpg_failure(
     mock_logger.warning.assert_called_once_with("gpg error: some error")
 
 
+@pytest.mark.parametrize("key_id", (None, "FAKE-KEY-ID-FROM-GNUPG"))
 def test_install_key(
-    apt_gpg, mock_run, mock_chmod, sample_key_string, sample_key_bytes
+    apt_gpg, mock_run, mock_chmod, sample_key_string, sample_key_bytes, tmp_path, key_id
 ):
     mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
+    mock_run.return_value.stderr = None
 
     apt_gpg.install_key(key=sample_key_string)
+
+    # The key should be imported to a file that contains the short-id of the
+    # "FAKE-KEY-ID-FROM-GNUPG" fingerprint, (so the last 8 characters).
+    expected_imported_keyring = f"gnupg-ring:{tmp_path / 'craft-OM-GNUPG.gpg'}"
 
     assert mock_run.mock_calls == [
         call(
@@ -288,6 +294,8 @@ def test_install_key(
                 "--no-default-keyring",
                 "--with-colons",
                 "--keyring",
+                expected_imported_keyring,
+                "--homedir",
                 mock.ANY,
                 "--import",
                 "-",
@@ -335,7 +343,7 @@ def test_install_key_with_gpg_failure(apt_gpg, mock_run):
         subprocess.CompletedProcess(
             ["gpg", "--do-something"], returncode=0, stdout=SAMPLE_GPG_SHOW_KEY_OUTPUT
         ),
-        subprocess.CalledProcessError(cmd=["foo"], returncode=1, output=b"some error"),
+        subprocess.CalledProcessError(cmd=["foo"], returncode=1, stderr=b"some error"),
     ]
 
     with pytest.raises(errors.AptGPGKeyInstallError) as raised:
@@ -344,25 +352,28 @@ def test_install_key_with_gpg_failure(apt_gpg, mock_run):
     assert str(raised.value) == "Failed to install GPG key: some error"
 
 
-@pytest.mark.parametrize(
-    "fingerprints,error",
-    [
-        pytest.param([], "Invalid GPG key", id="no keys"),
-        pytest.param(
-            ["finger1", "finger2"],
-            "Key must be a single key, not multiple.",
-            id="multiple keys",
-        ),
-    ],
-)
-def test_install_key_with_key_issue(apt_gpg, mocker, fingerprints, error):
+def test_install_key_with_no_fingerprints(apt_gpg, mocker):
+    """Test installing key contents that have no fingerprints at all."""
     mock_fingerprints = mocker.patch.object(apt_gpg, "get_key_fingerprints")
-    mock_fingerprints.return_value = fingerprints
+    mock_fingerprints.return_value = []
 
     with pytest.raises(errors.AptGPGKeyInstallError) as raised:
         apt_gpg.install_key(key="key")
 
-    assert str(raised.value) == f"Failed to install GPG key: {error}"
+    assert str(raised.value) == "Failed to install GPG key: Invalid GPG key"
+
+
+def test_install_key_with_invalid_key_id(apt_gpg, mocker):
+    """Test installing key contents where the desired key-id is *not* among the
+    existing fingerprints."""
+    mock_fingerprints = mocker.patch.object(apt_gpg, "get_key_fingerprints")
+    mock_fingerprints.return_value = ["FINGERPRINT-1", "FINGERPRINT-2"]
+
+    expected_error = (
+        "Failed to install GPG key: Desired key_id not found in fingerprints"
+    )
+    with pytest.raises(errors.AptGPGKeyInstallError, match=expected_error):
+        apt_gpg.install_key(key="key", key_id="IM-NOT-THERE")
 
 
 def test_install_key_from_keyserver(apt_gpg, mock_run, mock_chmod):
