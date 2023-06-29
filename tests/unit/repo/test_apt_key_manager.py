@@ -468,7 +468,7 @@ def test_install_package_repository_key_from_asset(apt_gpg, key_assets, mocker):
     updated = apt_gpg.install_package_repository_key(package_repo=package_repo)
 
     assert updated is True
-    assert mock_install_key.mock_calls == [call(key="key-data")]
+    assert mock_install_key.mock_calls == [call(key="key-data", key_id=key_id)]
 
 
 def test_install_package_repository_key_apt_from_keyserver(apt_gpg, mocker):
