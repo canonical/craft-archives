@@ -18,6 +18,7 @@
 
 import abc
 import enum
+import pathlib
 import re
 from typing import Any, Dict, List, Mapping, Optional, Union
 from urllib.parse import urlparse
@@ -28,7 +29,7 @@ from pydantic import (
     AnyUrl,
     ConstrainedStr,
     root_validator,  # pyright: ignore[reportUnknownVariableType]
-    validator,  # pyright: ignore[reportUnknownVariableType]
+    validator, FileUrl,  # pyright: ignore[reportUnknownVariableType]
 )
 
 # NOTE: using this instead of typing.Literal because of this bad typing_extensions
@@ -220,7 +221,7 @@ class PackageRepositoryAptUCA(PackageRepository):
 class PackageRepositoryApt(PackageRepository):
     """An APT package repository."""
 
-    url: AnyUrl
+    url: Union[AnyUrl, FileUrl]
     key_id: KeyIdStr = pydantic.Field(alias="key-id")
     architectures: Optional[List[str]]
     formats: Optional[List[Literal["deb", "deb-src"]]]
