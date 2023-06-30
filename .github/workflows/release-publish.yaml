@@ -18,7 +18,10 @@ jobs:
         with:
           depth: 0
       - name: Get tags
-        run: git fetch --tags origin
+        run: |
+          git fetch --tags origin
+          echo Current tag:
+          git tag --contains
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
