@@ -33,32 +33,32 @@ jobs:
       - run: |
           git describe --dirty --long --match '[0-9]*.[0-9]*.[0-9]*' --exclude '*[^0-9.]*'
           exit 1
-      - name: Upload pypi packages artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: pypi-packages
-          path: dist
-  pypi:
-    needs: source-wheel
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get packages
-        uses: actions/download-artifact@v3
-        with:
-          name: pypi-packages
-          path: dist/
-      - name: Publish to pypi
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
-  github-release:
-    needs: ["source-wheel"]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Get pypi artifacts
-        uses: actions/download-artifact@v3
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            **
+#      - name: Upload pypi packages artifact
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: pypi-packages
+#          path: dist
+#  pypi:
+#    needs: source-wheel
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Get packages
+#        uses: actions/download-artifact@v3
+#        with:
+#          name: pypi-packages
+#          path: dist/
+#      - name: Publish to pypi
+#        uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          password: ${{ secrets.PYPI_API_TOKEN }}
+#  github-release:
+#    needs: ["source-wheel"]
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Get pypi artifacts
+#        uses: actions/download-artifact@v3
+#      - name: Release
+#        uses: softprops/action-gh-release@v1
+#        with:
+#          files: |
+#            **
