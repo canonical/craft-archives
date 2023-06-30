@@ -24,6 +24,7 @@ jobs:
         with:
           python-version: "3.11"
           check-latest: true
+          cache: "pip"
       - name: Build packages
         run: |
           pip install build twine
