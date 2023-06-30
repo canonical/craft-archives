@@ -20,7 +20,7 @@ jobs:
 
       - name: DEV DEV DEV print the tags and exit
         run: |
-          git tag
+          git tag --contains
           exit 1
       - name: Setup Python
         uses: actions/setup-python@v4
