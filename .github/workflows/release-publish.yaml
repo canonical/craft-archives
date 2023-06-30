@@ -25,15 +25,15 @@ jobs:
           python-version: "3.11"
           check-latest: true
           cache: "pip"
+      - run: |
+          git describe --dirty --long --match '[0-9]*.[0-9]*.[0-9]*' --exclude '*[^0-9.]*'
+          exit 1
       - name: Build packages
         run: |
           pip install build twine
           python3 -m build
           twine check dist/*
 
-      - run: |
-          git describe --tags --dirty --long --match '[0-9]*.[0-9]*.[0-9]*' --exclude '*[^0-9.]*'
-          exit 1
 #      - name: Upload pypi packages artifact
 #        uses: actions/upload-artifact@v3
 #        with:
