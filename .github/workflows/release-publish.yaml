@@ -15,12 +15,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          depth: 0
-      - name: Get tags
-        run: |
-          git fetch --tags origin
-          echo Current tag:
+#        with:
+#          depth: 0
+      - run: |
           git tag --contains
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -35,7 +32,7 @@ jobs:
           twine check dist/*
 
       - run: |
-          git describe --dirty --long --match '[0-9]*.[0-9]*.[0-9]*' --exclude '*[^0-9.]*'
+          git describe --tags --dirty --long --match '[0-9]*.[0-9]*.[0-9]*' --exclude '*[^0-9.]*'
           exit 1
 #      - name: Upload pypi packages artifact
 #        uses: actions/upload-artifact@v3
