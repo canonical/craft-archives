@@ -18,7 +18,6 @@
 
 import abc
 import enum
-import pathlib
 import re
 from typing import Any, Dict, List, Mapping, Optional, Union
 from urllib.parse import urlparse
@@ -28,8 +27,9 @@ from overrides import overrides  # pyright: ignore[reportUnknownVariableType]
 from pydantic import (
     AnyUrl,
     ConstrainedStr,
+    FileUrl,
     root_validator,  # pyright: ignore[reportUnknownVariableType]
-    validator, FileUrl,  # pyright: ignore[reportUnknownVariableType]
+    validator,  # pyright: ignore[reportUnknownVariableType]
 )
 
 # NOTE: using this instead of typing.Literal because of this bad typing_extensions
