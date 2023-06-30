@@ -36,6 +36,38 @@ fpr:::::::::FAKE-KEY-ID-FROM-GNUPG:
 uid:-::::1416490823::DCB9EEE37DC9FD84C3DB333BFBF6C41A075EEF62::Launchpad PPA for Snappy Developers::::::::::0:
 """
 
+# Real output listing keys with sub/multiple keys.
+
+# Docker repo: 1 primary key ("pub:") and 1 subkey ("sub:")
+SAMPLE_GPG_DOCKER_OUTPUT = b"""\
+pub:-:4096:1:8D81803C0EBFCD88:1487788586:::-:::escaESCA::::::23::0:
+fpr:::::::::9DC858229FC7DD38854AE2D88D81803C0EBFCD88:
+uid:-::::1487792064::B50C6A3598EE2C27B34302761B93B277BF674C93::Docker Release (CE deb) <docker@docker.com>::::::::::0:
+sub:-:4096:1:7EA0A9C3F273FCD8:1487788586::::::s::::::23:
+fpr:::::::::D3306A018370199E527AE7997EA0A9C3F273FCD8:
+"""
+
+# Puppet repo: Multiple primary and subkeys, most expired ("pub:e:" and "sub:e:").
+SAMPLE_GPG_PUPPET_OUTPUT = b"""\
+pub:e:4096:1:B8F999C007BB6C57:1360109177:1549910347::-:::sc::::::23::0:
+fpr:::::::::8735F5AF62A99A628EC13377B8F999C007BB6C57:
+uid:e::::1455302347::A8FC88656336852AD4301DF059CEE6134FD37C21::Puppet Labs Nightly Build Key (Puppet Labs Nightly Build Key) <delivery@puppetlabs.com>::::::::::0:
+uid:e::::1455302347::4EF2A82F1FF355343885012A832C628E1A4F73A8::Puppet Labs Nightly Build Key (Puppet Labs Nightly Build Key) <info@puppetlabs.com>::::::::::0:
+sub:e:4096:1:AE8282E5A5FC3E74:1360109177:1549910293:::::e::::::23:
+fpr:::::::::F838D657CCAF0E4A6375B0E9AE8282E5A5FC3E74:
+gpg: key 7F438280EF8D349F: 8 signatures not checked due to missing keys
+pub:e:4096:1:7F438280EF8D349F:1471554366:1629234366::-:::sc::::::23::0:
+fpr:::::::::6F6B15509CF8E59E6E469F327F438280EF8D349F:
+uid:e::::1471554366::B648B946D1E13EEA5F4081D8FE5CF4D001200BC7::Puppet, Inc. Release Key (Puppet, Inc. Release Key) <release@puppet.com>::::::::::0:
+sub:e:4096:1:A2D80E04656674AE:1471554366:1629234366:::::e::::::23:
+fpr:::::::::07F5ABF8FE84BC3736D2AAD3A2D80E04656674AE:
+pub:-:4096:1:4528B6CD9E61EF26:1554759562:1743975562::-:::scESC::::::23::0:
+fpr:::::::::D6811ED3ADEEB8441AF5AA8F4528B6CD9E61EF26:
+uid:-::::1554759562::B648B946D1E13EEA5F4081D8FE5CF4D001200BC7::Puppet, Inc. Release Key (Puppet, Inc. Release Key) <release@puppet.com>::::::::::0:
+sub:-:4096:1:F230A24E9F057A83:1554759562:1743975562:::::e::::::23:
+fpr:::::::::90A29D0A6576E2CA185AED3EF230A24E9F057A83:
+"""
+
 
 @pytest.fixture(autouse=True)
 def mock_environ_copy(mocker):
@@ -109,10 +141,7 @@ def test_find_asset_none(
     assert key_path is None
 
 
-def test_get_key_fingerprints(
-    apt_gpg,
-    mock_run,
-):
+def test_get_key_fingerprints(apt_gpg, mock_run):
     mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
 
     ids = apt_gpg.get_key_fingerprints(key="8" * 40)
@@ -137,6 +166,30 @@ def test_get_key_fingerprints(
             env={"LANG": "C.UTF-8"},
         )
     ]
+
+
+@pytest.mark.parametrize(
+    "sample_output,expected_keys",
+    [
+        (SAMPLE_GPG_DOCKER_OUTPUT, ["9DC858229FC7DD38854AE2D88D81803C0EBFCD88"]),
+        (
+            SAMPLE_GPG_PUPPET_OUTPUT,
+            [
+                "8735F5AF62A99A628EC13377B8F999C007BB6C57",
+                "6F6B15509CF8E59E6E469F327F438280EF8D349F",
+                "D6811ED3ADEEB8441AF5AA8F4528B6CD9E61EF26",
+            ],
+        ),
+    ],
+)
+def test_get_key_fingerprints_multi_keys(
+    apt_gpg, mock_run, sample_output, expected_keys
+):
+    mock_run.return_value.stdout = sample_output
+
+    ids = apt_gpg.get_key_fingerprints(key="8" * 40)
+
+    assert ids == expected_keys
 
 
 @pytest.mark.parametrize(
@@ -203,12 +256,18 @@ def test_is_key_installed_with_gpg_failure(
     mock_logger.warning.assert_called_once_with("gpg error: some error")
 
 
+@pytest.mark.parametrize("key_id", (None, "FAKE-KEY-ID-FROM-GNUPG"))
 def test_install_key(
-    apt_gpg, mock_run, mock_chmod, sample_key_string, sample_key_bytes
+    apt_gpg, mock_run, mock_chmod, sample_key_string, sample_key_bytes, tmp_path, key_id
 ):
     mock_run.return_value.stdout = SAMPLE_GPG_SHOW_KEY_OUTPUT
+    mock_run.return_value.stderr = None
 
     apt_gpg.install_key(key=sample_key_string)
+
+    # The key should be imported to a file that contains the short-id of the
+    # "FAKE-KEY-ID-FROM-GNUPG" fingerprint, (so the last 8 characters).
+    expected_imported_keyring = f"gnupg-ring:{tmp_path / 'craft-OM-GNUPG.gpg'}"
 
     assert mock_run.mock_calls == [
         call(
@@ -235,6 +294,8 @@ def test_install_key(
                 "--no-default-keyring",
                 "--with-colons",
                 "--keyring",
+                expected_imported_keyring,
+                "--homedir",
                 mock.ANY,
                 "--import",
                 "-",
@@ -282,7 +343,7 @@ def test_install_key_with_gpg_failure(apt_gpg, mock_run):
         subprocess.CompletedProcess(
             ["gpg", "--do-something"], returncode=0, stdout=SAMPLE_GPG_SHOW_KEY_OUTPUT
         ),
-        subprocess.CalledProcessError(cmd=["foo"], returncode=1, output=b"some error"),
+        subprocess.CalledProcessError(cmd=["foo"], returncode=1, stderr=b"some error"),
     ]
 
     with pytest.raises(errors.AptGPGKeyInstallError) as raised:
@@ -291,25 +352,28 @@ def test_install_key_with_gpg_failure(apt_gpg, mock_run):
     assert str(raised.value) == "Failed to install GPG key: some error"
 
 
-@pytest.mark.parametrize(
-    "fingerprints,error",
-    [
-        pytest.param([], "Invalid GPG key", id="no keys"),
-        pytest.param(
-            ["finger1", "finger2"],
-            "Key must be a single key, not multiple.",
-            id="multiple keys",
-        ),
-    ],
-)
-def test_install_key_with_key_issue(apt_gpg, mocker, fingerprints, error):
+def test_install_key_with_no_fingerprints(apt_gpg, mocker):
+    """Test installing key contents that have no fingerprints at all."""
     mock_fingerprints = mocker.patch.object(apt_gpg, "get_key_fingerprints")
-    mock_fingerprints.return_value = fingerprints
+    mock_fingerprints.return_value = []
 
     with pytest.raises(errors.AptGPGKeyInstallError) as raised:
         apt_gpg.install_key(key="key")
 
-    assert str(raised.value) == f"Failed to install GPG key: {error}"
+    assert str(raised.value) == "Failed to install GPG key: Invalid GPG key"
+
+
+def test_install_key_with_invalid_key_id(apt_gpg, mocker):
+    """Test installing key contents where the desired key-id is *not* among the
+    existing fingerprints."""
+    mock_fingerprints = mocker.patch.object(apt_gpg, "get_key_fingerprints")
+    mock_fingerprints.return_value = ["FINGERPRINT-1", "FINGERPRINT-2"]
+
+    expected_error = (
+        "Failed to install GPG key: Desired key_id not found in fingerprints"
+    )
+    with pytest.raises(errors.AptGPGKeyInstallError, match=expected_error):
+        apt_gpg.install_key(key="key", key_id="IM-NOT-THERE")
 
 
 def test_install_key_from_keyserver(apt_gpg, mock_run, mock_chmod):
@@ -404,7 +468,7 @@ def test_install_package_repository_key_from_asset(apt_gpg, key_assets, mocker):
     updated = apt_gpg.install_package_repository_key(package_repo=package_repo)
 
     assert updated is True
-    assert mock_install_key.mock_calls == [call(key="key-data")]
+    assert mock_install_key.mock_calls == [call(key="key-data", key_id=key_id)]
 
 
 def test_install_package_repository_key_apt_from_keyserver(apt_gpg, mocker):

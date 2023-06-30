@@ -68,6 +68,17 @@ CLOUD_SOURCES = dedent(
     """
 ).lstrip()
 
+PUPPET_SOURCES = dedent(
+    """
+    Types: deb
+    URIs: http://apt.puppet.com
+    Suites: focal
+    Components: puppet-tools
+    Architectures: amd64
+    Signed-By: {key_location}/craft-9E61EF26.gpg
+    """
+).lstrip()
+
 PREFERENCES = dedent(
     """
     # This file is managed by craft-archives
@@ -151,15 +162,24 @@ def all_repo_types() -> List[Dict[str, Any]]:
             "pocket": "updates",
             "priority": 123,
         },
+        # A key with multiple keys inside.
+        {
+            "type": "apt",
+            "components": ["puppet-tools"],
+            "suites": ["focal"],
+            "url": "http://apt.puppet.com",
+            "key-id": "D6811ED3ADEEB8441AF5AA8F4528B6CD9E61EF26",
+        },
     ]
 
 
 @pytest.fixture
-def test_keys_dir(tmp_path, sample_key_path) -> Path:
+def test_keys_dir(tmp_path, test_data_dir) -> Path:
     target_dir = tmp_path / "keys"
     target_dir.mkdir()
 
-    shutil.copy2(sample_key_path, target_dir)
+    shutil.copy2(test_data_dir / "FC42E99D.asc", target_dir)
+    shutil.copy2(test_data_dir / "multi-keys/9E61EF26.asc", target_dir)
 
     return target_dir
 
@@ -192,7 +212,12 @@ def check_keyrings(etc_apt_dir: Path) -> None:
     keyrings_dir = etc_apt_dir / "keyrings"
 
     # Must have exactly these keyring files, one for each repo
-    expected_key_ids = ("6A755776", "FC42E99D", "EC4926EA")
+    expected_key_ids = (
+        "6A755776",
+        "FC42E99D",
+        "EC4926EA",
+        "9E61EF26",
+    )
 
     assert len(list(keyrings_dir.iterdir())) == len(expected_key_ids)
     for key_id in expected_key_ids:
@@ -221,6 +246,7 @@ def check_sources(etc_apt_dir: Path, signed_by_location: Path) -> None:
             codename=codename,
             key_location=signed_by_location,
         ),
+        "http_apt_puppet_com": PUPPET_SOURCES.format(key_location=signed_by_location),
     }
 
     assert len(list(keyrings_on_fs.iterdir())) == len(source_to_contents)
