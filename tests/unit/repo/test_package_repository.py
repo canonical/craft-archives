@@ -97,6 +97,12 @@ def test_apt_name():
             "key-server": "my-key-server",
             "suites": ["some", "suites"],
         },
+        {  # File URLs. See: https://github.com/canonical/craft-archives/issues/92
+            "type": "apt",
+            "url": "file:///tmp/apt-repo",
+            "path": "my/path",
+            "key-id": "BCDEF12345" * 4,
+        },
     ],
 )
 def test_apt_valid(repo, priority):
@@ -104,7 +110,7 @@ def test_apt_valid(repo, priority):
         repo["priority"] = priority
     apt_deb = PackageRepositoryApt.unmarshal(repo)
     assert apt_deb.type == "apt"
-    assert apt_deb.url == "https://some/url"
+    assert apt_deb.url == repo["url"]
     assert apt_deb.key_id == "BCDEF12345" * 4
     assert apt_deb.formats == (["deb"] if "formats" in repo else None)
     assert apt_deb.components == (

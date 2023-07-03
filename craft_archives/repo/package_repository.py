@@ -27,6 +27,7 @@ from overrides import overrides  # pyright: ignore[reportUnknownVariableType]
 from pydantic import (
     AnyUrl,
     ConstrainedStr,
+    FileUrl,
     root_validator,  # pyright: ignore[reportUnknownVariableType]
     validator,  # pyright: ignore[reportUnknownVariableType]
 )
@@ -220,7 +221,7 @@ class PackageRepositoryAptUCA(PackageRepository):
 class PackageRepositoryApt(PackageRepository):
     """An APT package repository."""
 
-    url: AnyUrl
+    url: Union[AnyUrl, FileUrl]
     key_id: KeyIdStr = pydantic.Field(alias="key-id")
     architectures: Optional[List[str]]
     formats: Optional[List[Literal["deb", "deb-src"]]]
