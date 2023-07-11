@@ -45,7 +45,7 @@ def sample_key_bytes(sample_key_path) -> bytes:
     return sample_key_path.read_bytes()
 
 
-@pytest.fixture()
+@pytest.fixture
 def project_main_module() -> types.ModuleType:
     """Fixture that returns the project's principal package (imported).
 

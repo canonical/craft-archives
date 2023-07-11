@@ -90,7 +90,7 @@ def test_install_key_missing_directory(key_assets, tmp_path, test_data_dir):
 
 
 @pytest.mark.parametrize(
-    "key_id, expected_keyfile",
+    ("key_id", "expected_keyfile"),
     (
         # Desired key-id is provided: imported file has its shortid
         ("D6811ED3ADEEB8441AF5AA8F4528B6CD9E61EF26", "craft-9E61EF26.gpg"),

@@ -153,10 +153,7 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
-        if isinstance(key, str):
-            key_bytes = key.encode()
-        else:
-            key_bytes = key
+        key_bytes = key.encode() if isinstance(key, str) else key
 
         with _temporary_home_dir() as tmpdir:
             response = _call_gpg(

@@ -259,3 +259,6 @@ ignore = [
 ]
 # isort leaves init files alone by default, this makes ruff ignore them too.
 "__init__.py" = ["I001"]
+
+[tool.ruff.flake8-pytest-style]
+fixture-parentheses = false

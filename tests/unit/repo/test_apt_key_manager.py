@@ -71,12 +71,12 @@ fpr:::::::::90A29D0A6576E2CA185AED3EF230A24E9F057A83:
 
 @pytest.fixture(autouse=True)
 def mock_environ_copy(mocker):
-    yield mocker.patch("os.environ.copy")
+    return mocker.patch("os.environ.copy")
 
 
 @pytest.fixture(autouse=True)
 def mock_run(mocker):
-    yield mocker.patch("subprocess.run", spec=subprocess.run)
+    return mocker.patch("subprocess.run", spec=subprocess.run)
 
 
 @pytest.fixture
@@ -86,7 +86,7 @@ def mock_chmod(mocker):
 
 @pytest.fixture(autouse=True)
 def mock_apt_ppa_get_signing_key(mocker):
-    yield mocker.patch(
+    return mocker.patch(
         "craft_archives.repo.apt_ppa.get_launchpad_ppa_key_id",
         spec=apt_ppa.get_launchpad_ppa_key_id,
         return_value="FAKE-PPA-SIGNING-KEY",
@@ -95,12 +95,12 @@ def mock_apt_ppa_get_signing_key(mocker):
 
 @pytest.fixture(autouse=True)
 def mock_apt_uca_key_id(mocker):
-    yield mocker.patch.object(package_repository, "UCA_KEY_ID", "FAKE-UCA-KEY-ID")
+    return mocker.patch.object(package_repository, "UCA_KEY_ID", "FAKE-UCA-KEY-ID")
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_logger(mocker):
-    yield mocker.patch(
+    return mocker.patch(
         "craft_archives.repo.apt_key_manager.logger", spec=logging.Logger
     )
 
@@ -109,12 +109,12 @@ def mock_logger(mocker):
 def key_assets(tmp_path):
     assets = tmp_path / "key-assets"
     assets.mkdir(parents=True)
-    yield assets
+    return assets
 
 
 @pytest.fixture
 def apt_gpg(key_assets, tmp_path):
-    yield AptKeyManager(
+    return AptKeyManager(
         keyrings_path=tmp_path,
         key_assets=key_assets,
     )
@@ -169,7 +169,7 @@ def test_get_key_fingerprints(apt_gpg, mock_run):
 
 
 @pytest.mark.parametrize(
-    "sample_output,expected_keys",
+    ("sample_output", "expected_keys"),
     [
         (SAMPLE_GPG_DOCKER_OUTPUT, ["9DC858229FC7DD38854AE2D88D81803C0EBFCD88"]),
         (
@@ -193,7 +193,7 @@ def test_get_key_fingerprints_multi_keys(
 
 
 @pytest.mark.parametrize(
-    "should_raise,expected_is_installed",
+    ("should_raise", "expected_is_installed"),
     [
         (True, False),
         (False, True),
