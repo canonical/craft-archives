@@ -33,9 +33,9 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: pypi-packages
-          path: dist
+          path: dist/
   pypi:
-    needs: source-wheel
+    needs: ["source-wheel"]
     runs-on: ubuntu-latest
     steps:
       - name: Get packages

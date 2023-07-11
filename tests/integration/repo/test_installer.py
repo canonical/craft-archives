@@ -136,7 +136,7 @@ def fake_etc_apt(tmp_path, mocker) -> Path:
     return etc_apt
 
 
-@pytest.fixture()
+@pytest.fixture
 def all_repo_types() -> List[Dict[str, Any]]:
     return [
         # a "standard" repo, with a key coming from the assets dir

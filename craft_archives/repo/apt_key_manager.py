@@ -62,11 +62,12 @@ def _call_gpg(
         )
         if log:
             _log_gpg(process)
-        return process.stdout
     except subprocess.CalledProcessError as error:
         if log:
             _log_gpg(error)
         raise
+    else:
+        return process.stdout
 
 
 def get_keyring_path(
@@ -153,10 +154,7 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
-        if isinstance(key, str):
-            key_bytes = key.encode()
-        else:
-            key_bytes = key
+        key_bytes = key.encode() if isinstance(key, str) else key
 
         with _temporary_home_dir() as tmpdir:
             response = _call_gpg(
@@ -243,7 +241,9 @@ class AptKeyManager:
                     log=True,
                 )
             except subprocess.CalledProcessError as error:
-                raise errors.AptGPGKeyInstallError(error.stderr.decode(), key=key)
+                raise errors.AptGPGKeyInstallError(
+                    error.stderr.decode(), key=key
+                ) from error
 
         if key_id is not None:
             # Make sure the imported key has the expected key_id
@@ -283,7 +283,7 @@ class AptKeyManager:
         except subprocess.CalledProcessError as error:
             raise errors.AptGPGKeyInstallError(
                 error.output.decode(), key_id=key_id, key_server=key_server
-            )
+            ) from error
 
     def install_package_repository_key(
         self, *, package_repo: package_repository.PackageRepository
@@ -313,7 +313,7 @@ class AptKeyManager:
             if package_repo.key_server:
                 key_server = package_repo.key_server
         else:
-            raise RuntimeError(f"unhandled package repo type: {package_repo!r}")
+            raise TypeError(f"unhandled package repo type: {package_repo!r}")
 
         # Already installed, nothing to do.
         if self.is_key_installed(key_id=key_id):
