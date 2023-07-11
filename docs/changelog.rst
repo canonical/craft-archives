@@ -5,6 +5,12 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+1.1.2 (2023-07-12)
+------------------
+
+This release addresses a regression where local filepaths were no longer
+accepted for the ``url`` property of an deb-type repository.
+
 1.1.1 (2023-06-30)
 ------------------
 
