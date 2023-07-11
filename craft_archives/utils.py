@@ -78,7 +78,7 @@ def get_os_platform(
         else:
             os_release: Dict[str, str] = {}
             for line in lines:
-                line = line.strip()  # noqa PLW2901 — overwriting outer loop variable
+                line = line.strip()  # noqa: PLW2901 — overwriting outer loop variable
                 if not line or line.startswith("#") or "=" not in line:
                     continue
                 key, value = line.rstrip().split("=", 1)

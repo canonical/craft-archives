@@ -250,7 +250,7 @@ def test_apt_key_id_valid():
 
 @pytest.mark.parametrize(
     "key_id",
-    ("KEYID12345" * 4, "abcde12345" * 4),
+    ["KEYID12345" * 4, "abcde12345" * 4],
 )
 def test_apt_key_id_invalid(key_id):
     repo = {

@@ -19,7 +19,6 @@
 import abc
 import enum
 import re
-
 from typing import Any, Dict, List, Literal, Mapping, Optional, Union
 from urllib.parse import urlparse
 
