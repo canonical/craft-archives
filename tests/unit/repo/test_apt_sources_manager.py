@@ -28,6 +28,7 @@ from craft_archives.repo import apt_ppa, apt_sources_manager, errors
 from craft_archives.repo.apt_sources_manager import (
     _DEFAULT_SOURCES_DIRECTORY,
     AptSourcesManager,
+    _add_architecture,
 )
 from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
@@ -187,6 +188,14 @@ def test_install(
     mocker,
 ):
     run_mock = mocker.patch("subprocess.run")
+    get_architecture_mock = mocker.patch(
+        "subprocess.check_output", return_value=b"fake"
+    )
+    add_architecture_mock = mocker.spy(
+        apt_sources_manager,
+        "_add_architecture",
+    )
+
     mocker.patch("urllib.request.urlopen")
 
     apt_sources_mgr = create_apt_sources_mgr(
@@ -216,23 +225,19 @@ def test_install(
     assert sources_path.read_bytes() == content
 
     if use_signed_by_root:
-        expected_root = str(tmp_path)
+        expected_root = tmp_path
     else:
-        expected_root = "/"
+        expected_root = Path("/")
 
     if isinstance(package_repo, PackageRepositoryApt) and package_repo.architectures:
-        assert run_mock.mock_calls == [
-            call(
-                ["dpkg", "--add-architecture", "amd64", "--root", expected_root],
-                check=True,
-            ),
-            call(
-                ["dpkg", "--add-architecture", "arm64", "--root", expected_root],
-                check=True,
-            ),
+        assert add_architecture_mock.mock_calls == [
+            call(package_repo.architectures, root=expected_root)
         ]
-    else:
-        assert run_mock.mock_calls == []
+        assert get_architecture_mock.called
+
+    # Regardless of host architecture, "dpkg --add-architecture" must _not_ be called,
+    # because the fantasy archs in the test repos are not compatible.
+    assert run_mock.mock_calls == []
 
     run_mock.reset_mock()
 
@@ -294,3 +299,44 @@ def test_preferences_path_for_root():
     assert AptSourcesManager.sources_path_for_root(Path("/my/root")) == Path(
         "/my/root/etc/apt/sources.list.d"
     )
+
+
+@pytest.mark.parametrize(
+    ("host_arch, repo_arch"),
+    [
+        (b"amd64\n", "i386"),
+        (b"arm64\n", "armhf"),
+    ],
+)
+def test_add_architecture_compatible(mocker, host_arch, repo_arch):
+    """Test calling _add_architecture() with compatible pairs of (host, repo)."""
+    check_output_mock = mocker.patch("subprocess.check_output", return_value=host_arch)
+    run_mock = mocker.patch("subprocess.run")
+
+    _add_architecture([repo_arch], root=Path("/"))
+
+    check_output_mock.assert_called_once_with(["dpkg", "--print-architecture"])
+    assert run_mock.mock_calls == [
+        call(
+            ["dpkg", "--root", "/", "--add-architecture", repo_arch],
+            check=True,
+        ),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("host_arch, repo_arch"),
+    [
+        (b"amd64\n", "arm64"),
+        (b"arm64\n", "i386"),
+    ],
+)
+def test_add_architecture_incompatible(mocker, host_arch, repo_arch):
+    """Test calling _add_architecture() with incompatible pairs of (host, repo)."""
+    check_output_mock = mocker.patch("subprocess.check_output", return_value=host_arch)
+    run_mock = mocker.patch("subprocess.run")
+
+    _add_architecture([repo_arch], root=Path("/"))
+
+    check_output_mock.assert_called_once_with(["dpkg", "--print-architecture"])
+    assert not run_mock.called

@@ -299,9 +299,25 @@ class AptSourcesManager:
 
 def _add_architecture(architectures: List[str], root: Path) -> None:
     """Add package repository architecture."""
+    current_arch = _get_current_architecture()
+    compatible_pairs = {"amd64": "i386", "arm64": "armhf"}
     for arch in architectures:
-        logger.info(f"Add repository architecture: {arch}")
-        subprocess.run(
-            ["dpkg", "--add-architecture", arch, "--root", str(root)],
-            check=True,
-        )
+        # We can only add architectures if they are compatible with the running host,
+        # because of the way the default repositories are typically setup.
+        if compatible_pairs.get(current_arch) == arch:
+            logger.info(f"Add repository architecture: {arch}")
+            subprocess.run(
+                # Note: the order of parameters matters here, as "--add-architecture"
+                # must come last because of the way dpkg parses the command.
+                ["dpkg", "--root", str(root), "--add-architecture", arch],
+                check=True,
+            )
+
+
+def _get_current_architecture() -> str:
+    """Get the "main" architecture of the running system, as reported by dpkg."""
+    return (
+        subprocess.check_output(["dpkg", "--print-architecture"])
+        .decode("utf-8")
+        .strip()
+    )
