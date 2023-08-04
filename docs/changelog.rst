@@ -5,6 +5,16 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+1.1.3 (2023-08-04)
+------------------
+
+This release addresses a regression where package repository definitions
+with declared ``architectures`` would cause an error when calling
+``install()``. The fix also changes the behavior to only call
+``dpkg --add-architecture`` when the target architecture is "compatible"
+with the host's, meaning ``i386`` on ``amd64`` and ``armhf`` on ``amd64``.
+
+
 1.1.2 (2023-07-12)
 ------------------
 
