@@ -132,7 +132,7 @@ def test_apt_valid_architectures(arch):
 
 def test_apt_invalid_url():
     with pytest.raises(
-        pydantic.ValidationError, match="Invalid URL; URLs must be non-empty strings"
+        pydantic.ValidationError, match="Input should be a valid URL, input is empty"
     ):
         create_apt(
             key_id="A" * 40,
@@ -156,12 +156,13 @@ def test_apt_invalid_path_with_suites():
         create_apt(
             key_id="A" * 40,
             path="/",
+            components=["main"],
             suites=["xenial", "xenial-updates"],
             url="http://archive.ubuntu.com/ubuntu",
         )
 
     expected_message = (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
+        "Value error, Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
         "suites ['xenial', 'xenial-updates'] cannot be combined with path '/'"
     )
 
@@ -175,11 +176,12 @@ def test_apt_invalid_path_with_components():
             key_id="A" * 40,
             path="/",
             components=["main"],
+            suites=["xenial", "xenial-updates"],
             url="http://archive.ubuntu.com/ubuntu",
         )
 
     expected_message = (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
+        "Value error, Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
         "components ['main'] cannot be combined with path '/'."
     )
 
@@ -196,7 +198,7 @@ def test_apt_invalid_missing_components():
         )
 
     expected_message = (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
+        "Value error, Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
         "components must be specified when using suites."
     )
 
@@ -213,7 +215,7 @@ def test_apt_invalid_missing_suites():
         )
 
     expected_message = (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
+        "Value error, Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
         "suites must be specified when using components."
     )
 
@@ -225,13 +227,14 @@ def test_apt_invalid_suites_as_path():
     with pytest.raises(pydantic.ValidationError) as raised:
         create_apt(
             key_id="A" * 40,
+            components=["main"],
             suites=["my-suite/"],
             url="http://archive.ubuntu.com/ubuntu",
         )
 
     expected_message = (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
-        "invalid suite 'my-suite/'. Suites must not end with a '/'."
+        "Value error, Invalid package repository for 'http://archive.ubuntu.com/"
+        "ubuntu': invalid suite 'my-suite/'. Suites must not end with a '/'."
     )
 
     err = raised.value
@@ -260,7 +263,8 @@ def test_apt_key_id_invalid(key_id):
         "key-id": key_id,
     }
 
-    with pytest.raises(pydantic.ValidationError, match="string does not match regex"):
+    error = r"String should match pattern '\^\[0-9A-F\]\{40\}\$'"
+    with pytest.raises(pydantic.ValidationError, match=error):
         PackageRepositoryApt.unmarshal(repo)
 
 
@@ -285,7 +289,7 @@ def test_apt_formats(formats):
         apt_deb = PackageRepositoryApt.unmarshal(repo)
         assert apt_deb.formats == formats
     else:
-        error = ".*unexpected value; permitted: 'deb', 'deb-src'"
+        error = "Input should be 'deb' or 'deb-src'"
         with pytest.raises(pydantic.ValidationError, match=error):
             PackageRepositoryApt.unmarshal(repo)
 
@@ -379,7 +383,7 @@ def test_apt_invalid_priority():
         create_apt(key_id="A" * 40, url="http://test", priority=0)
 
     expected_message = (
-        "Invalid package repository for 'http://test': "
+        "Value error, Invalid package repository for 'http://test': "
         "invalid priority: Priority cannot be zero."
     )
 

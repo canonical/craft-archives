@@ -22,21 +22,24 @@ import re
 from typing import Any, Dict, List, Mapping, Optional, Union
 from urllib.parse import urlparse
 
-import pydantic
 from overrides import overrides  # pyright: ignore[reportUnknownVariableType]
 from pydantic import (
     AnyUrl,
-    ConstrainedStr,
+    BaseModel,
+    ConfigDict,
+    Field,
     FileUrl,
-    root_validator,  # pyright: ignore[reportUnknownVariableType]
-    validator,  # pyright: ignore[reportUnknownVariableType]
+    StringConstraints,
+    ValidationInfo,
+    field_validator,  # pyright: ignore[reportUnknownVariableType]
+    model_validator,  # pyright: ignore[reportUnknownVariableType]
 )
 
 # NOTE: using this instead of typing.Literal because of this bad typing_extensions
 # interaction: https://github.com/pydantic/pydantic/issues/5821#issuecomment-1559196859
-# We can revisit this when typing_extensions >4.6.0 is released, and/or we no longer
-# have to support Python <3.10
-from typing_extensions import Literal
+# We can revisit this when typing_extensions >4.6.0 is released, and/or we no
+# longer have to support Python <3.10
+from typing_extensions import Annotated, Literal
 
 from . import errors
 
@@ -45,14 +48,6 @@ UCA_NETLOC = urlparse(UCA_ARCHIVE).netloc
 UCA_VALID_POCKETS = ["updates", "proposed"]
 UCA_DEFAULT_POCKET = UCA_VALID_POCKETS[0]
 UCA_KEY_ID = "391A9AA2147192839E9DB0315EDB1B62EC4926EA"
-
-
-class KeyIdStr(ConstrainedStr):
-    """A constrained string for a GPG key ID."""
-
-    min_length = 40
-    max_length = 40
-    regex = re.compile(r"^[0-9A-F]{40}$")
 
 
 class PriorityString(enum.IntEnum):
@@ -70,22 +65,22 @@ def _alias_generator(value: str) -> str:
     return value.replace("_", "-")
 
 
-class PackageRepository(pydantic.BaseModel, abc.ABC):
+class PackageRepository(BaseModel, abc.ABC):
     """The base class for package repositories."""
 
-    class Config:  # pylint: disable=too-few-public-methods
-        """Pydantic model configuration."""
-
-        validate_assignment = True
-        allow_mutation = False
-        allow_population_by_field_name = True
-        alias_generator = _alias_generator
-        extra = "forbid"
+    model_config = ConfigDict(
+        validate_assignment=True,
+        frozen=True,
+        populate_by_name=True,
+        alias_generator=_alias_generator,
+        extra="forbid",
+    )
 
     type: Literal["apt"]
-    priority: Optional[PriorityValue]
+    priority: Optional[PriorityValue] = None
 
-    @root_validator
+    @model_validator(mode="before")
+    @classmethod
     def priority_cannot_be_zero(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Priority cannot be zero per apt Preferences specification."""
         priority = values.get("priority")
@@ -96,9 +91,10 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
             )
         return values
 
-    @validator("priority")
+    @field_validator("priority")
+    @classmethod
     def _convert_priority_to_int(
-        cls, priority: Optional[PriorityValue], values: Dict[str, Any]
+        cls, priority: Optional[PriorityValue], info: ValidationInfo
     ) -> Optional[int]:
         if isinstance(priority, str):
             str_priority = priority.upper()
@@ -107,7 +103,11 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
             # This cannot happen; if it's a string but not one of the accepted
             # ones Pydantic will fail early and won't call this validator.
             raise _create_validation_error(
-                url=str(values.get("url") or values.get("ppa") or values.get("cloud")),
+                url=str(
+                    info.data.get("url")
+                    or info.data.get("ppa")
+                    or info.data.get("cloud")
+                ),
                 message=(
                     f"invalid priority {priority!r}. "
                     "Priority must be 'always', 'prefer', 'defer' or a nonzero integer."
@@ -117,7 +117,7 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
 
     def marshal(self) -> Dict[str, Union[str, int]]:
         """Return the package repository data as a dictionary."""
-        return self.dict(by_alias=True, exclude_none=True)
+        return self.model_dump(by_alias=True, exclude_none=True)
 
     @classmethod
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepository":
@@ -173,7 +173,8 @@ class PackageRepositoryAptPPA(PackageRepository):
 
     ppa: str
 
-    @validator("ppa")
+    @field_validator("ppa")
+    @classmethod
     def _non_empty_ppa(cls, ppa: str) -> str:
         if not ppa:
             raise _create_validation_error(
@@ -200,7 +201,8 @@ class PackageRepositoryAptUCA(PackageRepository):
     cloud: str
     pocket: Literal["updates", "proposed"] = "updates"
 
-    @validator("cloud")
+    @field_validator("cloud")
+    @classmethod
     def _non_empty_cloud(cls, cloud: str) -> str:
         if not cloud:
             raise _create_validation_error(message="clouds must be non-empty strings.")
@@ -222,44 +224,47 @@ class PackageRepositoryApt(PackageRepository):
     """An APT package repository."""
 
     url: Union[AnyUrl, FileUrl]
-    key_id: KeyIdStr = pydantic.Field(alias="key-id")
-    architectures: Optional[List[str]]
-    formats: Optional[List[Literal["deb", "deb-src"]]]
-    path: Optional[str]
-    components: Optional[List[str]]
-    key_server: Optional[str] = pydantic.Field(alias="key-server")
-    suites: Optional[List[str]]
-
-    # Customize some of the validation error messages
-    class Config(PackageRepository.Config):  # noqa: D106 - no docstring needed
-        error_msg_templates = {
-            "value_error.any_str.min_length": "Invalid URL; URLs must be non-empty strings"
-        }
+    key_id: Annotated[
+        str, StringConstraints(min_length=40, max_length=40, pattern=r"^[0-9A-F]{40}$")
+    ] = Field(alias="key-id")
+    architectures: Optional[List[str]] = None
+    formats: Optional[List[Literal["deb", "deb-src"]]] = None
+    path: Optional[str] = None
+    components: Optional[List[str]] = None
+    key_server: Optional[Annotated[str, Field(alias="key-server")]] = None
+    suites: Optional[List[str]] = None
 
     @property
     def name(self) -> str:
         """Get the repository name."""
-        return re.sub(r"\W+", "_", self.url)
+        return re.sub(r"\W+", "_", str(self.url).rstrip("/"))
 
-    @validator("path")
+    @field_validator("url")
+    @classmethod
+    def _convert_url_to_string(cls, url: Union[AnyUrl, FileUrl]) -> str:
+        return str(url).rstrip("/")
+
+    @field_validator("path")
+    @classmethod
     def _path_non_empty(
-        cls, path: Optional[str], values: Dict[str, Any]
+        cls, path: Optional[str], info: ValidationInfo
     ) -> Optional[str]:
         if path is not None and not path:
             raise _create_validation_error(
-                url=values.get("url"),
+                url=info.data.get("url"),
                 message="Invalid path; Paths must be non-empty strings.",
             )
         return path
 
-    @validator("components")
+    @field_validator("components")
+    @classmethod
     def _not_mixing_components_and_path(
-        cls, components: Optional[List[str]], values: Dict[str, Any]
+        cls, components: Optional[List[str]], info: ValidationInfo
     ) -> Optional[List[str]]:
-        path = values.get("path")
+        path = info.data.get("path")
         if components and path:
             raise _create_validation_error(
-                url=values.get("url"),
+                url=info.data.get("url"),
                 message=(
                     f"components {components!r} cannot be combined with "
                     f"path {path!r}."
@@ -267,26 +272,33 @@ class PackageRepositoryApt(PackageRepository):
             )
         return components
 
-    @validator("suites")
+    @field_validator("suites")
+    @classmethod
     def _not_mixing_suites_and_path(
-        cls, suites: Optional[List[str]], values: Dict[str, Any]
+        cls, suites: Optional[List[str]], info: ValidationInfo
     ) -> Optional[List[str]]:
-        path = values.get("path")
+        path = info.data.get("path")
         if suites and path:
             message = f"suites {suites!r} cannot be combined with path {path!r}."
-            raise _create_validation_error(url=values.get("url"), message=message)
+            raise _create_validation_error(url=info.data.get("url"), message=message)
         return suites
 
-    @validator("suites", each_item=True)
-    def _suites_without_backslash(cls, suite: str, values: Dict[str, Any]) -> str:
-        if suite.endswith("/"):
-            raise _create_validation_error(
-                url=values.get("url"),
-                message=f"invalid suite {suite!r}. Suites must not end with a '/'.",
-            )
-        return suite
+    @field_validator("suites")
+    @classmethod
+    def _suites_without_backslash(
+        cls, suites: List[str], info: ValidationInfo
+    ) -> List[str]:
+        for suite in suites:
+            if suite.endswith("/"):
+                raise _create_validation_error(
+                    url=info.data.get("url"),
+                    message=f"invalid suite {suite!r}. Suites must not end "
+                    "with a '/'.",
+                )
+        return suites
 
-    @root_validator
+    @model_validator(mode="before")
+    @classmethod
     def _missing_components_or_suites(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         suites = values.get("suites")
         components = values.get("components")
@@ -311,12 +323,12 @@ class PackageRepositoryApt(PackageRepository):
     @property
     def pin(self) -> str:
         """The pin string for this repository if needed."""
-        domain = urlparse(self.url).netloc
+        domain = urlparse(str(self.url).rstrip("/")).netloc
         return f'origin "{domain}"'
 
 
 def _create_validation_error(*, url: Optional[str] = None, message: str) -> ValueError:
-    """Create a ValueError with a formatted message and an optional indicative ``url``."""
+    """Create a ValueError with a formatted message and an optional url."""
     error_message = ""
     if url:
         error_message += f"Invalid package repository for '{url}': "
