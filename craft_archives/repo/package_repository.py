@@ -237,7 +237,7 @@ class PackageRepositoryApt(PackageRepository):
     @property
     def name(self) -> str:
         """Get the repository name."""
-        return re.sub(r"\W+", "_", str(self.url).rstrip("/"))
+        return re.sub(r"\W+", "_", str(self.url))
 
     @field_validator("url")
     @classmethod
@@ -323,7 +323,7 @@ class PackageRepositoryApt(PackageRepository):
     @property
     def pin(self) -> str:
         """The pin string for this repository if needed."""
-        domain = urlparse(str(self.url).rstrip("/")).netloc
+        domain = urlparse(str(self.url)).netloc
         return f'origin "{domain}"'
 
 

@@ -203,7 +203,7 @@ class AptSourcesManager:
             formats=cast(Optional[List[str]], package_repo.formats),
             name=name,
             suites=suites,
-            url=str(package_repo.url).rstrip("/"),
+            url=str(package_repo.url),
             keyring_path=keyring_path,
         )
 
