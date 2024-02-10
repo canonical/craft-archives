@@ -47,9 +47,9 @@ types = [
     "pyright==1.1.326",
 ]
 docs = [
-    "furo==2023.5.20",
-    "sphinx>=6.2.1,<7.0",
-    "sphinx-autobuild==2021.3.14",
+    "furo==2024.1.29",
+    "sphinx>=7.2.6,<7.3",
+    "sphinx-autobuild==2024.2.4",
     "sphinx-copybutton==0.5.2",
     "sphinx-design==0.4.1",
     "sphinx-pydantic==0.1.1",
