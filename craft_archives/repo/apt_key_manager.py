@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import pathlib
 import subprocess
 import tempfile
@@ -51,7 +52,8 @@ def _call_gpg(
     else:
         command = [*base_parameters, *parameters]
     logger.debug(f"Executing command: {command}")
-    env = {"LANG": "C.UTF-8"}
+    env = os.environ.copy()
+    env["LANG"] = "C.UTF-8"
     try:
         process = subprocess.run(
             command,
