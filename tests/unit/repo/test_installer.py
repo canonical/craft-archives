@@ -74,7 +74,7 @@ def test_unmarshal_repositories():
     assert pkg_repos[4].pocket == "proposed"
 
 
-@pytest.fixture
+@pytest.fixture()
 def manager_mocks(mocker, tmp_path):
     mock_install_package_repository_key = mocker.patch.object(
         AptKeyManager,

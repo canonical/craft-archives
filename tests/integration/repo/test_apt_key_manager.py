@@ -26,19 +26,19 @@ from craft_archives.repo import errors
 from craft_archives.repo.apt_key_manager import AptKeyManager
 
 
-@pytest.fixture
+@pytest.fixture()
 def key_assets(tmp_path):
     assets = tmp_path / "key-assets"
     assets.mkdir(parents=True)
     return assets
 
 
-@pytest.fixture
+@pytest.fixture()
 def gpg_keyring(tmp_path):
     return tmp_path / "keyring.gpg"
 
 
-@pytest.fixture
+@pytest.fixture()
 def apt_gpg(key_assets, tmp_path):
     return AptKeyManager(
         keyrings_path=tmp_path,
@@ -87,7 +87,7 @@ def test_install_key_missing_directory(key_assets, tmp_path, test_data_dir):
     apt_gpg.install_key(key=keypath.read_text())
 
     assert keyrings_path.exists()
-    assert keyrings_path.stat().st_mode == 0o40755  # noqa: PLR2004 magic value
+    assert keyrings_path.stat().st_mode == 0o40755  # magic value
 
 
 @pytest.mark.parametrize(

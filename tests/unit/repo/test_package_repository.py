@@ -46,9 +46,9 @@ BASIC_APT_MARSHALLED = {
 }
 
 
-@pytest.fixture
+@pytest.fixture()
 def apt_repository():
-    yield PackageRepositoryApt(
+    return PackageRepositoryApt(
         type="apt",
         architectures=["amd64", "i386"],
         components=["main", "multiverse"],

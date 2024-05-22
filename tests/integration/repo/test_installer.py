@@ -111,7 +111,7 @@ def create_etc_apt_dirs(etc_apt: Path):
     preferences_dir.mkdir()
 
 
-@pytest.fixture
+@pytest.fixture()
 def fake_etc_apt(tmp_path, mocker) -> Path:
     """Mock the default paths used to store keys, sources and preferences."""
     etc_apt = tmp_path / "etc/apt"
@@ -173,7 +173,7 @@ def all_repo_types() -> List[Dict[str, Any]]:
     ]
 
 
-@pytest.fixture
+@pytest.fixture()
 def test_keys_dir(tmp_path, test_data_dir) -> Path:
     target_dir = tmp_path / "keys"
     target_dir.mkdir()

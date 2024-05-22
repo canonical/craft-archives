@@ -30,7 +30,11 @@ def test_check_release_compatibility(urllib):
 @patch(
     "urllib.request.urlopen",
     side_effect=urllib.error.HTTPError(
-        "", http.HTTPStatus.NOT_FOUND, "NOT FOUND", {}, None  # type: ignore
+        "",
+        http.HTTPStatus.NOT_FOUND,
+        "NOT FOUND",
+        {},  # type: ignore
+        None,
     ),
 )
 def test_check_release_compatibility_invalid(urllib):
@@ -44,7 +48,11 @@ def test_check_release_compatibility_invalid(urllib):
 @patch(
     "urllib.request.urlopen",
     side_effect=urllib.error.HTTPError(
-        "", http.HTTPStatus.BAD_GATEWAY, "BAD GATEWAY", {}, None  # type: ignore
+        "",
+        http.HTTPStatus.BAD_GATEWAY,
+        "BAD GATEWAY",
+        {},  # type: ignore
+        None,
     ),
 )
 def test_check_release_compatibility_bad_gateway(urllib):

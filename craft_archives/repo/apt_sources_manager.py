@@ -35,7 +35,7 @@ _DEFAULT_SOURCES_DIRECTORY = Path("/etc/apt/sources.list.d")
 _DEFAULT_SIGNED_BY_ROOT = Path("/")
 
 
-def _construct_deb822_source(  # noqa: PLR0913
+def _construct_deb822_source(
     *,
     architectures: Optional[List[str]] = None,
     components: Optional[List[str]] = None,
@@ -112,7 +112,7 @@ class AptSourcesManager:
             return _DEFAULT_SOURCES_DIRECTORY
         return root / "etc/apt/sources.list.d"
 
-    def _install_sources(  # noqa: PLR0913
+    def _install_sources(
         self,
         *,
         architectures: Optional[List[str]] = None,

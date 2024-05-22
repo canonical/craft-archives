@@ -41,7 +41,7 @@ from craft_archives.repo.package_repository import (
 
 @pytest.fixture(autouse=True)
 def mock_apt_ppa_get_signing_key(mocker):
-    yield mocker.patch(
+    return mocker.patch(
         "craft_archives.repo.apt_ppa.get_launchpad_ppa_key_id",
         spec=apt_ppa.get_launchpad_ppa_key_id,
         return_value="FAKE-PPA-SIGNING-KEY",
@@ -50,7 +50,7 @@ def mock_apt_ppa_get_signing_key(mocker):
 
 @pytest.fixture(autouse=True)
 def mock_environ_copy(mocker):
-    yield mocker.patch("os.environ.copy")
+    return mocker.patch("os.environ.copy")
 
 
 @pytest.fixture(autouse=True)
@@ -58,29 +58,29 @@ def mock_host_arch(mocker):
     m = mocker.patch("craft_archives.utils.get_host_architecture")
     m.return_value = "FAKE-HOST-ARCH"
 
-    yield m
+    return m
 
 
 @pytest.fixture(autouse=True)
 def mock_run(mocker):
-    yield mocker.patch("subprocess.run")
+    return mocker.patch("subprocess.run")
 
 
 @pytest.fixture(autouse=True)
 def mock_version_codename(monkeypatch):
     mock_codename = mock.Mock(return_value="FAKE-CODENAME")
     monkeypatch.setattr(distro, "codename", mock_codename)
-    yield mock_codename
+    return mock_codename
 
 
-@pytest.fixture
+@pytest.fixture()
 def apt_sources_mgr(tmp_path):
     sources_list_d = tmp_path / "sources.list.d"
     sources_list_d.mkdir(parents=True)
     keyrings_dir = tmp_path / "keyrings"
     keyrings_dir.mkdir(parents=True)
 
-    yield apt_sources_manager.AptSourcesManager(
+    return apt_sources_manager.AptSourcesManager(
         sources_list_d=sources_list_d,
         keyrings_dir=keyrings_dir,
     )
