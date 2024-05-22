@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Integration tests for AptKeyManager"""
+
 import logging
 import tempfile
 from typing import List
@@ -25,19 +26,19 @@ from craft_archives.repo import errors
 from craft_archives.repo.apt_key_manager import AptKeyManager
 
 
-@pytest.fixture
+@pytest.fixture()
 def key_assets(tmp_path):
     assets = tmp_path / "key-assets"
     assets.mkdir(parents=True)
     return assets
 
 
-@pytest.fixture
+@pytest.fixture()
 def gpg_keyring(tmp_path):
     return tmp_path / "keyring.gpg"
 
 
-@pytest.fixture
+@pytest.fixture()
 def apt_gpg(key_assets, tmp_path):
     return AptKeyManager(
         keyrings_path=tmp_path,
@@ -86,18 +87,18 @@ def test_install_key_missing_directory(key_assets, tmp_path, test_data_dir):
     apt_gpg.install_key(key=keypath.read_text())
 
     assert keyrings_path.exists()
-    assert keyrings_path.stat().st_mode == 0o40755  # noqa: PLR2004 magic value
+    assert keyrings_path.stat().st_mode == 0o40755  # magic value
 
 
 @pytest.mark.parametrize(
-    "key_id, expected_keyfile",
-    (
+    ("key_id", "expected_keyfile"),
+    [
         # Desired key-id is provided: imported file has its shortid
         ("D6811ED3ADEEB8441AF5AA8F4528B6CD9E61EF26", "craft-9E61EF26.gpg"),
         # Desired key-id is *not* provided: imported file has the shortid of the
         # first fingerprint in the original file.
         (None, "craft-07BB6C57.gpg"),
-    ),
+    ],
 )
 def test_install_key_gpg_errors_valid(
     apt_gpg, tmp_path, test_data_dir, key_id, expected_keyfile, caplog

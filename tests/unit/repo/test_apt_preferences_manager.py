@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """Tests for apt_preferencs_manager"""
+
 import shutil
 from pathlib import Path
 from textwrap import dedent
@@ -38,9 +39,9 @@ SAMPLE_PINS = (
 )
 
 
-@pytest.fixture
+@pytest.fixture()
 def manager(tmp_path):
-    yield AptPreferencesManager(path=tmp_path / "preferences")
+    return AptPreferencesManager(path=tmp_path / "preferences")
 
 
 # region Preference
@@ -57,7 +58,7 @@ def test_invalid_priorities(priority):
 
 
 @pytest.mark.parametrize(
-    "input_str,expected",
+    ("input_str", "expected"),
     [
         (
             dedent(
@@ -99,7 +100,7 @@ def test_preference_string_parsing(input_str, expected):
 
 
 @pytest.mark.parametrize(
-    "preference,expected",
+    ("preference", "expected"),
     [
         (
             Preference(pin="release o=LP-PPA-ppa-ppa", priority=123),
@@ -140,7 +141,7 @@ def test_read_nonexistent_file(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "pref_file,expected",
+    ("pref_file", "expected"),
     [
         (
             "no_header.preferences",
@@ -171,7 +172,7 @@ def test_read_existing_preferences(test_data_dir, pref_file, expected):
 
 
 @pytest.mark.parametrize(
-    "pref_file,expected_file",
+    ("pref_file", "expected_file"),
     [
         (
             "no_header.preferences",
@@ -212,7 +213,7 @@ def test_write_empty_preferences_removes_file(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "preferences,expected_file",
+    ("preferences", "expected_file"),
     [
         pytest.param(
             [  # Preferences

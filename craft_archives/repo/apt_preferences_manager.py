@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """Manage the host's apt preferences configurations."""
+
 import contextlib
 import dataclasses
 import io

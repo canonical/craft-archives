@@ -133,7 +133,7 @@ def _verify_all_key_assets_installed(
 
 
 def _unmarshal_repositories(
-    project_repositories: List[Dict[str, Any]]
+    project_repositories: List[Dict[str, Any]],
 ) -> List[PackageRepository]:
     """Create package repositories objects from project data."""
     repositories: List[PackageRepository] = []

@@ -34,7 +34,8 @@ def check_release_compatibility(
     """Raise an exception if the release is incompatible with codename."""
     request = UCA_ARCHIVE + f"/dists/{codename}-{pocket}/{cloud}/"
     try:
-        urllib.request.urlopen(request)
+        # Silencing ruff due to https://github.com/astral-sh/ruff/issues/7918
+        urllib.request.urlopen(request)  # noqa: S310
     except urllib.error.HTTPError as e:
         if e.code == http.HTTPStatus.NOT_FOUND:
             raise errors.AptUCAInstallError(
