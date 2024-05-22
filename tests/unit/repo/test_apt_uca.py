@@ -33,7 +33,7 @@ def test_check_release_compatibility(urllib):
         "",
         http.HTTPStatus.NOT_FOUND,
         "NOT FOUND",
-        {},  # type: ignore
+        {},  # pyright: ignore[reportArgumentType,reportGeneralTypeIssues]
         None,
     ),
 )
@@ -51,7 +51,7 @@ def test_check_release_compatibility_invalid(urllib):
         "",
         http.HTTPStatus.BAD_GATEWAY,
         "BAD GATEWAY",
-        {},  # type: ignore
+        {},  # pyright: ignore[reportArgumentType,reportGeneralTypeIssues]
         None,
     ),
 )

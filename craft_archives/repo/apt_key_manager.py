@@ -60,13 +60,14 @@ def _call_gpg(
             check=True,
             env=env,
         )
-        if log:
-            _log_gpg(process)
-        return process.stdout
     except subprocess.CalledProcessError as error:
         if log:
             _log_gpg(error)
         raise
+    else:
+        if log:
+            _log_gpg(process)
+        return process.stdout
 
 
 def get_keyring_path(
@@ -308,7 +309,8 @@ class AptKeyManager:
             if package_repo.key_server:
                 key_server = package_repo.key_server
         else:
-            raise RuntimeError(f"unhandled package repo type: {package_repo!r}")
+            # This is a RuntimeError because it gets passed up to the application as such.
+            raise RuntimeError(f"unhandled package repo type: {package_repo!r}")  # noqa: TRY004
 
         # Already installed, nothing to do.
         if self.is_key_installed(key_id=key_id):

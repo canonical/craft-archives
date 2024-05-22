@@ -17,7 +17,7 @@
 """Package repository error definitions."""
 
 import pathlib
-from typing import Any, Literal, Optional
+from typing import Literal, Optional, Union
 
 from craft_archives.errors import ArchivesError
 
@@ -49,7 +49,7 @@ class AptPreferencesError(PackageRepositoryError):
     def __init__(
         self,
         component: Literal["pin", "priority"],
-        value: Optional[Any] = None,
+        value: Union[str, int, None] = None,
         details: Optional[str] = None,
         resolution: Optional[str] = None,
     ) -> None:
