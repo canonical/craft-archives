@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Package repository error definitions."""
+
 import pathlib
 from typing import Any, Literal, Optional
 
