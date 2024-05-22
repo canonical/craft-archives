@@ -25,7 +25,7 @@ from urllib.parse import urlparse
 import pydantic
 from overrides import overrides  # pyright: ignore[reportUnknownVariableType]
 from pydantic import (
-    AnyUrl,
+    field_validator, ConfigDict, AnyUrl,
     ConstrainedStr,
     FileUrl,
     root_validator,  # pyright: ignore[reportUnknownVariableType]
@@ -72,15 +72,9 @@ def _alias_generator(value: str) -> str:
 
 class PackageRepository(pydantic.BaseModel, abc.ABC):
     """The base class for package repositories."""
-
-    class Config:  # pylint: disable=too-few-public-methods
-        """Pydantic model configuration."""
-
-        validate_assignment = True
-        allow_mutation = False
-        allow_population_by_field_name = True
-        alias_generator = _alias_generator
-        extra = "forbid"
+    # TODO[pydantic]: The following keys were removed: `allow_mutation`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(validate_assignment=True, allow_mutation=False, populate_by_name=True, alias_generator=_alias_generator, extra="forbid")
 
     type: Literal["apt"]
     priority: Optional[PriorityValue]
@@ -96,6 +90,8 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
             )
         return values
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("priority")
     def _convert_priority_to_int(
         cls, priority: Optional[PriorityValue], values: Dict[str, Any]
@@ -173,7 +169,8 @@ class PackageRepositoryAptPPA(PackageRepository):
 
     ppa: str
 
-    @validator("ppa")
+    @field_validator("ppa")
+    @classmethod
     def _non_empty_ppa(cls, ppa: str) -> str:
         if not ppa:
             raise _create_validation_error(
@@ -200,7 +197,8 @@ class PackageRepositoryAptUCA(PackageRepository):
     cloud: str
     pocket: Literal["updates", "proposed"] = "updates"
 
-    @validator("cloud")
+    @field_validator("cloud")
+    @classmethod
     def _non_empty_cloud(cls, cloud: str) -> str:
         if not cloud:
             raise _create_validation_error(message="clouds must be non-empty strings.")
@@ -223,14 +221,16 @@ class PackageRepositoryApt(PackageRepository):
 
     url: Union[AnyUrl, FileUrl]
     key_id: KeyIdStr = pydantic.Field(alias="key-id")
-    architectures: Optional[List[str]]
-    formats: Optional[List[Literal["deb", "deb-src"]]]
-    path: Optional[str]
-    components: Optional[List[str]]
+    architectures: Optional[List[str]] = None
+    formats: Optional[List[Literal["deb", "deb-src"]]] = None
+    path: Optional[str] = None
+    components: Optional[List[str]] = None
     key_server: Optional[str] = pydantic.Field(alias="key-server")
-    suites: Optional[List[str]]
+    suites: Optional[List[str]] = None
 
     # Customize some of the validation error messages
+    # TODO[pydantic]: The `Config` class inherits from another class, please create the `model_config` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     class Config(PackageRepository.Config):  # noqa: D106 - no docstring needed
         error_msg_templates = {
             "value_error.any_str.min_length": "Invalid URL; URLs must be non-empty strings"
@@ -241,6 +241,8 @@ class PackageRepositoryApt(PackageRepository):
         """Get the repository name."""
         return re.sub(r"\W+", "_", self.url)
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("path")
     def _path_non_empty(
         cls, path: Optional[str], values: Dict[str, Any]
@@ -252,6 +254,8 @@ class PackageRepositoryApt(PackageRepository):
             )
         return path
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("components")
     def _not_mixing_components_and_path(
         cls, components: Optional[List[str]], values: Dict[str, Any]
@@ -267,6 +271,8 @@ class PackageRepositoryApt(PackageRepository):
             )
         return components
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("suites")
     def _not_mixing_suites_and_path(
         cls, suites: Optional[List[str]], values: Dict[str, Any]
@@ -277,6 +283,8 @@ class PackageRepositoryApt(PackageRepository):
             raise _create_validation_error(url=values.get("url"), message=message)
         return suites
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("suites", each_item=True)
     def _suites_without_backslash(cls, suite: str, values: Dict[str, Any]) -> str:
         if suite.endswith("/"):
