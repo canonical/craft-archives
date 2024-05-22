@@ -24,6 +24,7 @@ from craft_archives.repo.package_repository import (
 )
 
 # pyright: reportGeneralTypeIssues=false
+# pyright: reportCallIssue=information
 
 # region Test data and fixtures
 BASIC_PPA_MARSHALLED = {"type": "apt", "ppa": "test/foo", "priority": 123}
@@ -509,7 +510,7 @@ def test_unmarshal_package_repositories_list_none():
 
 def test_unmarshal_package_repositories_invalid_data():
     with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepository.unmarshal_package_repositories("not-a-list")  # pyright: ignore[reportGeneralTypeIssues]
+        PackageRepository.unmarshal_package_repositories("not-a-list")  # pyright: ignore[reportArgumentType]
 
     err = raised.value
     assert str(err) == (

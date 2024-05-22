@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# pyright: reportCallIssue=information
 
 import http
 import urllib.error
@@ -261,7 +262,7 @@ def test_install_ppa_invalid(apt_sources_mgr):
 
 @patch(
     "urllib.request.urlopen",
-    side_effect=urllib.error.HTTPError("", http.HTTPStatus.NOT_FOUND, "", {}, None),
+    side_effect=urllib.error.HTTPError("", http.HTTPStatus.NOT_FOUND, "", {}, None),  # pyright: ignore[reportArgumentType]
 )
 def test_install_uca_invalid(urllib, apt_sources_mgr):
     repo = PackageRepositoryAptUCA(type="apt", cloud="FAKE-CLOUD")
@@ -276,7 +277,7 @@ def test_install_uca_invalid(urllib, apt_sources_mgr):
 class UnvalidatedAptRepo(PackageRepositoryApt):
     """Repository with no validation to use for invalid repositories."""
 
-    def validate(self) -> None:
+    def validate(self) -> None:  # pyright: ignore[reportIncompatibleMethodOverride]
         pass
 
 

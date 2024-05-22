@@ -85,7 +85,7 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
     type: Literal["apt"]
     priority: Optional[PriorityValue]
 
-    @root_validator
+    @root_validator  # pyright: ignore[reportUntypedFunctionDecorator]
     def priority_cannot_be_zero(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Priority cannot be zero per apt Preferences specification."""
         priority = values.get("priority")
@@ -96,7 +96,7 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
             )
         return values
 
-    @validator("priority")
+    @validator("priority")  # pyright: ignore[reportUntypedFunctionDecorator]
     def _convert_priority_to_int(
         cls, priority: Optional[PriorityValue], values: Dict[str, Any]
     ) -> Optional[int]:
@@ -171,7 +171,7 @@ class PackageRepositoryAptPPA(PackageRepository):
 
     ppa: str
 
-    @validator("ppa")
+    @validator("ppa")  # pyright: ignore[reportUntypedFunctionDecorator]
     def _non_empty_ppa(cls, ppa: str) -> str:
         if not ppa:
             raise _create_validation_error(
@@ -198,7 +198,7 @@ class PackageRepositoryAptUCA(PackageRepository):
     cloud: str
     pocket: Literal["updates", "proposed"] = "updates"
 
-    @validator("cloud")
+    @validator("cloud")  # pyright: ignore[reportUntypedFunctionDecorator]
     def _non_empty_cloud(cls, cloud: str) -> str:
         if not cloud:
             raise _create_validation_error(message="clouds must be non-empty strings.")
@@ -239,7 +239,7 @@ class PackageRepositoryApt(PackageRepository):
         """Get the repository name."""
         return re.sub(r"\W+", "_", self.url)
 
-    @validator("path")
+    @validator("path")  # pyright: ignore[reportUntypedFunctionDecorator]
     def _path_non_empty(
         cls, path: Optional[str], values: Dict[str, Any]
     ) -> Optional[str]:
@@ -250,7 +250,7 @@ class PackageRepositoryApt(PackageRepository):
             )
         return path
 
-    @validator("components")
+    @validator("components")  # pyright: ignore[reportUntypedFunctionDecorator]
     def _not_mixing_components_and_path(
         cls, components: Optional[List[str]], values: Dict[str, Any]
     ) -> Optional[List[str]]:
@@ -265,7 +265,7 @@ class PackageRepositoryApt(PackageRepository):
             )
         return components
 
-    @validator("suites")
+    @validator("suites")  # pyright: ignore[reportUntypedFunctionDecorator]
     def _not_mixing_suites_and_path(
         cls, suites: Optional[List[str]], values: Dict[str, Any]
     ) -> Optional[List[str]]:
@@ -275,7 +275,7 @@ class PackageRepositoryApt(PackageRepository):
             raise _create_validation_error(url=values.get("url"), message=message)
         return suites
 
-    @validator("suites", each_item=True)
+    @validator("suites", each_item=True)  # pyright: ignore[reportUntypedFunctionDecorator]
     def _suites_without_backslash(cls, suite: str, values: Dict[str, Any]) -> str:
         if suite.endswith("/"):
             raise _create_validation_error(
@@ -284,7 +284,7 @@ class PackageRepositoryApt(PackageRepository):
             )
         return suite
 
-    @root_validator
+    @root_validator  # pyright: ignore[reportUntypedFunctionDecorator]
     def _missing_components_or_suites(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         suites = values.get("suites")
         components = values.get("components")
