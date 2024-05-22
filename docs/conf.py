@@ -1,3 +1,5 @@
+# This file is part of craft-archives.
+#
 # Copyright 2023-2024 Canonical Ltd.
 #
 # This program is free software; you can redistribute it and/or
@@ -24,6 +26,7 @@ copyright = "2023-%s, %s" % (datetime.date.today().year, author)
 # region Configuration for canonical-sphinx
 ogp_site_url = "https://canonical-craft-archives.readthedocs-hosted.com/"
 ogp_site_name = project
+ogp_image = "https://assets.ubuntu.com/v1/253da317-image-document-ubuntudocs.svg"
 
 html_context = {
     "product_page": "github.com/canonical/craft-archives",
@@ -34,17 +37,23 @@ extensions = [
     "canonical_sphinx",
 ]
 # endregion
+# region General configuration
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions.extend(
     [
         "sphinx.ext.intersphinx",
         "sphinx.ext.viewcode",
+        "sphinx.ext.coverage",
+        "sphinx.ext.doctest",
         "sphinx-pydantic",
         "sphinx_toolbox",
         "sphinx_toolbox.more_autodoc",
         "sphinx.ext.autodoc",  # Must be loaded after more_autodoc
     ]
 )
+
+# endregion
 
 # region Options for extensions
 # Intersphinx extension

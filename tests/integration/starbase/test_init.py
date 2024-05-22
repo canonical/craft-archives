@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""craft-archives base package."""
+"""craft-archives package demo."""
 
 try:
     from ._version import __version__
