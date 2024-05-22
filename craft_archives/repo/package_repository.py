@@ -27,7 +27,7 @@ from pydantic import (
     AnyUrl,
     BaseModel,
     ConfigDict,
-    Field,
+    Field,  # pyright: ignore[reportUnknownVariableType]
     FileUrl,
     StringConstraints,
     ValidationInfo,
