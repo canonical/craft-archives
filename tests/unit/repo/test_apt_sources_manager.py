@@ -105,7 +105,7 @@ def create_apt_sources_mgr(tmp_path: Path, *, use_signed_by_root: bool):
 
 @pytest.mark.parametrize("use_signed_by_root", [False, True])
 @pytest.mark.parametrize(
-    "package_repo,name,content_template",
+    ("package_repo", "name", "content_template"),
     [
         (
             PackageRepositoryApt(
@@ -224,10 +224,7 @@ def test_install(
     assert changed is True
     assert sources_path.read_bytes() == content
 
-    if use_signed_by_root:
-        expected_root = tmp_path
-    else:
-        expected_root = Path("/")
+    expected_root = tmp_path if use_signed_by_root else Path("/")
 
     if isinstance(package_repo, PackageRepositoryApt) and package_repo.architectures:
         assert add_architecture_mock.mock_calls == [
@@ -302,7 +299,7 @@ def test_preferences_path_for_root():
 
 
 @pytest.mark.parametrize(
-    ("host_arch, repo_arch"),
+    ("host_arch", "repo_arch"),
     [
         (b"amd64\n", "i386"),
         (b"arm64\n", "armhf"),
@@ -325,7 +322,7 @@ def test_add_architecture_compatible(mocker, host_arch, repo_arch):
 
 
 @pytest.mark.parametrize(
-    ("host_arch, repo_arch"),
+    ("host_arch", "repo_arch"),
     [
         (b"amd64\n", "arm64"),
         (b"arm64\n", "i386"),

@@ -46,10 +46,7 @@ def _construct_deb822_source(
 ) -> str:
     """Construct deb-822 formatted sources string."""
     with io.StringIO() as deb822:
-        if formats:
-            type_text = " ".join(formats)
-        else:
-            type_text = "deb"
+        type_text = " ".join(formats) if formats else "deb"
 
         print(f"Types: {type_text}", file=deb822)
 
