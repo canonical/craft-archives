@@ -27,7 +27,16 @@ def test_check_release_compatibility(urllib):
     assert apt_uca.check_release_compatibility("jammy", "antelope") is None
 
 
-@patch("urllib.request.urlopen", side_effect=urllib.error.HTTPError("", http.HTTPStatus.NOT_FOUND, "NOT FOUND", {}, None))  # type: ignore
+@patch(
+    "urllib.request.urlopen",
+    side_effect=urllib.error.HTTPError(
+        "",
+        http.HTTPStatus.NOT_FOUND,
+        "NOT FOUND",
+        {},  # type: ignore[argument-type]
+        None,
+    ),
+)
 def test_check_release_compatibility_invalid(urllib):
     with pytest.raises(
         errors.AptUCAInstallError,
@@ -36,7 +45,16 @@ def test_check_release_compatibility_invalid(urllib):
         apt_uca.check_release_compatibility("jammy", "invalid-cloud")
 
 
-@patch("urllib.request.urlopen", side_effect=urllib.error.HTTPError("", http.HTTPStatus.BAD_GATEWAY, "BAD GATEWAY", {}, None))  # type: ignore
+@patch(
+    "urllib.request.urlopen",
+    side_effect=urllib.error.HTTPError(
+        "",
+        http.HTTPStatus.BAD_GATEWAY,
+        "BAD GATEWAY",
+        {},  # type: ignore[argument-type]
+        None,
+    ),
+)
 def test_check_release_compatibility_bad_gateway(urllib):
     with pytest.raises(
         errors.AptUCAInstallError,
