@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Utilities for craft_archives."""
+
 import logging
 import platform
 from dataclasses import dataclass

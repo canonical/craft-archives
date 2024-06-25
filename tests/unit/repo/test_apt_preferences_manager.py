@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """Tests for apt_preferencs_manager"""
+
 import shutil
 from pathlib import Path
 from textwrap import dedent

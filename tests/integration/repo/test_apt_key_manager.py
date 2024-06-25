@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Integration tests for AptKeyManager"""
+
 import logging
 import tempfile
 from typing import List

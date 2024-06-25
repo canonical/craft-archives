@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """Project model definitions and helpers."""
+
 from typing import Any, Dict
 
 from craft_archives.repo.package_repository import PackageRepository
