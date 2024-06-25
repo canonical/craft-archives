@@ -223,7 +223,10 @@ class AptSourcesManager:
         owner, name = apt_ppa.split_ppa_parts(ppa=package_repo.ppa)
         codename = distro.codename()
 
-        key_id = apt_ppa.get_launchpad_ppa_key_id(ppa=package_repo.ppa)
+        key_id: str = cast(str, package_repo.key_id)
+        if not key_id:
+            key_id = apt_ppa.get_launchpad_ppa_key_id(ppa=package_repo.ppa)
+
         keyring_path = apt_key_manager.get_keyring_path(
             key_id, base_path=self._keyrings_dir
         )

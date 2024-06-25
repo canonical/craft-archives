@@ -21,6 +21,14 @@ The following properties are supported for PPA-type repositories:
    - Examples:
       - ``ppa: snappy-devs/snapcraft-daily``
       - ``ppa: mozillateam/firefox-next``
+- key-id
+   - Type: string
+   - Description: 40 character GPG key identifier ("long-form thumbprint" or
+     "fingerprint"). To determine a key-id from a given key file with gpg,
+     type the following: ``gpg --import-options show-only --import <file>``
+   - Format: alphanumeric, dash ``-`` , and underscores ``_`` permitted.
+   - Examples:
+       - ``key-id: 590CA3D8E4826565BE3200526A634116E00F4C82``
 
 .. _uca-properties:
 
@@ -79,17 +87,11 @@ The following properties are supported for Deb-type repositories:
 - key-id
    - Type: string
    - Description: 40 character GPG key identifier ("long-form thumbprint" or
-     "fingerprint"). The Craft Application will first look for the corresponding
-     key at: ``<project>/snap/keys/<key-id[-8:]>.asc``. If the key is not found,
-     the key will be fetched from the ``key-server``. To determine a key-id from
-     a given key file with gpg, type the following:
-     ``gpg --import-options show-only --import <file>``
+     "fingerprint"). To determine a key-id from a given key file with gpg,
+     type the following: ``gpg --import-options show-only --import <file>``
    - Format: alphanumeric, dash ``-`` , and underscores ``_`` permitted.
    - Examples:
        - ``key-id: 590CA3D8E4826565BE3200526A634116E00F4C82``
-
-         The Application will look for a corresponding key at
-         ``<project>/snap/keys/E00F4C82.asc``
 - key-server
    - Type: string
    - Description: Key server to fetch key ``<key-id>`` from
@@ -139,6 +141,16 @@ PPA repository using "ppa" property
    package-repositories:
      - type: apt
        ppa: snappy-dev/snapcraft-daily
+
+PPA repository using key-id
+---------------------------
+
+.. code-block:: yaml
+
+   package-repositories:
+     - type: apt
+       ppa: mozillateam/firefox-next
+       key-id: 78E1918602959B9C59103100F1831DDAFC42E99D
 
 UCA repository using "cloud" property
 -------------------------------------

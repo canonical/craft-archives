@@ -26,7 +26,12 @@ from craft_archives.repo.package_repository import (
 # pyright: reportGeneralTypeIssues=false
 
 # region Test data and fixtures
-BASIC_PPA_MARSHALLED = {"type": "apt", "ppa": "test/foo", "priority": 123}
+BASIC_PPA_MARSHALLED = {
+    "type": "apt",
+    "ppa": "test/foo",
+    "key-id": "A" * 40,
+    "priority": 123,
+}
 BASIC_UCA_MARSHALLED = {
     "type": "apt",
     "cloud": "antelope",
@@ -429,9 +434,14 @@ def create_ppa(**kwargs) -> PackageRepositoryAptPPA:
 
 
 def test_ppa_marshal():
-    repo = create_ppa(ppa="test/ppa", priority=123)
+    repo = create_ppa(ppa="test/ppa", priority=123, key_id="A" * 40)
 
-    assert repo.marshal() == {"type": "apt", "ppa": "test/ppa", "priority": 123}
+    assert repo.marshal() == {
+        "type": "apt",
+        "ppa": "test/ppa",
+        "key-id": "A" * 40,
+        "priority": 123,
+    }
 
 
 def test_ppa_invalid_ppa():

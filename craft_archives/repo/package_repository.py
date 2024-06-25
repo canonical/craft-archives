@@ -172,6 +172,7 @@ class PackageRepositoryAptPPA(PackageRepository):
     """A PPA package repository."""
 
     ppa: str
+    key_id: Optional[KeyIdStr] = pydantic.Field(alias="key-id")
 
     @validator("ppa")
     def _non_empty_ppa(cls, ppa: str) -> str:
