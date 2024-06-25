@@ -60,10 +60,17 @@ class PocketEnum(str, enum.Enum):
     def __str__(self) -> str:
         return self.value
 
+class PocketUCAEnum(str, enum.Enum):
+    """Enum values that represent possible pocket values for UCA."""
+
+    UPDATES = PocketEnum.UPDATES.value
+    PROPOSED = PocketEnum.PROPOSED.value
+
+    def __str__(self) -> str:
+        return self.value
+
 UCA_ARCHIVE = "http://ubuntu-cloud.archive.canonical.com/ubuntu"
 UCA_NETLOC = urlparse(UCA_ARCHIVE).netloc
-UCA_VALID_POCKETS = ["updates", "proposed"]
-UCA_DEFAULT_POCKET = UCA_VALID_POCKETS[0]
 UCA_KEY_ID = "391A9AA2147192839E9DB0315EDB1B62EC4926EA"
 
 
@@ -224,7 +231,7 @@ class PackageRepositoryAptUCA(PackageRepository):
     """A cloud package repository."""
 
     cloud: str
-    pocket: Literal["updates", "proposed"] = "updates"
+    pocket: PocketUCAEnum = PocketUCAEnum.UPDATES
 
     @validator("cloud")
     def _non_empty_cloud(cls, cloud: str) -> str:
