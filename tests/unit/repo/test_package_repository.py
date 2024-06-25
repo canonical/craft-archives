@@ -156,6 +156,17 @@ def test_apt_invalid_path():
         )
 
 
+def test_apt_invalid_components():
+    with pytest.raises(
+        pydantic.ValidationError,
+        match=r"1 validation error for PackageRepositoryApt\ncomponents\n  the list has duplicated items \(type=value_error\.list\.unique_items\)",
+    ):
+        create_apt(
+            key_id="A" * 40,
+            components=["main", "main"],
+            url="http://archive.ubuntu.com/ubuntu",
+        )
+
 def test_apt_invalid_path_with_suites():
     with pytest.raises(pydantic.ValidationError) as raised:
         create_apt(

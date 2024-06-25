@@ -19,7 +19,7 @@
 import abc
 import enum
 import re
-from typing import Any, Dict, List, Mapping, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Union
 from urllib.parse import urlparse
 
 import pydantic
@@ -28,6 +28,7 @@ from pydantic import (
     AnyUrl,
     ConstrainedStr,
     FileUrl,
+    conlist,
     root_validator,  # pyright: ignore[reportUnknownVariableType]
     validator,  # pyright: ignore[reportUnknownVariableType]
 )
@@ -39,6 +40,14 @@ from pydantic import (
 from typing_extensions import Literal
 
 from . import errors
+
+# A workaround for mypy false positives
+# see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
+# fmt: off
+if TYPE_CHECKING:
+    UniqueStrList = List[str]
+else:
+    UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
 UCA_ARCHIVE = "http://ubuntu-cloud.archive.canonical.com/ubuntu"
 UCA_NETLOC = urlparse(UCA_ARCHIVE).netloc
@@ -227,7 +236,7 @@ class PackageRepositoryApt(PackageRepository):
     architectures: Optional[List[str]]
     formats: Optional[List[Literal["deb", "deb-src"]]]
     path: Optional[str]
-    components: Optional[List[str]]
+    components: Optional[UniqueStrList]
     key_server: Optional[str] = pydantic.Field(alias="key-server")
     suites: Optional[List[str]]
 
