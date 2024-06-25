@@ -21,6 +21,17 @@ The following properties are supported for PPA-type repositories:
    - Examples:
       - ``ppa: snappy-devs/snapcraft-daily``
       - ``ppa: mozillateam/firefox-next``
+- priority
+   - Type: enum[string] or int
+   - Description: Overrides the default behavior when picking the source for a
+     particular package
+   - Format: ``always``, ``prefer`` or ``defer``. Alternatively an int other
+     than 0
+   - Notes: string equivalencies are ``always``: 1000; ``prefer``: 990;
+     ``defer``: 100
+   - Examples:
+      - ``priority: always``
+      - ``priority: 1000``
 - key-id
    - Type: string
    - Description: 40 character GPG key identifier ("long-form thumbprint" or
@@ -109,6 +120,17 @@ The following properties are supported for Deb-type repositories:
    - Examples:
        - ``path: /``
        - ``path: /my-repo``
+- priority
+   - Type: enum[string] or int
+   - Description: Overrides the default behavior when picking the source for a
+     particular package
+   - Format: ``always``, ``prefer`` or ``defer``. Alternatively an int other
+     than 0
+   - Notes: string equivalencies are ``always``: 1000; ``prefer``: 990;
+     ``defer``: 100
+   - Examples:
+      - ``priority: always``
+      - ``priority: 1000``
 - suites
    - Type: string
    - Description: Repository suites to enable
