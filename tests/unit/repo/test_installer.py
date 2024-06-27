@@ -71,7 +71,7 @@ def test_unmarshal_repositories():
     assert pkg_repos[3].priority == -2
     assert isinstance(pkg_repos[4], PackageRepositoryAptUCA)
     assert pkg_repos[4].cloud == "antelope"
-    assert pkg_repos[4].pocket == "proposed"
+    assert pkg_repos[4].pocket.value == "proposed"
 
 
 @pytest.fixture

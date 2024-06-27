@@ -24,24 +24,24 @@ import urllib.request
 from . import errors
 from .package_repository import (
     UCA_ARCHIVE,
-    UCA_DEFAULT_POCKET,
+    PocketUCAEnum,
 )
 
 
 def check_release_compatibility(
-    codename: str, cloud: str, pocket: str = UCA_DEFAULT_POCKET
+    codename: str, cloud: str, pocket: PocketUCAEnum = PocketUCAEnum.UPDATES
 ) -> None:
     """Raise an exception if the release is incompatible with codename."""
-    request = UCA_ARCHIVE + f"/dists/{codename}-{pocket}/{cloud}/"
+    request = UCA_ARCHIVE + f"/dists/{codename}-{pocket.value}/{cloud}/"
     try:
         urllib.request.urlopen(request)
     except urllib.error.HTTPError as e:
         if e.code == http.HTTPStatus.NOT_FOUND:
             raise errors.AptUCAInstallError(
-                cloud, pocket, f"not a valid release for {codename!r}"
+                cloud, pocket.value, f"not a valid release for {codename!r}"
             )
         raise errors.AptUCAInstallError(
             cloud,
-            pocket,
+            pocket.value,
             f"unexpected status code {e.code}: {e.reason!r} while fetching release",
         )

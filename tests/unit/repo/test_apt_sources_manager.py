@@ -29,11 +29,13 @@ from craft_archives.repo.apt_sources_manager import (
     _DEFAULT_SOURCES_DIRECTORY,
     AptSourcesManager,
     _add_architecture,
+    _get_suites,
 )
 from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
     PackageRepositoryAptUCA,
+    PocketEnum,
 )
 
 # pyright: reportGeneralTypeIssues=false
@@ -123,6 +125,52 @@ def create_apt_sources_mgr(tmp_path: Path, *, use_signed_by_root: bool):
                 Types: deb deb-src
                 URIs: http://test.url/ubuntu
                 Suites: test-suite1 test-suite2
+                Components: test-component
+                Architectures: amd64 arm64
+                Signed-By: {keyring_path}
+                """
+            ),
+        ),
+        (
+            PackageRepositoryApt(
+                type="apt",
+                architectures=["amd64", "arm64"],
+                components=["test-component"],
+                formats=["deb", "deb-src"],
+                key_id="A" * 40,
+                series="test",
+                pocket=PocketEnum.PROPOSED,
+                url="http://test.url/ubuntu",
+            ),
+            "craft-http_test_url_ubuntu.sources",
+            dedent(
+                """\
+                Types: deb deb-src
+                URIs: http://test.url/ubuntu
+                Suites: test test-updates test-proposed
+                Components: test-component
+                Architectures: amd64 arm64
+                Signed-By: {keyring_path}
+                """
+            ),
+        ),
+        (
+            PackageRepositoryApt(
+                type="apt",
+                architectures=["amd64", "arm64"],
+                components=["test-component"],
+                formats=["deb", "deb-src"],
+                key_id="A" * 40,
+                series="test",
+                pocket=PocketEnum.SECURITY,
+                url="http://test.url/ubuntu",
+            ),
+            "craft-http_test_url_ubuntu.sources",
+            dedent(
+                """\
+                Types: deb deb-src
+                URIs: http://test.url/ubuntu
+                Suites: test-security
                 Components: test-component
                 Architectures: amd64 arm64
                 Signed-By: {keyring_path}
@@ -340,3 +388,18 @@ def test_add_architecture_incompatible(mocker, host_arch, repo_arch):
 
     check_output_mock.assert_called_once_with(["dpkg", "--print-architecture"])
     assert not run_mock.called
+
+
+@pytest.mark.parametrize(
+    ("pocket, series, result"),
+    [
+        (PocketEnum.RELEASE, "jammy", ["jammy"]),
+        (PocketEnum.UPDATES, "jammy", ["jammy", "jammy-updates"]),
+        (PocketEnum.PROPOSED, "jammy", ["jammy", "jammy-updates", "jammy-proposed"]),
+        (PocketEnum.SECURITY, "jammy", ["jammy-security"]),
+        (None, "jammy", ["jammy"]),
+        (PocketEnum.RELEASE, "", [""]),
+    ],
+)
+def test_get_suites(pocket, series, result):
+    assert _get_suites(pocket, series) == result

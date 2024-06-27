@@ -26,6 +26,9 @@ from typing import List, Optional, cast
 import distro
 
 from craft_archives import utils
+from craft_archives.repo.package_repository import (
+    PocketEnum,
+)
 
 from . import apt_key_manager, apt_ppa, apt_uca, errors, package_repository
 
@@ -188,6 +191,8 @@ class AptSourcesManager:
             suites = [path]
         elif package_repo.suites:
             suites = package_repo.suites
+        elif package_repo.pocket:
+            suites = _get_suites(package_repo.pocket, cast(str, package_repo.series))
         else:  # pragma: no cover
             raise RuntimeError("no suites or path")
 
@@ -223,7 +228,10 @@ class AptSourcesManager:
         owner, name = apt_ppa.split_ppa_parts(ppa=package_repo.ppa)
         codename = distro.codename()
 
-        key_id = apt_ppa.get_launchpad_ppa_key_id(ppa=package_repo.ppa)
+        key_id: str = cast(str, package_repo.key_id)
+        if not key_id:
+            key_id = apt_ppa.get_launchpad_ppa_key_id(ppa=package_repo.ppa)
+
         keyring_path = apt_key_manager.get_keyring_path(
             key_id, base_path=self._keyrings_dir
         )
@@ -321,3 +329,21 @@ def _get_current_architecture() -> str:
         .decode("utf-8")
         .strip()
     )
+
+
+def _get_suites(pocket: PocketEnum, series: str) -> List[str]:
+    """Get a list of suites from a pocket and a series."""
+    suites = [series]
+    if not pocket or pocket == PocketEnum.RELEASE:
+        return suites
+
+    if pocket == PocketEnum.UPDATES:
+        suites.append(f"{series}-{pocket}")
+    if pocket == PocketEnum.PROPOSED:
+        suites.extend(
+            [f"{series}-{p}" for p in [PocketEnum.UPDATES, PocketEnum.PROPOSED]]
+        )
+    if pocket == PocketEnum.SECURITY:
+        suites = [f"{series}-{pocket}"]
+
+    return suites

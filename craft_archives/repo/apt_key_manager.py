@@ -24,7 +24,7 @@ import pathlib
 import subprocess
 import tempfile
 from contextlib import contextmanager
-from typing import Iterable, Iterator, List, Optional, Union
+from typing import Iterable, Iterator, List, Optional, Union, cast
 
 from . import apt_ppa, errors, package_repository
 
@@ -305,7 +305,9 @@ class AptKeyManager:
         """
         key_server = DEFAULT_APT_KEYSERVER
         if isinstance(package_repo, package_repository.PackageRepositoryAptPPA):
-            key_id = apt_ppa.get_launchpad_ppa_key_id(ppa=package_repo.ppa)
+            key_id: str = cast(str, package_repo.key_id)
+            if not key_id:
+                key_id = apt_ppa.get_launchpad_ppa_key_id(ppa=package_repo.ppa)
         elif isinstance(package_repo, package_repository.PackageRepositoryAptUCA):
             key_id = package_repository.UCA_KEY_ID
         elif isinstance(package_repo, package_repository.PackageRepositoryApt):
