@@ -49,6 +49,17 @@ if TYPE_CHECKING:
 else:
     UniqueStrList = conlist(str, unique_items=True, min_items=1)
 
+class PocketEnum(str, enum.Enum):
+    """Enum values that represent possible pocket values."""
+
+    RELEASE = "release"
+    UPDATES = "updates"
+    PROPOSED = "proposed"
+    SECURITY = "security"
+
+    def __str__(self) -> str:
+        return self.value
+
 UCA_ARCHIVE = "http://ubuntu-cloud.archive.canonical.com/ubuntu"
 UCA_NETLOC = urlparse(UCA_ARCHIVE).netloc
 UCA_VALID_POCKETS = ["updates", "proposed"]
@@ -73,6 +84,11 @@ class PriorityString(enum.IntEnum):
 
 
 PriorityValue = Union[int, Literal["always", "prefer", "defer"]]
+
+class SeriesStr(ConstrainedStr):
+    """A constrained string for a series."""
+
+    regex = re.compile(r"^[a-z]+$")
 
 
 def _alias_generator(value: str) -> str:
@@ -239,6 +255,8 @@ class PackageRepositoryApt(PackageRepository):
     components: Optional[UniqueStrList]
     key_server: Optional[str] = pydantic.Field(alias="key-server")
     suites: Optional[List[str]]
+    pocket: Optional[PocketEnum]
+    series: Optional[SeriesStr]
 
     # Customize some of the validation error messages
     class Config(PackageRepository.Config):  # noqa: D106 - no docstring needed
@@ -287,6 +305,30 @@ class PackageRepositoryApt(PackageRepository):
             raise _create_validation_error(url=values.get("url"), message=message)
         return suites
 
+    @root_validator
+    def _not_mixing_suites_and_series_pocket(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        suites = values.get("suites")
+        series = values.get("series")
+        pocket = values.get("pocket")
+        url = values.get("url")
+        if suites and (series or pocket):
+            raise _create_validation_error(
+                url=url, message="suites cannot be combined with series and pocket."
+            )
+        return values
+
+    @root_validator
+    def _missing_pocket_with_series(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate pocket is set when series is. The other way around is NOT mandatory."""
+        series = values.get("series")
+        pocket = values.get("pocket")
+        url = values.get("url")
+        if series and not pocket:
+            raise _create_validation_error(
+                url=url, message="pocket must be specified when using series."
+            )
+        return values
+
     @validator("suites", each_item=True)
     def _suites_without_backslash(cls, suite: str, values: Dict[str, Any]) -> str:
         if suite.endswith("/"):
@@ -297,17 +339,18 @@ class PackageRepositoryApt(PackageRepository):
         return suite
 
     @root_validator
-    def _missing_components_or_suites(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def _missing_components_or_suites_pocket(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         suites = values.get("suites")
         components = values.get("components")
+        pocket = values.get("pocket")
         url = values.get("url")
         if suites and not components:
             raise _create_validation_error(
                 url=url, message="components must be specified when using suites."
             )
-        if components and not suites:
+        if components and not (suites or pocket):
             raise _create_validation_error(
-                url=url, message="suites must be specified when using components."
+                url=url, message='either "suites" or "series and pocket" must be specified when using components.'
             )
 
         return values

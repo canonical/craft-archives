@@ -73,6 +73,12 @@ Deb properties
 
 The following properties are supported for Deb-type repositories:
 
+- type
+   - Type: enum[string]
+   - Description: Specifies type of package-repository
+   - Notes: Must be ``apt``
+   - Examples:
+       - ``type: apt``
 - architectures
    - Type: list[string]
    - Description: Architectures to enable, or restrict to, for this repository
@@ -139,12 +145,21 @@ The following properties are supported for Deb-type repositories:
    - Examples:
        - ``suites: [xenial]``
        - ``suites: [xenial, xenial-updates]``
-- type
+- pocket
    - Type: enum[string]
-   - Description: Specifies type of package-repository
-   - Notes: Must be ``apt``
+   - Description: Pocket to get packages from, must be one of: ``release``,
+     ``updates``, ``proposed`` or ``security``.
    - Examples:
-       - ``type: apt``
+      - ``pocket: updates``
+      - ``pocket: proposed``
+- series
+   - Type: string
+   - Description: Repository series to use
+   - Notes: ``series`` must be used with ``pocket`` and cannot be used with
+     ``suites``
+   - Examples:
+      - ``series: mantic``
+      - ``series: bionic``
 - url
    - Type: string
    - Description: Repository URL.
@@ -202,6 +217,19 @@ Typical apt repository with components and suites
      - type: apt
        components: [main]
        suites: [xenial]
+       key-id: 78E1918602959B9C59103100F1831DDAFC42E99D
+       url: http://ppa.launchpad.net/snappy-dev/snapcraft-daily/ubuntu
+
+Typical apt repository with components, pocket and series
+---------------------------------------------------------
+
+.. code-block:: yaml
+
+   package-repositories:
+     - type: apt
+       components: [main]
+       series: xenial
+       pocket: updates
        key-id: 78E1918602959B9C59103100F1831DDAFC42E99D
        url: http://ppa.launchpad.net/snappy-dev/snapcraft-daily/ubuntu
 
