@@ -5,6 +5,13 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+1.2.0 (2024-07-05)
+------------------
+
+* Support "series" and "pocket" in Apt package repositories.
+* Support key-ids in PPAs.
+* Add missing py.typed file.
+
 1.1.3 (2023-08-04)
 ------------------
 
