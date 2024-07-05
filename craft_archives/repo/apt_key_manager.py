@@ -354,7 +354,7 @@ def _temporary_home_dir() -> Iterator[pathlib.Path]:
 
 
 def _log_gpg(
-    entity: Union[subprocess.CompletedProcess[bytes], subprocess.CalledProcessError]
+    entity: Union[subprocess.CompletedProcess[bytes], subprocess.CalledProcessError],
 ) -> None:
     if entity.stdout:
         logger.debug("gpg stdout:")

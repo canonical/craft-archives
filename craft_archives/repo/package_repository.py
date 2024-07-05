@@ -180,9 +180,7 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
         repositories: List[PackageRepository] = []
 
         if data is not None:
-            if not isinstance(
-                data, list
-            ):  # pyright: ignore[reportUnnecessaryIsInstance]
+            if not isinstance(data, list):  # pyright: ignore[reportUnnecessaryIsInstance]
                 raise errors.PackageRepositoryValidationError(
                     url=str(data),
                     brief="invalid list object.",
