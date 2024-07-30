@@ -22,6 +22,7 @@ from craft_archives.repo.package_repository import (
     PackageRepositoryAptPPA,
     PackageRepositoryAptUCA,
 )
+from pydantic_core import Url
 
 # pyright: reportGeneralTypeIssues=false
 
@@ -48,17 +49,19 @@ BASIC_APT_MARSHALLED = {
 
 @pytest.fixture
 def apt_repository():
-    yield PackageRepositoryApt(
-        type="apt",
-        architectures=["amd64", "i386"],
-        components=["main", "multiverse"],
-        formats=["deb", "deb-src"],
-        key_id="A" * 40,
-        key_server="keyserver.ubuntu.com",
-        # name="test-name",
-        suites=["xenial", "xenial-updates"],
-        url="http://archive.ubuntu.com/ubuntu",
-        priority=123,
+    return PackageRepositoryApt.model_validate(
+        {
+            "type": "apt",
+            "architectures": ["amd64", "i386"],
+            "components": ["main", "multiverse"],
+            "formats": ["deb", "deb-src"],
+            "key_id": "A" * 40,
+            "key_server": "keyserver.ubuntu.com",
+            # name="test-name",
+            "suites": ["xenial", "xenial-updates"],
+            "url": Url("http://archive.ubuntu.com/ubuntu"),
+            "priority": 123,
+        }
     )
 
 

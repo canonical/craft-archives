@@ -31,6 +31,7 @@ from pydantic import (
     FileUrl,
     StringConstraints,
     ValidationInfo,
+    field_serializer,
     field_validator,  # pyright: ignore[reportUnknownVariableType]
     model_validator,  # pyright: ignore[reportUnknownVariableType]
 )
@@ -212,7 +213,7 @@ class PackageRepositoryAptUCA(PackageRepository):
     @overrides
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryAptUCA":
         """Create a package repository object from the given data."""
-        return cls(**data)
+        return cls.model_validate(data)
 
     @property
     def pin(self) -> str:
@@ -223,7 +224,7 @@ class PackageRepositoryAptUCA(PackageRepository):
 class PackageRepositoryApt(PackageRepository):
     """An APT package repository."""
 
-    url: Union[AnyUrl, FileUrl]
+    url: AnyUrl | FileUrl
     key_id: Annotated[
         str, StringConstraints(min_length=40, max_length=40, pattern=r"^[0-9A-F]{40}$")
     ] = Field(alias="key-id")
@@ -231,7 +232,7 @@ class PackageRepositoryApt(PackageRepository):
     formats: Optional[List[Literal["deb", "deb-src"]]] = None
     path: Optional[str] = None
     components: Optional[List[str]] = None
-    key_server: Optional[Annotated[str, Field(alias="key-server")]] = None
+    key_server: Optional[str] = Field(default=None, alias="key-server")
     suites: Optional[List[str]] = None
 
     @property
@@ -243,6 +244,10 @@ class PackageRepositoryApt(PackageRepository):
     @classmethod
     def _convert_url_to_string(cls, url: Union[AnyUrl, FileUrl]) -> str:
         return str(url).rstrip("/")
+
+    @field_serializer("url")
+    def _serialize_url_as_string(self, url: AnyUrl | FileUrl) -> str:
+        return str(url)
 
     @field_validator("path")
     @classmethod
@@ -318,7 +323,7 @@ class PackageRepositoryApt(PackageRepository):
     @overrides
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryApt":
         """Create a package repository object from the given data."""
-        return cls(**data)
+        return cls.model_validate(data)
 
     @property
     def pin(self) -> str:
