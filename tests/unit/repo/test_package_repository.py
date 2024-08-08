@@ -21,13 +21,19 @@ from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
     PackageRepositoryAptUCA,
+    PocketEnum,
 )
 from pydantic_core import Url
 
 # pyright: reportGeneralTypeIssues=false
 
 # region Test data and fixtures
-BASIC_PPA_MARSHALLED = {"type": "apt", "ppa": "test/foo", "priority": 123}
+BASIC_PPA_MARSHALLED = {
+    "type": "apt",
+    "ppa": "test/foo",
+    "key-id": "A" * 40,
+    "priority": 123,
+}
 BASIC_UCA_MARSHALLED = {
     "type": "apt",
     "cloud": "antelope",
@@ -106,6 +112,14 @@ def test_apt_name():
             "path": "my/path",
             "key-id": "BCDEF12345" * 4,
         },
+        {
+            "type": "apt",
+            "url": "https://some/url",
+            "key-id": "BCDEF12345" * 4,
+            "components": ["some", "components"],
+            "series": "noble",
+            "pocket": "release",
+        },
     ],
 )
 def test_apt_valid(repo, priority):
@@ -122,6 +136,8 @@ def test_apt_valid(repo, priority):
     assert apt_deb.key_server == ("my-key-server" if "key-server" in repo else None)
     assert apt_deb.path == ("my/path" if "path" in repo else None)
     assert apt_deb.suites == (["some", "suites"] if "suites" in repo else None)
+    assert apt_deb.pocket == (PocketEnum.RELEASE if "pocket" in repo else None)
+    assert apt_deb.series == ("noble" if "series" in repo else None)
 
 
 @pytest.mark.parametrize(
@@ -150,6 +166,44 @@ def test_apt_invalid_path():
         create_apt(
             key_id="A" * 40,
             path="",
+            url="http://archive.ubuntu.com/ubuntu",
+        )
+
+
+def test_apt_invalid_components():
+    with pytest.raises(
+        pydantic.ValidationError,
+        match=r"1 validation error for PackageRepositoryApt\ncomponents\n\s+Value error, duplicate values in list: \['main'\]",
+    ):
+        create_apt(
+            key_id="A" * 40,
+            components=["main", "main"],
+            suites=["jammy"],
+            url="http://archive.ubuntu.com/ubuntu",
+        )
+
+
+def test_apt_invalid_series():
+    with pytest.raises(
+        pydantic.ValidationError,
+        match=r"1 validation error for PackageRepositoryApt\nseries\n  String should match pattern",
+    ):
+        create_apt(
+            key_id="A" * 40,
+            series="12noble",
+            url="http://archive.ubuntu.com/ubuntu",
+        )
+
+
+def test_apt_invalid_pocket():
+    with pytest.raises(
+        pydantic.ValidationError,
+        match=r"1 validation error for PackageRepositoryApt\npocket\n  Input should be ",
+    ):
+        create_apt(
+            key_id="A" * 40,
+            series="noble",
+            pocket="invalid",
             url="http://archive.ubuntu.com/ubuntu",
         )
 
@@ -209,7 +263,43 @@ def test_apt_invalid_missing_components():
     assert expected_message in str(err)
 
 
-def test_apt_invalid_missing_suites():
+def test_apt_invalid_not_mixing_suites_and_series_pocket():
+    with pytest.raises(pydantic.ValidationError) as raised:
+        create_apt(
+            key_id="A" * 40,
+            series="noble",
+            pocket="updates",
+            suites=["bionic-updates"],
+            url="http://archive.ubuntu.com/ubuntu",
+        )
+
+    expected_message = (
+        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
+        "suites cannot be combined with series and pocket."
+    )
+
+    err = raised.value
+    assert expected_message in str(err)
+
+
+def test_apt_invalid_missing_pocket_with_series():
+    with pytest.raises(pydantic.ValidationError) as raised:
+        create_apt(
+            key_id="A" * 40,
+            series="noble",
+            url="http://archive.ubuntu.com/ubuntu",
+        )
+
+    expected_message = (
+        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
+        "pocket must be specified when using series."
+    )
+
+    err = raised.value
+    assert expected_message in str(err)
+
+
+def test_apt_invalid_missing_components_or_suites_pocket():
     with pytest.raises(pydantic.ValidationError) as raised:
         create_apt(
             key_id="A" * 40,
@@ -219,7 +309,7 @@ def test_apt_invalid_missing_suites():
 
     expected_message = (
         "Value error, Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
-        "suites must be specified when using components."
+        'either "suites" or "series and pocket" must be specified when using components.'
     )
 
     err = raised.value
@@ -227,21 +317,15 @@ def test_apt_invalid_missing_suites():
 
 
 def test_apt_invalid_suites_as_path():
-    with pytest.raises(pydantic.ValidationError) as raised:
+    with pytest.raises(
+        pydantic.ValidationError, match="Suites must not end with a '/'"
+    ):
         create_apt(
             key_id="A" * 40,
             components=["main"],
             suites=["my-suite/"],
             url="http://archive.ubuntu.com/ubuntu",
         )
-
-    expected_message = (
-        "Value error, Invalid package repository for 'http://archive.ubuntu.com/"
-        "ubuntu': invalid suite 'my-suite/'. Suites must not end with a '/'."
-    )
-
-    err = raised.value
-    assert expected_message in str(err)
 
 
 def test_apt_key_id_valid():
@@ -436,9 +520,14 @@ def create_ppa(**kwargs) -> PackageRepositoryAptPPA:
 
 
 def test_ppa_marshal():
-    repo = create_ppa(ppa="test/ppa", priority=123)
+    repo = create_ppa(ppa="test/ppa", priority=123, key_id="A" * 40)
 
-    assert repo.marshal() == {"type": "apt", "ppa": "test/ppa", "priority": 123}
+    assert repo.marshal() == {
+        "type": "apt",
+        "ppa": "test/ppa",
+        "key-id": "A" * 40,
+        "priority": 123,
+    }
 
 
 def test_ppa_invalid_ppa():
@@ -518,9 +607,7 @@ def test_unmarshal_package_repositories_list_none():
 
 def test_unmarshal_package_repositories_invalid_data():
     with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepository.unmarshal_package_repositories(
-            "not-a-list"
-        )  # pyright: ignore[reportGeneralTypeIssues]
+        PackageRepository.unmarshal_package_repositories("not-a-list")  # pyright: ignore[reportGeneralTypeIssues]
 
     err = raised.value
     assert str(err) == (

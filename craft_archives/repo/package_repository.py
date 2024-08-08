@@ -17,13 +17,25 @@
 """Package repository definitions."""
 
 import abc
+import collections
 import enum
 import re
-from typing import Any, Dict, List, Mapping, Optional, Union
+from typing import (
+    Annotated,
+    Any,
+    Dict,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    TypeVar,
+    Union,
+)
 from urllib.parse import urlparse
 
 from overrides import overrides  # pyright: ignore[reportUnknownVariableType]
 from pydantic import (
+    AfterValidator,
     AnyUrl,
     BaseModel,
     ConfigDict,
@@ -35,19 +47,52 @@ from pydantic import (
     field_validator,  # pyright: ignore[reportUnknownVariableType]
     model_validator,  # pyright: ignore[reportUnknownVariableType]
 )
-
-# NOTE: using this instead of typing.Literal because of this bad typing_extensions
-# interaction: https://github.com/pydantic/pydantic/issues/5821#issuecomment-1559196859
-# We can revisit this when typing_extensions >4.6.0 is released, and/or we no
-# longer have to support Python <3.10
-from typing_extensions import Annotated, Literal
+from typing_extensions import Self
 
 from . import errors
 
+T = TypeVar("T")
+
+
+def _validate_list_is_unique(value: list[T]) -> list[T]:
+    value_set = set(value)
+    if len(value_set) == len(value):
+        return value
+    dupes = [item for item, count in collections.Counter(value).items() if count > 1]
+    raise ValueError(f"duplicate values in list: {dupes}")
+
+
+UniqueList = Annotated[
+    list[T],
+    AfterValidator(_validate_list_is_unique),
+    Field(json_schema_extra={"uniqueItems": True}),
+]
+
+
+class PocketEnum(str, enum.Enum):
+    """Enum values that represent possible pocket values."""
+
+    RELEASE = "release"
+    UPDATES = "updates"
+    PROPOSED = "proposed"
+    SECURITY = "security"
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class PocketUCAEnum(str, enum.Enum):
+    """Enum values that represent possible pocket values for UCA."""
+
+    UPDATES = PocketEnum.UPDATES.value
+    PROPOSED = PocketEnum.PROPOSED.value
+
+    def __str__(self) -> str:
+        return self.value
+
+
 UCA_ARCHIVE = "http://ubuntu-cloud.archive.canonical.com/ubuntu"
 UCA_NETLOC = urlparse(UCA_ARCHIVE).netloc
-UCA_VALID_POCKETS = ["updates", "proposed"]
-UCA_DEFAULT_POCKET = UCA_VALID_POCKETS[0]
 UCA_KEY_ID = "391A9AA2147192839E9DB0315EDB1B62EC4926EA"
 
 
@@ -60,6 +105,27 @@ class PriorityString(enum.IntEnum):
 
 
 PriorityValue = Union[int, Literal["always", "prefer", "defer"]]
+SeriesStr = Annotated[
+    str, StringConstraints(min_length=1, pattern=re.compile(r"^[a-z]+$"))
+]
+KeyIdStr = Annotated[
+    str,
+    StringConstraints(
+        min_length=40, max_length=40, pattern=re.compile(r"^[0-9A-F]{40}$")
+    ),
+]
+
+
+def _validate_suite_str(suite: str) -> str:
+    if suite.endswith("/"):
+        raise ValueError(f"invalid suite {suite!r}. Suites must not end with a '/'.")
+    return suite
+
+
+SuiteStr = Annotated[
+    str,
+    AfterValidator(_validate_suite_str),
+]
 
 
 def _alias_generator(value: str) -> str:
@@ -149,9 +215,7 @@ class PackageRepository(BaseModel, abc.ABC):
         repositories: List[PackageRepository] = []
 
         if data is not None:
-            if not isinstance(
-                data, list
-            ):  # pyright: ignore[reportUnnecessaryIsInstance]
+            if not isinstance(data, list):  # pyright: ignore[reportUnnecessaryIsInstance]
                 raise errors.PackageRepositoryValidationError(
                     url=str(data),
                     brief="invalid list object.",
@@ -173,6 +237,7 @@ class PackageRepositoryAptPPA(PackageRepository):
     """A PPA package repository."""
 
     ppa: str
+    key_id: KeyIdStr | None = Field(default=None, alias="key-id")
 
     @field_validator("ppa")
     @classmethod
@@ -200,7 +265,7 @@ class PackageRepositoryAptUCA(PackageRepository):
     """A cloud package repository."""
 
     cloud: str
-    pocket: Literal["updates", "proposed"] = "updates"
+    pocket: PocketUCAEnum = PocketUCAEnum.UPDATES
 
     @field_validator("cloud")
     @classmethod
@@ -225,15 +290,20 @@ class PackageRepositoryApt(PackageRepository):
     """An APT package repository."""
 
     url: AnyUrl | FileUrl
-    key_id: Annotated[
-        str, StringConstraints(min_length=40, max_length=40, pattern=r"^[0-9A-F]{40}$")
-    ] = Field(alias="key-id")
-    architectures: Optional[List[str]] = None
+    key_id: KeyIdStr = Field(alias="key-id")
+    architectures: Optional[UniqueList[str]] = None
     formats: Optional[List[Literal["deb", "deb-src"]]] = None
     path: Optional[str] = None
-    components: Optional[List[str]] = None
+    components: Optional[UniqueList[str]] = None
     key_server: Optional[str] = Field(default=None, alias="key-server")
-    suites: Optional[List[str]] = None
+    suites: Optional[List[SuiteStr]] = None
+    pocket: Optional[PocketEnum] = None
+    series: Optional[SeriesStr] = None
+
+    # class Config(PackageRepository.Config):  # - no docstring needed
+    #     error_msg_templates = {
+    #         "value_error.any_str.min_length": "Invalid URL; URLs must be non-empty strings"
+    #     }
 
     @property
     def name(self) -> str:
@@ -288,36 +358,38 @@ class PackageRepositoryApt(PackageRepository):
             raise _create_validation_error(url=info.data.get("url"), message=message)
         return suites
 
-    @field_validator("suites")
-    @classmethod
-    def _suites_without_backslash(
-        cls, suites: List[str], info: ValidationInfo
-    ) -> List[str]:
-        for suite in suites:
-            if suite.endswith("/"):
-                raise _create_validation_error(
-                    url=info.data.get("url"),
-                    message=f"invalid suite {suite!r}. Suites must not end "
-                    "with a '/'.",
-                )
-        return suites
-
-    @model_validator(mode="before")
-    @classmethod
-    def _missing_components_or_suites(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        suites = values.get("suites")
-        components = values.get("components")
-        url = values.get("url")
-        if suites and not components:
+    @model_validator(mode="after")
+    def _not_mixing_suites_and_series_pocket(self) -> Self:
+        if self.suites and (self.series or self.pocket):
             raise _create_validation_error(
-                url=url, message="components must be specified when using suites."
+                url=str(self.url),
+                message="suites cannot be combined with series and pocket.",
             )
-        if components and not suites:
+        return self
+
+    @model_validator(mode="after")
+    def _missing_pocket_with_series(self) -> Self:
+        """Validate pocket is set when series is. The other way around is NOT mandatory."""
+        if self.series and not self.pocket:
             raise _create_validation_error(
-                url=url, message="suites must be specified when using components."
+                url=str(self.url), message="pocket must be specified when using series."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _missing_components_or_suites_pocket(self) -> Self:
+        if self.suites and not self.components:
+            raise _create_validation_error(
+                url=str(self.url),
+                message="components must be specified when using suites.",
+            )
+        if self.components and not (self.suites or self.pocket):
+            raise _create_validation_error(
+                url=str(self.url),
+                message='either "suites" or "series and pocket" must be specified when using components.',
             )
 
-        return values
+        return self
 
     @classmethod
     @overrides

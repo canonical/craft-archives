@@ -56,7 +56,8 @@ RELEASE_TO_CLOUD = {
     "focal": {"cloud": "wallaby", "codename": "focal"},
 }
 
-CLOUD_DATA = RELEASE_TO_CLOUD[VERSION_CODENAME]
+# If running on a distro that's not supported, set CLOUD_DATA to None
+CLOUD_DATA = RELEASE_TO_CLOUD.get(VERSION_CODENAME)
 
 CLOUD_SOURCES = dedent(
     """
@@ -91,12 +92,17 @@ PREFERENCES = dedent(
     Pin: release o=LP-PPA-deadsnakes-ppa
     Pin-Priority: 1000
 
-    Package: *
-    Pin: origin "ubuntu-cloud.archive.canonical.com"
-    Pin-Priority: 123
-
     """
 ).lstrip()
+if CLOUD_DATA:
+    PREFERENCES += dedent(
+        """\
+        Package: *
+        Pin: origin "ubuntu-cloud.archive.canonical.com"
+        Pin-Priority: 123
+
+        """
+    )
 
 
 def create_etc_apt_dirs(etc_apt: Path):
@@ -139,7 +145,7 @@ def fake_etc_apt(tmp_path, mocker) -> Path:
 
 @pytest.fixture()
 def all_repo_types() -> List[Dict[str, Any]]:
-    return [
+    repo_types = [
         # a "standard" repo, with a key coming from the assets dir
         {
             "type": "apt",
@@ -156,13 +162,6 @@ def all_repo_types() -> List[Dict[str, Any]]:
             "ppa": "deadsnakes/ppa",
             "priority": "always",
         },
-        # a "cloud" repo
-        {
-            "type": "apt",
-            "cloud": CLOUD_DATA["cloud"],
-            "pocket": "updates",
-            "priority": 123,
-        },
         # A key with multiple keys inside.
         {
             "type": "apt",
@@ -172,6 +171,17 @@ def all_repo_types() -> List[Dict[str, Any]]:
             "key-id": "D6811ED3ADEEB8441AF5AA8F4528B6CD9E61EF26",
         },
     ]
+    if CLOUD_DATA:
+        repo_types.append(
+            # a "cloud" repo
+            {
+                "type": "apt",
+                "cloud": CLOUD_DATA["cloud"],
+                "pocket": "updates",
+                "priority": 123,
+            },
+        )
+    return repo_types
 
 
 @pytest.fixture
@@ -213,12 +223,13 @@ def check_keyrings(etc_apt_dir: Path) -> None:
     keyrings_dir = etc_apt_dir / "keyrings"
 
     # Must have exactly these keyring files, one for each repo
-    expected_key_ids = (
+    expected_key_ids = [
         "6A755776",
         "FC42E99D",
-        "EC4926EA",
         "9E61EF26",
-    )
+    ]
+    if CLOUD_DATA:
+        expected_key_ids.append("EC4926EA")
 
     assert len(list(keyrings_dir.iterdir())) == len(expected_key_ids)
     for key_id in expected_key_ids:
@@ -231,8 +242,11 @@ def check_sources(etc_apt_dir: Path, signed_by_location: Path) -> None:
 
     keyrings_on_fs = etc_apt_dir / "keyrings"
 
-    cloud_name = CLOUD_DATA["cloud"]
-    codename = CLOUD_DATA["codename"]
+    if CLOUD_DATA:
+        cloud_name = CLOUD_DATA["cloud"]
+        codename = CLOUD_DATA["codename"]
+    else:
+        cloud_name = codename = None
 
     # Must have exactly these sources files, one for each repo
     source_to_contents = {
@@ -242,13 +256,14 @@ def check_sources(etc_apt_dir: Path, signed_by_location: Path) -> None:
         "ppa-deadsnakes_ppa": PPA_SOURCES.format(
             codename=VERSION_CODENAME, key_location=signed_by_location
         ),
-        f"cloud-{cloud_name}": CLOUD_SOURCES.format(
+        "http_apt_puppet_com": PUPPET_SOURCES.format(key_location=signed_by_location),
+    }
+    if CLOUD_DATA:
+        source_to_contents[f"cloud-{cloud_name}"] = CLOUD_SOURCES.format(
             cloud=cloud_name,
             codename=codename,
             key_location=signed_by_location,
-        ),
-        "http_apt_puppet_com": PUPPET_SOURCES.format(key_location=signed_by_location),
-    }
+        )
 
     assert len(list(keyrings_on_fs.iterdir())) == len(source_to_contents)
 
