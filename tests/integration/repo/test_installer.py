@@ -51,6 +51,7 @@ PPA_SOURCES = dedent(
 
 # Needed because some "clouds" are only available for specific Ubuntu releases
 RELEASE_TO_CLOUD = {
+    "noble": {"cloud": "dalmatian", "codename": "noble"},
     "jammy": {"cloud": "antelope", "codename": "jammy"},
     "focal": {"cloud": "wallaby", "codename": "focal"},
 }

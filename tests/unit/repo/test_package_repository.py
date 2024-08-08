@@ -23,6 +23,7 @@ from craft_archives.repo.package_repository import (
     PackageRepositoryAptUCA,
     PocketEnum,
 )
+from pydantic_core import Url
 
 # pyright: reportGeneralTypeIssues=false
 
@@ -54,17 +55,19 @@ BASIC_APT_MARSHALLED = {
 
 @pytest.fixture
 def apt_repository():
-    yield PackageRepositoryApt(
-        type="apt",
-        architectures=["amd64", "i386"],
-        components=["main", "multiverse"],
-        formats=["deb", "deb-src"],
-        key_id="A" * 40,
-        key_server="keyserver.ubuntu.com",
-        # name="test-name",
-        suites=["xenial", "xenial-updates"],
-        url="http://archive.ubuntu.com/ubuntu",
-        priority=123,
+    return PackageRepositoryApt.model_validate(
+        {
+            "type": "apt",
+            "architectures": ["amd64", "i386"],
+            "components": ["main", "multiverse"],
+            "formats": ["deb", "deb-src"],
+            "key_id": "A" * 40,
+            "key_server": "keyserver.ubuntu.com",
+            # name="test-name",
+            "suites": ["xenial", "xenial-updates"],
+            "url": Url("http://archive.ubuntu.com/ubuntu"),
+            "priority": 123,
+        }
     )
 
 
@@ -148,7 +151,7 @@ def test_apt_valid_architectures(arch):
 
 def test_apt_invalid_url():
     with pytest.raises(
-        pydantic.ValidationError, match="Invalid URL; URLs must be non-empty strings"
+        pydantic.ValidationError, match="Input should be a valid URL, input is empty"
     ):
         create_apt(
             key_id="A" * 40,
@@ -170,11 +173,12 @@ def test_apt_invalid_path():
 def test_apt_invalid_components():
     with pytest.raises(
         pydantic.ValidationError,
-        match=r"1 validation error for PackageRepositoryApt\ncomponents\n  the list has duplicated items \(type=value_error\.list\.unique_items\)",
+        match=r"1 validation error for PackageRepositoryApt\ncomponents\n\s+Value error, duplicate values in list: \['main'\]",
     ):
         create_apt(
             key_id="A" * 40,
             components=["main", "main"],
+            suites=["jammy"],
             url="http://archive.ubuntu.com/ubuntu",
         )
 
@@ -182,7 +186,7 @@ def test_apt_invalid_components():
 def test_apt_invalid_series():
     with pytest.raises(
         pydantic.ValidationError,
-        match=r"1 validation error for PackageRepositoryApt\nseries\n  string does not match regex",
+        match=r"1 validation error for PackageRepositoryApt\nseries\n  String should match pattern",
     ):
         create_apt(
             key_id="A" * 40,
@@ -194,7 +198,7 @@ def test_apt_invalid_series():
 def test_apt_invalid_pocket():
     with pytest.raises(
         pydantic.ValidationError,
-        match=r"2 validation errors for PackageRepositoryApt\npocket\n  value is not a valid enumeration member;",
+        match=r"1 validation error for PackageRepositoryApt\npocket\n  Input should be ",
     ):
         create_apt(
             key_id="A" * 40,
@@ -209,12 +213,13 @@ def test_apt_invalid_path_with_suites():
         create_apt(
             key_id="A" * 40,
             path="/",
+            components=["main"],
             suites=["xenial", "xenial-updates"],
             url="http://archive.ubuntu.com/ubuntu",
         )
 
     expected_message = (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
+        "Value error, Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
         "suites ['xenial', 'xenial-updates'] cannot be combined with path '/'"
     )
 
@@ -228,11 +233,12 @@ def test_apt_invalid_path_with_components():
             key_id="A" * 40,
             path="/",
             components=["main"],
+            suites=["xenial", "xenial-updates"],
             url="http://archive.ubuntu.com/ubuntu",
         )
 
     expected_message = (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
+        "Value error, Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
         "components ['main'] cannot be combined with path '/'."
     )
 
@@ -249,7 +255,7 @@ def test_apt_invalid_missing_components():
         )
 
     expected_message = (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
+        "Value error, Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
         "components must be specified when using suites."
     )
 
@@ -302,7 +308,7 @@ def test_apt_invalid_missing_components_or_suites_pocket():
         )
 
     expected_message = (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
+        "Value error, Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
         'either "suites" or "series and pocket" must be specified when using components.'
     )
 
@@ -311,20 +317,15 @@ def test_apt_invalid_missing_components_or_suites_pocket():
 
 
 def test_apt_invalid_suites_as_path():
-    with pytest.raises(pydantic.ValidationError) as raised:
+    with pytest.raises(
+        pydantic.ValidationError, match="Suites must not end with a '/'"
+    ):
         create_apt(
             key_id="A" * 40,
+            components=["main"],
             suites=["my-suite/"],
             url="http://archive.ubuntu.com/ubuntu",
         )
-
-    expected_message = (
-        "Invalid package repository for 'http://archive.ubuntu.com/ubuntu': "
-        "invalid suite 'my-suite/'. Suites must not end with a '/'."
-    )
-
-    err = raised.value
-    assert expected_message in str(err)
 
 
 def test_apt_key_id_valid():
@@ -349,7 +350,8 @@ def test_apt_key_id_invalid(key_id):
         "key-id": key_id,
     }
 
-    with pytest.raises(pydantic.ValidationError, match="string does not match regex"):
+    error = r"String should match pattern '\^\[0-9A-F\]\{40\}\$'"
+    with pytest.raises(pydantic.ValidationError, match=error):
         PackageRepositoryApt.unmarshal(repo)
 
 
@@ -374,7 +376,7 @@ def test_apt_formats(formats):
         apt_deb = PackageRepositoryApt.unmarshal(repo)
         assert apt_deb.formats == formats
     else:
-        error = ".*unexpected value; permitted: 'deb', 'deb-src'"
+        error = "Input should be 'deb' or 'deb-src'"
         with pytest.raises(pydantic.ValidationError, match=error):
             PackageRepositoryApt.unmarshal(repo)
 
@@ -468,7 +470,7 @@ def test_apt_invalid_priority():
         create_apt(key_id="A" * 40, url="http://test", priority=0)
 
     expected_message = (
-        "Invalid package repository for 'http://test': "
+        "Value error, Invalid package repository for 'http://test': "
         "invalid priority: Priority cannot be zero."
     )
 

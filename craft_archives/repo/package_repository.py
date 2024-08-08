@@ -17,37 +17,57 @@
 """Package repository definitions."""
 
 import abc
+import collections
 import enum
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Union
+from typing import (
+    Annotated,
+    Any,
+    Dict,
+    List,
+    Literal,
+    Mapping,
+    Optional,
+    TypeVar,
+    Union,
+)
 from urllib.parse import urlparse
 
-import pydantic
 from overrides import overrides  # pyright: ignore[reportUnknownVariableType]
 from pydantic import (
+    AfterValidator,
     AnyUrl,
-    ConstrainedStr,
+    BaseModel,
+    ConfigDict,
+    Field,  # pyright: ignore[reportUnknownVariableType]
     FileUrl,
-    conlist,
-    root_validator,  # pyright: ignore[reportUnknownVariableType]
-    validator,  # pyright: ignore[reportUnknownVariableType]
+    StringConstraints,
+    ValidationInfo,
+    field_serializer,
+    field_validator,  # pyright: ignore[reportUnknownVariableType]
+    model_validator,  # pyright: ignore[reportUnknownVariableType]
 )
-
-# NOTE: using this instead of typing.Literal because of this bad typing_extensions
-# interaction: https://github.com/pydantic/pydantic/issues/5821#issuecomment-1559196859
-# We can revisit this when typing_extensions >4.6.0 is released, and/or we no longer
-# have to support Python <3.10
-from typing_extensions import Literal
+from typing_extensions import Self
 
 from . import errors
 
-# A workaround for mypy false positives
-# see https://github.com/samuelcolvin/pydantic/issues/975#issuecomment-551147305
-# fmt: off
-if TYPE_CHECKING:
-    UniqueStrList = List[str]
-else:
-    UniqueStrList = conlist(str, unique_items=True, min_items=1)
+T = TypeVar("T")
+
+
+def _validate_list_is_unique(value: list[T]) -> list[T]:
+    value_set = set(value)
+    if len(value_set) == len(value):
+        return value
+    dupes = [item for item, count in collections.Counter(value).items() if count > 1]
+    raise ValueError(f"duplicate values in list: {dupes}")
+
+
+UniqueList = Annotated[
+    list[T],
+    AfterValidator(_validate_list_is_unique),
+    Field(json_schema_extra={"uniqueItems": True}),
+]
+
 
 class PocketEnum(str, enum.Enum):
     """Enum values that represent possible pocket values."""
@@ -60,6 +80,7 @@ class PocketEnum(str, enum.Enum):
     def __str__(self) -> str:
         return self.value
 
+
 class PocketUCAEnum(str, enum.Enum):
     """Enum values that represent possible pocket values for UCA."""
 
@@ -69,17 +90,10 @@ class PocketUCAEnum(str, enum.Enum):
     def __str__(self) -> str:
         return self.value
 
+
 UCA_ARCHIVE = "http://ubuntu-cloud.archive.canonical.com/ubuntu"
 UCA_NETLOC = urlparse(UCA_ARCHIVE).netloc
 UCA_KEY_ID = "391A9AA2147192839E9DB0315EDB1B62EC4926EA"
-
-
-class KeyIdStr(ConstrainedStr):
-    """A constrained string for a GPG key ID."""
-
-    min_length = 40
-    max_length = 40
-    regex = re.compile(r"^[0-9A-F]{40}$")
 
 
 class PriorityString(enum.IntEnum):
@@ -91,33 +105,49 @@ class PriorityString(enum.IntEnum):
 
 
 PriorityValue = Union[int, Literal["always", "prefer", "defer"]]
+SeriesStr = Annotated[
+    str, StringConstraints(min_length=1, pattern=re.compile(r"^[a-z]+$"))
+]
+KeyIdStr = Annotated[
+    str,
+    StringConstraints(
+        min_length=40, max_length=40, pattern=re.compile(r"^[0-9A-F]{40}$")
+    ),
+]
 
-class SeriesStr(ConstrainedStr):
-    """A constrained string for a series."""
 
-    regex = re.compile(r"^[a-z]+$")
+def _validate_suite_str(suite: str) -> str:
+    if suite.endswith("/"):
+        raise ValueError(f"invalid suite {suite!r}. Suites must not end with a '/'.")
+    return suite
+
+
+SuiteStr = Annotated[
+    str,
+    AfterValidator(_validate_suite_str),
+]
 
 
 def _alias_generator(value: str) -> str:
     return value.replace("_", "-")
 
 
-class PackageRepository(pydantic.BaseModel, abc.ABC):
+class PackageRepository(BaseModel, abc.ABC):
     """The base class for package repositories."""
 
-    class Config:  # pylint: disable=too-few-public-methods
-        """Pydantic model configuration."""
-
-        validate_assignment = True
-        allow_mutation = False
-        allow_population_by_field_name = True
-        alias_generator = _alias_generator
-        extra = "forbid"
+    model_config = ConfigDict(
+        validate_assignment=True,
+        frozen=True,
+        populate_by_name=True,
+        alias_generator=_alias_generator,
+        extra="forbid",
+    )
 
     type: Literal["apt"]
-    priority: Optional[PriorityValue]
+    priority: Optional[PriorityValue] = None
 
-    @root_validator
+    @model_validator(mode="before")
+    @classmethod
     def priority_cannot_be_zero(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """Priority cannot be zero per apt Preferences specification."""
         priority = values.get("priority")
@@ -128,9 +158,10 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
             )
         return values
 
-    @validator("priority")
+    @field_validator("priority")
+    @classmethod
     def _convert_priority_to_int(
-        cls, priority: Optional[PriorityValue], values: Dict[str, Any]
+        cls, priority: Optional[PriorityValue], info: ValidationInfo
     ) -> Optional[int]:
         if isinstance(priority, str):
             str_priority = priority.upper()
@@ -139,7 +170,11 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
             # This cannot happen; if it's a string but not one of the accepted
             # ones Pydantic will fail early and won't call this validator.
             raise _create_validation_error(
-                url=str(values.get("url") or values.get("ppa") or values.get("cloud")),
+                url=str(
+                    info.data.get("url")
+                    or info.data.get("ppa")
+                    or info.data.get("cloud")
+                ),
                 message=(
                     f"invalid priority {priority!r}. "
                     "Priority must be 'always', 'prefer', 'defer' or a nonzero integer."
@@ -149,7 +184,7 @@ class PackageRepository(pydantic.BaseModel, abc.ABC):
 
     def marshal(self) -> Dict[str, Union[str, int]]:
         """Return the package repository data as a dictionary."""
-        return self.dict(by_alias=True, exclude_none=True)
+        return self.model_dump(by_alias=True, exclude_none=True)
 
     @classmethod
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepository":
@@ -202,9 +237,10 @@ class PackageRepositoryAptPPA(PackageRepository):
     """A PPA package repository."""
 
     ppa: str
-    key_id: Optional[KeyIdStr] = pydantic.Field(alias="key-id")
+    key_id: KeyIdStr | None = Field(default=None, alias="key-id")
 
-    @validator("ppa")
+    @field_validator("ppa")
+    @classmethod
     def _non_empty_ppa(cls, ppa: str) -> str:
         if not ppa:
             raise _create_validation_error(
@@ -231,7 +267,8 @@ class PackageRepositoryAptUCA(PackageRepository):
     cloud: str
     pocket: PocketUCAEnum = PocketUCAEnum.UPDATES
 
-    @validator("cloud")
+    @field_validator("cloud")
+    @classmethod
     def _non_empty_cloud(cls, cloud: str) -> str:
         if not cloud:
             raise _create_validation_error(message="clouds must be non-empty strings.")
@@ -241,7 +278,7 @@ class PackageRepositoryAptUCA(PackageRepository):
     @overrides
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryAptUCA":
         """Create a package repository object from the given data."""
-        return cls(**data)
+        return cls.model_validate(data)
 
     @property
     def pin(self) -> str:
@@ -252,47 +289,57 @@ class PackageRepositoryAptUCA(PackageRepository):
 class PackageRepositoryApt(PackageRepository):
     """An APT package repository."""
 
-    url: Union[AnyUrl, FileUrl]
-    key_id: KeyIdStr = pydantic.Field(alias="key-id")
-    architectures: Optional[List[str]]
-    formats: Optional[List[Literal["deb", "deb-src"]]]
-    path: Optional[str]
-    components: Optional[UniqueStrList]
-    key_server: Optional[str] = pydantic.Field(alias="key-server")
-    suites: Optional[List[str]]
-    pocket: Optional[PocketEnum]
-    series: Optional[SeriesStr]
+    url: AnyUrl | FileUrl
+    key_id: KeyIdStr = Field(alias="key-id")
+    architectures: Optional[UniqueList[str]] = None
+    formats: Optional[List[Literal["deb", "deb-src"]]] = None
+    path: Optional[str] = None
+    components: Optional[UniqueList[str]] = None
+    key_server: Optional[str] = Field(default=None, alias="key-server")
+    suites: Optional[List[SuiteStr]] = None
+    pocket: Optional[PocketEnum] = None
+    series: Optional[SeriesStr] = None
 
-    # Customize some of the validation error messages
-    class Config(PackageRepository.Config):  # noqa: D106 - no docstring needed
-        error_msg_templates = {
-            "value_error.any_str.min_length": "Invalid URL; URLs must be non-empty strings"
-        }
+    # class Config(PackageRepository.Config):  # - no docstring needed
+    #     error_msg_templates = {
+    #         "value_error.any_str.min_length": "Invalid URL; URLs must be non-empty strings"
+    #     }
 
     @property
     def name(self) -> str:
         """Get the repository name."""
-        return re.sub(r"\W+", "_", self.url)
+        return re.sub(r"\W+", "_", str(self.url))
 
-    @validator("path")
+    @field_validator("url")
+    @classmethod
+    def _convert_url_to_string(cls, url: Union[AnyUrl, FileUrl]) -> str:
+        return str(url).rstrip("/")
+
+    @field_serializer("url")
+    def _serialize_url_as_string(self, url: AnyUrl | FileUrl) -> str:
+        return str(url)
+
+    @field_validator("path")
+    @classmethod
     def _path_non_empty(
-        cls, path: Optional[str], values: Dict[str, Any]
+        cls, path: Optional[str], info: ValidationInfo
     ) -> Optional[str]:
         if path is not None and not path:
             raise _create_validation_error(
-                url=values.get("url"),
+                url=info.data.get("url"),
                 message="Invalid path; Paths must be non-empty strings.",
             )
         return path
 
-    @validator("components")
+    @field_validator("components")
+    @classmethod
     def _not_mixing_components_and_path(
-        cls, components: Optional[List[str]], values: Dict[str, Any]
+        cls, components: Optional[List[str]], info: ValidationInfo
     ) -> Optional[List[str]]:
-        path = values.get("path")
+        path = info.data.get("path")
         if components and path:
             raise _create_validation_error(
-                url=values.get("url"),
+                url=info.data.get("url"),
                 message=(
                     f"components {components!r} cannot be combined with "
                     f"path {path!r}."
@@ -300,81 +347,65 @@ class PackageRepositoryApt(PackageRepository):
             )
         return components
 
-    @validator("suites")
+    @field_validator("suites")
+    @classmethod
     def _not_mixing_suites_and_path(
-        cls, suites: Optional[List[str]], values: Dict[str, Any]
+        cls, suites: Optional[List[str]], info: ValidationInfo
     ) -> Optional[List[str]]:
-        path = values.get("path")
+        path = info.data.get("path")
         if suites and path:
             message = f"suites {suites!r} cannot be combined with path {path!r}."
-            raise _create_validation_error(url=values.get("url"), message=message)
+            raise _create_validation_error(url=info.data.get("url"), message=message)
         return suites
 
-    @root_validator
-    def _not_mixing_suites_and_series_pocket(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        suites = values.get("suites")
-        series = values.get("series")
-        pocket = values.get("pocket")
-        url = values.get("url")
-        if suites and (series or pocket):
+    @model_validator(mode="after")
+    def _not_mixing_suites_and_series_pocket(self) -> Self:
+        if self.suites and (self.series or self.pocket):
             raise _create_validation_error(
-                url=url, message="suites cannot be combined with series and pocket."
+                url=str(self.url),
+                message="suites cannot be combined with series and pocket.",
             )
-        return values
+        return self
 
-    @root_validator
-    def _missing_pocket_with_series(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="after")
+    def _missing_pocket_with_series(self) -> Self:
         """Validate pocket is set when series is. The other way around is NOT mandatory."""
-        series = values.get("series")
-        pocket = values.get("pocket")
-        url = values.get("url")
-        if series and not pocket:
+        if self.series and not self.pocket:
             raise _create_validation_error(
-                url=url, message="pocket must be specified when using series."
+                url=str(self.url), message="pocket must be specified when using series."
             )
-        return values
+        return self
 
-    @validator("suites", each_item=True)
-    def _suites_without_backslash(cls, suite: str, values: Dict[str, Any]) -> str:
-        if suite.endswith("/"):
+    @model_validator(mode="after")
+    def _missing_components_or_suites_pocket(self) -> Self:
+        if self.suites and not self.components:
             raise _create_validation_error(
-                url=values.get("url"),
-                message=f"invalid suite {suite!r}. Suites must not end with a '/'.",
+                url=str(self.url),
+                message="components must be specified when using suites.",
             )
-        return suite
-
-    @root_validator
-    def _missing_components_or_suites_pocket(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        suites = values.get("suites")
-        components = values.get("components")
-        pocket = values.get("pocket")
-        url = values.get("url")
-        if suites and not components:
+        if self.components and not (self.suites or self.pocket):
             raise _create_validation_error(
-                url=url, message="components must be specified when using suites."
-            )
-        if components and not (suites or pocket):
-            raise _create_validation_error(
-                url=url, message='either "suites" or "series and pocket" must be specified when using components.'
+                url=str(self.url),
+                message='either "suites" or "series and pocket" must be specified when using components.',
             )
 
-        return values
+        return self
 
     @classmethod
     @overrides
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryApt":
         """Create a package repository object from the given data."""
-        return cls(**data)
+        return cls.model_validate(data)
 
     @property
     def pin(self) -> str:
         """The pin string for this repository if needed."""
-        domain = urlparse(self.url).netloc
+        domain = urlparse(str(self.url)).netloc
         return f'origin "{domain}"'
 
 
 def _create_validation_error(*, url: Optional[str] = None, message: str) -> ValueError:
-    """Create a ValueError with a formatted message and an optional indicative ``url``."""
+    """Create a ValueError with a formatted message and an optional url."""
     error_message = ""
     if url:
         error_message += f"Invalid package repository for '{url}': "

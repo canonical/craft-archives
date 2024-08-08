@@ -208,7 +208,7 @@ class AptSourcesManager:
             formats=cast(Optional[List[str]], package_repo.formats),
             name=name,
             suites=suites,
-            url=package_repo.url,
+            url=str(package_repo.url),
             keyring_path=keyring_path,
         )
 
