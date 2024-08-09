@@ -5,6 +5,12 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+2.0.0 (2024-08-08)
+------------------
+
+* Update minimum Python version to 3.10
+* Require Pydantic 2
+
 1.2.0 (2024-07-05)
 ------------------
 
