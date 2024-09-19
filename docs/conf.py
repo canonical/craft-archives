@@ -46,6 +46,7 @@ extensions.extend(
     ]
 )
 
+
 # region Options for extensions
 # Intersphinx extension
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
