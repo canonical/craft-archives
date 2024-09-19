@@ -1,6 +1,6 @@
 {
   // Configuration file for RenovateBot: https://docs.renovatebot.com/configuration-options
-  extends: ["config:recommended", ":semanticCommitTypeAll(build)"],
+  extends: ["config:recommended", ":semanticCommitTypeAll(build)", ":enablePreCommit"],
   labels: ["dependencies"],  // For convenient searching in GitHub
   baseBranches: ["$default", "/^hotfix\\/.*/"],
   pip_requirements: {
@@ -32,7 +32,11 @@
       // Automerge patches, pin changes and digest changes.
       // Also groups these changes together.
       groupName: "bugfixes",
-      excludeDepPatterns: ["lint/.*", "types/.*"],
+      excludeDepPatterns: [
+        "lint/.*",
+        "types/.*",
+        "pyright",  // Pyright needs to be done separately.
+      ],
       matchUpdateTypes: ["patch", "pin", "digest"],
       prPriority: 3, // Patches should go first!
       automerge: true
@@ -57,6 +61,7 @@
       //Do all pydantic-related updates together
       groupName: "pydantic etc.",
       matchPackagePatterns: ["^pydantic"],
+      matchBaseBranches: ["$default"],  // Only do minor releases on main
     },
     {
       // Minor changes can be grouped and automerged for dev dependencies, but are also deprioritised.
@@ -91,7 +96,8 @@
       ],
       matchUpdateTypes: ["minor", "patch", "pin", "digest"],
       prPriority: -1,
-      automerge: true
+      automerge: true,
+      matchBaseBranches: ["$default"],  // Not for hotfix branches
     },
     {
       // Documentation related updates
@@ -135,16 +141,6 @@
         "# renovate: datasource=(?<datasource>\\S+)\n\\s+(?<depName>.*?)(\\[[\\w]*\\])*[=><]=?(?<currentValue>.*?)\n"
       ]
     },
-    {
-      // .pre-commit-config.yaml version updates
-      fileMatch: [".pre-commit-config.yaml"],
-      customType: "regex",
-      datasourceTemplate: "pypi",
-      depTypeTemplate: "lint",
-      matchStrings: [
-        "- repo: .*/<(?<depName>\\S+)\\s*\\n\\s*rev:\s+\"?v?(?<currentValue>\\S*)\"?",
-      ]
-    }
   ],
   timezone: "Etc/UTC",
   schedule: ["every weekend"],
