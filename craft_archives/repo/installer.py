@@ -17,7 +17,7 @@
 """Package repository installer."""
 
 import pathlib
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from . import errors
 from .apt_key_manager import AptKeyManager
@@ -32,7 +32,7 @@ from .package_repository import (
 
 
 def install(
-    project_repositories: List[Dict[str, Any]], *, key_assets: pathlib.Path
+    project_repositories: list[dict[str, Any]], *, key_assets: pathlib.Path
 ) -> bool:
     """Add package repositories to the host system.
 
@@ -47,7 +47,7 @@ def install(
 
 
 def install_in_root(
-    project_repositories: List[Dict[str, Any]],
+    project_repositories: list[dict[str, Any]],
     root: pathlib.Path,
     *,
     key_assets: pathlib.Path,
@@ -67,8 +67,8 @@ def install_in_root(
 
 def _install_repos(
     *,
-    project_repositories: List[Dict[str, Any]],
-    root: Optional[pathlib.Path] = None,
+    project_repositories: list[dict[str, Any]],
+    root: pathlib.Path | None = None,
     key_assets: pathlib.Path,
 ) -> bool:
     keyrings_path = AptKeyManager.keyrings_path_for_root(root)
@@ -97,11 +97,9 @@ def _install_repos(
         if (
             isinstance(
                 package_repo,
-                (
-                    PackageRepositoryApt,
-                    PackageRepositoryAptPPA,
-                    PackageRepositoryAptUCA,
-                ),
+                PackageRepositoryApt
+                | PackageRepositoryAptPPA
+                | PackageRepositoryAptUCA,
             )
             and package_repo.priority is not None
         ):
@@ -133,10 +131,10 @@ def _verify_all_key_assets_installed(
 
 
 def _unmarshal_repositories(
-    project_repositories: List[Dict[str, Any]],
-) -> List[PackageRepository]:
+    project_repositories: list[dict[str, Any]],
+) -> list[PackageRepository]:
     """Create package repositories objects from project data."""
-    repositories: List[PackageRepository] = []
+    repositories: list[PackageRepository] = []
     for data in project_repositories:
         pkg_repo: PackageRepository
 

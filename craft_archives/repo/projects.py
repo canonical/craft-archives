@@ -16,12 +16,12 @@
 
 """Project model definitions and helpers."""
 
-from typing import Any, Dict
+from typing import Any
 
 from craft_archives.repo.package_repository import PackageRepository
 
 
-def validate_repository(data: Dict[str, Any]) -> None:
+def validate_repository(data: dict[str, Any]) -> None:
     """Validate a package repository.
 
     :param data: The repository data to validate.

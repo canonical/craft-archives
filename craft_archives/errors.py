@@ -16,7 +16,6 @@
 """Common errors used in craft-archives."""
 
 import dataclasses
-from typing import Optional
 
 
 @dataclasses.dataclass(repr=True)
@@ -29,8 +28,8 @@ class ArchivesError(Exception):
     """
 
     brief: str
-    details: Optional[str] = None
-    resolution: Optional[str] = None
+    details: str | None = None
+    resolution: str | None = None
 
     def __str__(self) -> str:
         return self.brief

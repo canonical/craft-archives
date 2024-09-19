@@ -16,10 +16,11 @@
 
 """Integration tests for repo.installer"""
 
+import pathlib
 import shutil
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Dict, List
+from typing import Any
 
 import distro
 import pytest
@@ -118,8 +119,8 @@ def create_etc_apt_dirs(etc_apt: Path):
     preferences_dir.mkdir()
 
 
-@pytest.fixture
-def fake_etc_apt(tmp_path, mocker) -> Path:
+@pytest.fixture()
+def fake_etc_apt(tmp_path: pathlib.Path, mocker) -> Path:
     """Mock the default paths used to store keys, sources and preferences."""
     etc_apt = tmp_path / "etc/apt"
     create_etc_apt_dirs(etc_apt)
@@ -144,8 +145,8 @@ def fake_etc_apt(tmp_path, mocker) -> Path:
 
 
 @pytest.fixture()
-def all_repo_types() -> List[Dict[str, Any]]:
-    repo_types = [
+def all_repo_types() -> list[dict[str, Any]]:
+    repo_types: list[dict[str, Any]] = [
         # a "standard" repo, with a key coming from the assets dir
         {
             "type": "apt",
@@ -184,8 +185,8 @@ def all_repo_types() -> List[Dict[str, Any]]:
     return repo_types
 
 
-@pytest.fixture
-def test_keys_dir(tmp_path, test_data_dir) -> Path:
+@pytest.fixture()
+def test_keys_dir(tmp_path: Path, test_data_dir) -> Path:
     target_dir = tmp_path / "keys"
     target_dir.mkdir()
 
@@ -243,8 +244,8 @@ def check_sources(etc_apt_dir: Path, signed_by_location: Path) -> None:
     keyrings_on_fs = etc_apt_dir / "keyrings"
 
     if CLOUD_DATA:
-        cloud_name = CLOUD_DATA["cloud"]
-        codename = CLOUD_DATA["codename"]
+        cloud_name: str | None = CLOUD_DATA["cloud"]
+        codename: str | None = CLOUD_DATA["codename"]
     else:
         cloud_name = codename = None
 
