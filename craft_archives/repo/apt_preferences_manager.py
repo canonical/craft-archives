@@ -20,7 +20,6 @@ import contextlib
 import dataclasses
 import io
 import logging
-import typing
 from pathlib import Path
 
 from craft_archives.repo.errors import AptPreferencesError
@@ -109,15 +108,15 @@ class AptPreferencesManager:
     def __init__(
         self,
         *,
-        path: typing.Optional[Path] = None,
+        path: Path | None = None,
         header: str = _DEFAULT_HEADER,
     ) -> None:
         self._header = header
         self._path = path or _DEFAULT_PREFERENCES_FILE
-        self._preferences: typing.List[Preference] = []
+        self._preferences: list[Preference] = []
 
     @classmethod
-    def preferences_path_for_root(cls, root: typing.Optional[Path] = None) -> Path:
+    def preferences_path_for_root(cls, root: Path | None = None) -> Path:
         """Get the location for the Apt preferences file with ``root`` as the system root.
 
         :param root: The optional system root to consider, or None to assume the standard

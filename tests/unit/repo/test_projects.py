@@ -39,7 +39,7 @@ def test_validate_repository(repo):
 
 def test_validate_repository_invalid():
     with pytest.raises(TypeError, match="must be a dictionary"):
-        validate_repository("invalid repository")  # type: ignore
+        validate_repository("invalid repository")  # pyright: ignore[reportGeneralTypeIssues]
 
 
 def test_validate_repository_empty_dict():

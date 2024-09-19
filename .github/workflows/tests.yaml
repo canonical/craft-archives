@@ -17,10 +17,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: conventional commits
-        uses: webiny/action-conventional-commits@v1.3.0
-        with:
-          allowed-commit-types: "build,chore,ci,docs,feat,fix,perf,refactor,style,test"
+      # Disabled in craft-archives because there are many unconventional commits
+      # - name: conventional commits
+      #   uses: webiny/action-conventional-commits@v1.3.0
+      #   with:
+      #     allowed-commit-types: "build,chore,ci,docs,feat,fix,perf,refactor,style,test"
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -47,7 +48,7 @@ jobs:
   unit:
     strategy:
       matrix:
-        platform: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, windows-latest, macos-latest]
+        platform: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -88,7 +89,7 @@ jobs:
   integration:
     strategy:
       matrix:
-        platform: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, windows-latest, macos-latest]
+        platform: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4

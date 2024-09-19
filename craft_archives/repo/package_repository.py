@@ -20,16 +20,12 @@ import abc
 import collections
 import enum
 import re
+from collections.abc import Mapping
 from typing import (
     Annotated,
     Any,
-    Dict,
-    List,
     Literal,
-    Mapping,
-    Optional,
     TypeVar,
-    Union,
 )
 from urllib.parse import urlparse
 
@@ -104,7 +100,7 @@ class PriorityString(enum.IntEnum):
     DEFER = 100
 
 
-PriorityValue = Union[int, Literal["always", "prefer", "defer"]]
+PriorityValue = int | Literal["always", "prefer", "defer"]
 SeriesStr = Annotated[
     str, StringConstraints(min_length=1, pattern=re.compile(r"^[a-z]+$"))
 ]
@@ -144,11 +140,11 @@ class PackageRepository(BaseModel, abc.ABC):
     )
 
     type: Literal["apt"]
-    priority: Optional[PriorityValue] = None
+    priority: PriorityValue | None = None
 
     @model_validator(mode="before")
     @classmethod
-    def priority_cannot_be_zero(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def priority_cannot_be_zero(cls, values: dict[str, Any]) -> dict[str, Any]:
         """Priority cannot be zero per apt Preferences specification."""
         priority = values.get("priority")
         if priority == 0:
@@ -161,8 +157,8 @@ class PackageRepository(BaseModel, abc.ABC):
     @field_validator("priority")
     @classmethod
     def _convert_priority_to_int(
-        cls, priority: Optional[PriorityValue], info: ValidationInfo
-    ) -> Optional[int]:
+        cls, priority: PriorityValue | None, info: ValidationInfo
+    ) -> int | None:
         if isinstance(priority, str):
             str_priority = priority.upper()
             if str_priority in PriorityString.__members__:
@@ -182,7 +178,7 @@ class PackageRepository(BaseModel, abc.ABC):
             )
         return priority
 
-    def marshal(self) -> Dict[str, Union[str, int]]:
+    def marshal(self) -> dict[str, str | int]:
         """Return the package repository data as a dictionary."""
         return self.model_dump(by_alias=True, exclude_none=True)
 
@@ -209,10 +205,10 @@ class PackageRepository(BaseModel, abc.ABC):
 
     @classmethod
     def unmarshal_package_repositories(
-        cls, data: Optional[List[Dict[str, Any]]]
-    ) -> List["PackageRepository"]:
+        cls, data: list[dict[str, Any]] | None
+    ) -> list["PackageRepository"]:
         """Create multiple package repositories from the given data."""
-        repositories: List[PackageRepository] = []
+        repositories: list[PackageRepository] = []
 
         if data is not None:
             if not isinstance(data, list):  # pyright: ignore[reportUnnecessaryIsInstance]
@@ -291,19 +287,14 @@ class PackageRepositoryApt(PackageRepository):
 
     url: AnyUrl | FileUrl
     key_id: KeyIdStr = Field(alias="key-id")
-    architectures: Optional[UniqueList[str]] = None
-    formats: Optional[List[Literal["deb", "deb-src"]]] = None
-    path: Optional[str] = None
-    components: Optional[UniqueList[str]] = None
-    key_server: Optional[str] = Field(default=None, alias="key-server")
-    suites: Optional[List[SuiteStr]] = None
-    pocket: Optional[PocketEnum] = None
-    series: Optional[SeriesStr] = None
-
-    # class Config(PackageRepository.Config):  # - no docstring needed
-    #     error_msg_templates = {
-    #         "value_error.any_str.min_length": "Invalid URL; URLs must be non-empty strings"
-    #     }
+    architectures: UniqueList[str] | None = None
+    formats: list[Literal["deb", "deb-src"]] | None = None
+    path: str | None = None
+    components: UniqueList[str] | None = None
+    key_server: str | None = Field(default=None, alias="key-server")
+    suites: list[SuiteStr] | None = None
+    pocket: PocketEnum | None = None
+    series: SeriesStr | None = None
 
     @property
     def name(self) -> str:
@@ -312,7 +303,7 @@ class PackageRepositoryApt(PackageRepository):
 
     @field_validator("url")
     @classmethod
-    def _convert_url_to_string(cls, url: Union[AnyUrl, FileUrl]) -> str:
+    def _convert_url_to_string(cls, url: AnyUrl | FileUrl) -> str:
         return str(url).rstrip("/")
 
     @field_serializer("url")
@@ -321,9 +312,7 @@ class PackageRepositoryApt(PackageRepository):
 
     @field_validator("path")
     @classmethod
-    def _path_non_empty(
-        cls, path: Optional[str], info: ValidationInfo
-    ) -> Optional[str]:
+    def _path_non_empty(cls, path: str | None, info: ValidationInfo) -> str | None:
         if path is not None and not path:
             raise _create_validation_error(
                 url=info.data.get("url"),
@@ -334,8 +323,8 @@ class PackageRepositoryApt(PackageRepository):
     @field_validator("components")
     @classmethod
     def _not_mixing_components_and_path(
-        cls, components: Optional[List[str]], info: ValidationInfo
-    ) -> Optional[List[str]]:
+        cls, components: list[str] | None, info: ValidationInfo
+    ) -> list[str] | None:
         path = info.data.get("path")
         if components and path:
             raise _create_validation_error(
@@ -350,8 +339,8 @@ class PackageRepositoryApt(PackageRepository):
     @field_validator("suites")
     @classmethod
     def _not_mixing_suites_and_path(
-        cls, suites: Optional[List[str]], info: ValidationInfo
-    ) -> Optional[List[str]]:
+        cls, suites: list[str] | None, info: ValidationInfo
+    ) -> list[str] | None:
         path = info.data.get("path")
         if suites and path:
             message = f"suites {suites!r} cannot be combined with path {path!r}."
@@ -404,7 +393,7 @@ class PackageRepositoryApt(PackageRepository):
         return f'origin "{domain}"'
 
 
-def _create_validation_error(*, url: Optional[str] = None, message: str) -> ValueError:
+def _create_validation_error(*, url: str | None = None, message: str) -> ValueError:
     """Create a ValueError with a formatted message and an optional url."""
     error_message = ""
     if url:

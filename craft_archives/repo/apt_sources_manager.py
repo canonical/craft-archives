@@ -21,7 +21,7 @@ import logging
 import pathlib
 import subprocess
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import cast
 
 import distro
 
@@ -38,21 +38,18 @@ _DEFAULT_SOURCES_DIRECTORY = Path("/etc/apt/sources.list.d")
 _DEFAULT_SIGNED_BY_ROOT = Path("/")
 
 
-def _construct_deb822_source(  # noqa: PLR0913
+def _construct_deb822_source(
     *,
-    architectures: Optional[List[str]] = None,
-    components: Optional[List[str]] = None,
-    formats: Optional[List[str]] = None,
-    suites: List[str],
+    architectures: list[str] | None = None,
+    components: list[str] | None = None,
+    formats: list[str] | None = None,
+    suites: list[str],
     url: str,
     signed_by: pathlib.Path,
 ) -> str:
     """Construct deb-822 formatted sources string."""
     with io.StringIO() as deb822:
-        if formats:
-            type_text = " ".join(formats)
-        else:
-            type_text = "deb"
+        type_text = " ".join(formats) if formats else "deb"
 
         print(f"Types: {type_text}", file=deb822)
 
@@ -87,9 +84,9 @@ class AptSourcesManager:
     def __init__(
         self,
         *,
-        sources_list_d: Optional[Path] = None,
-        keyrings_dir: Optional[Path] = None,
-        signed_by_root: Optional[Path] = None,
+        sources_list_d: Path | None = None,
+        keyrings_dir: Path | None = None,
+        signed_by_root: Path | None = None,
     ) -> None:
         """Create a manager for Apt repository sources listings.
 
@@ -105,7 +102,7 @@ class AptSourcesManager:
         self._signed_by_root = signed_by_root or _DEFAULT_SIGNED_BY_ROOT
 
     @classmethod
-    def sources_path_for_root(cls, root: Optional[Path] = None) -> Path:
+    def sources_path_for_root(cls, root: Path | None = None) -> Path:
         """Get the location for Apt source listings with ``root`` as the system root.
 
         :param root: The optional system root to consider, or None to assume the standard
@@ -115,14 +112,14 @@ class AptSourcesManager:
             return _DEFAULT_SOURCES_DIRECTORY
         return root / "etc/apt/sources.list.d"
 
-    def _install_sources(  # noqa: PLR0913
+    def _install_sources(
         self,
         *,
-        architectures: Optional[List[str]] = None,
-        components: Optional[List[str]] = None,
-        formats: Optional[List[str]] = None,
+        architectures: list[str] | None = None,
+        components: list[str] | None = None,
+        formats: list[str] | None = None,
         name: str,
-        suites: List[str],
+        suites: list[str],
         url: str,
         keyring_path: pathlib.Path,
     ) -> bool:
@@ -205,7 +202,7 @@ class AptSourcesManager:
         return self._install_sources(
             architectures=package_repo.architectures,
             components=package_repo.components,
-            formats=cast(Optional[List[str]], package_repo.formats),
+            formats=cast(list[str] | None, package_repo.formats),
             name=name,
             suites=suites,
             url=str(package_repo.url),
@@ -305,7 +302,7 @@ class AptSourcesManager:
         raise RuntimeError(f"unhandled package repository: {package_repository!r}")
 
 
-def _add_architecture(architectures: List[str], root: Path) -> None:
+def _add_architecture(architectures: list[str], root: Path) -> None:
     """Add package repository architecture."""
     current_arch = _get_current_architecture()
     compatible_pairs = {"amd64": "i386", "arm64": "armhf"}
@@ -331,7 +328,7 @@ def _get_current_architecture() -> str:
     )
 
 
-def _get_suites(pocket: PocketEnum, series: str) -> List[str]:
+def _get_suites(pocket: PocketEnum, series: str) -> list[str]:
     """Get a list of suites from a pocket and a series."""
     suites = [series]
     if not pocket or pocket == PocketEnum.RELEASE:

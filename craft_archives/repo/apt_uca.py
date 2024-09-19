@@ -34,7 +34,7 @@ def check_release_compatibility(
     """Raise an exception if the release is incompatible with codename."""
     request = UCA_ARCHIVE + f"/dists/{codename}-{pocket.value}/{cloud}/"
     try:
-        urllib.request.urlopen(request)
+        urllib.request.urlopen(request)  # noqa: S310
     except urllib.error.HTTPError as e:
         if e.code == http.HTTPStatus.NOT_FOUND:
             raise errors.AptUCAInstallError(

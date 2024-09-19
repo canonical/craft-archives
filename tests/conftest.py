@@ -15,8 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """Basic test configuration for craft-archives."""
 
-from pathlib import Path
 import types
+from pathlib import Path
 
 import pytest
 
@@ -30,23 +30,23 @@ def test_data_dir() -> Path:
 
 
 @pytest.fixture(scope="session")
-def sample_key_path(test_data_dir) -> Path:
+def sample_key_path(test_data_dir: Path) -> Path:
     path = test_data_dir / "FC42E99D.asc"
     assert path.is_file()
     return path
 
 
 @pytest.fixture(scope="session")
-def sample_key_string(sample_key_path) -> str:
+def sample_key_string(sample_key_path: Path) -> str:
     return sample_key_path.read_text()
 
 
 @pytest.fixture(scope="session")
-def sample_key_bytes(sample_key_path) -> bytes:
+def sample_key_bytes(sample_key_path: Path) -> bytes:
     return sample_key_path.read_bytes()
 
 
-@pytest.fixture
+@pytest.fixture()
 def project_main_module() -> types.ModuleType:
     """Fixture that returns the project's principal package (imported).
 
