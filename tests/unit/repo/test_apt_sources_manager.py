@@ -19,6 +19,7 @@ import http
 import urllib.error
 from pathlib import Path
 from textwrap import dedent
+from typing import Any
 from unittest import mock
 from unittest.mock import call, patch
 
@@ -110,14 +111,16 @@ def create_apt_sources_mgr(tmp_path: Path, *, use_signed_by_root: bool):
     "package_repo,name,content_template",
     [
         (
-            PackageRepositoryApt(
-                type="apt",
-                architectures=["amd64", "arm64"],
-                components=["test-component"],
-                formats=["deb", "deb-src"],
-                key_id="A" * 40,
-                suites=["test-suite1", "test-suite2"],
-                url="http://test.url/ubuntu",
+            PackageRepositoryApt.model_validate(
+                {
+                    "type": "apt",
+                    "architectures": ["amd64", "arm64"],
+                    "components": ["test-component"],
+                    "formats": ["deb", "deb-src"],
+                    "key-id": "A" * 40,
+                    "suites": ["test-suite1", "test-suite2"],
+                    "url": "http://test.url/ubuntu",
+                }
             ),
             "craft-http_test_url_ubuntu.sources",
             dedent(
@@ -132,15 +135,17 @@ def create_apt_sources_mgr(tmp_path: Path, *, use_signed_by_root: bool):
             ),
         ),
         (
-            PackageRepositoryApt(
-                type="apt",
-                architectures=["amd64", "arm64"],
-                components=["test-component"],
-                formats=["deb", "deb-src"],
-                key_id="A" * 40,
-                series="test",
-                pocket=PocketEnum.PROPOSED,
-                url="http://test.url/ubuntu",
+            PackageRepositoryApt.model_validate(
+                {
+                    "type": "apt",
+                    "architectures": ["amd64", "arm64"],
+                    "components": ["test-component"],
+                    "formats": ["deb", "deb-src"],
+                    "key-id": "A" * 40,
+                    "series": "test",
+                    "pocket": PocketEnum.PROPOSED,
+                    "url": "http://test.url/ubuntu",
+                }
             ),
             "craft-http_test_url_ubuntu.sources",
             dedent(
@@ -155,15 +160,17 @@ def create_apt_sources_mgr(tmp_path: Path, *, use_signed_by_root: bool):
             ),
         ),
         (
-            PackageRepositoryApt(
-                type="apt",
-                architectures=["amd64", "arm64"],
-                components=["test-component"],
-                formats=["deb", "deb-src"],
-                key_id="A" * 40,
-                series="test",
-                pocket=PocketEnum.SECURITY,
-                url="http://test.url/ubuntu",
+            PackageRepositoryApt.model_validate(
+                {
+                    "type": "apt",
+                    "architectures": ["amd64", "arm64"],
+                    "components": ["test-component"],
+                    "formats": ["deb", "deb-src"],
+                    "key-id": "A" * 40,
+                    "series": "test",
+                    "pocket": PocketEnum.SECURITY,
+                    "url": "http://test.url/ubuntu",
+                }
             ),
             "craft-http_test_url_ubuntu.sources",
             dedent(
@@ -178,13 +185,15 @@ def create_apt_sources_mgr(tmp_path: Path, *, use_signed_by_root: bool):
             ),
         ),
         (
-            PackageRepositoryApt(
-                type="apt",
-                architectures=["amd64", "arm64"],
-                formats=["deb", "deb-src"],
-                path="dir/subdir",
-                key_id="A" * 40,
-                url="http://test.url/ubuntu",
+            PackageRepositoryApt.model_validate(
+                {
+                    "type": "apt",
+                    "architectures": ["amd64", "arm64"],
+                    "formats": ["deb", "deb-src"],
+                    "path": "dir/subdir",
+                    "key-id": "A" * 40,
+                    "url": "http://test.url/ubuntu",
+                }
             ),
             "craft-http_test_url_ubuntu.sources",
             dedent(
@@ -327,16 +336,19 @@ def test_install_uca_invalid(urllib, apt_sources_mgr):
 class UnvalidatedAptRepo(PackageRepositoryApt):
     """Repository with no validation to use for invalid repositories."""
 
-    def validate(self) -> None:
-        pass
+    @classmethod
+    def validate(cls, value: Any) -> Any:
+        return value
 
 
 def test_install_apt_errors(apt_sources_mgr):
-    repo = PackageRepositoryApt(
-        type="apt",
-        architectures=["amd64"],
-        url="https://example.com",
-        key_id="A" * 40,
+    repo = PackageRepositoryApt.model_validate(
+        {
+            "type": "apt",
+            "architectures": ["amd64"],
+            "url": "https://example.com",
+            "key-id": "A" * 40,
+        }
     )
     with pytest.raises(errors.AptGPGKeyringError):
         apt_sources_mgr._install_sources_apt(package_repo=repo)
