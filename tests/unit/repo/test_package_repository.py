@@ -607,7 +607,7 @@ def test_unmarshal_package_repositories_list_none():
 
 def test_unmarshal_package_repositories_invalid_data():
     with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepository.unmarshal_package_repositories("not-a-list")  # pyright: ignore[reportGeneralTypeIssues]
+        PackageRepository.unmarshal_package_repositories("not-a-list")  # pyright: ignore[reportArgumentType]
 
     err = raised.value
     assert str(err) == (
