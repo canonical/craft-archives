@@ -24,9 +24,9 @@ import pathlib
 import subprocess
 import tempfile
 from contextlib import contextmanager
-from typing import Iterable, Iterator, List, Optional, Union, cast
+from typing import Iterator, List, Optional, Union, cast
 
-from . import apt_ppa, errors, package_repository
+from . import apt_ppa, errors, gpg, package_repository
 
 logger = logging.getLogger(__name__)
 
@@ -34,39 +34,6 @@ DEFAULT_APT_KEYSERVER = "keyserver.ubuntu.com"
 
 # Directory for apt keyrings as recommended by Debian for third-party keyrings.
 KEYRINGS_PATH = pathlib.Path("/etc/apt/keyrings")
-
-# GnuPG command line options that we always want to use.
-_GPG_PREFIX = ["gpg", "--batch", "--no-default-keyring", "--with-colons"]
-
-
-def _call_gpg(
-    *parameters: str,
-    keyring: Optional[pathlib.Path] = None,
-    base_parameters: Iterable[str] = _GPG_PREFIX,
-    stdin: Optional[bytes] = None,
-    log: bool = False,
-) -> bytes:
-    if keyring:
-        command = [*base_parameters, "--keyring", f"gnupg-ring:{keyring}", *parameters]
-    else:
-        command = [*base_parameters, *parameters]
-    logger.debug(f"Executing command: {command}")
-    env = {"LANG": "C.UTF-8"}
-    try:
-        process = subprocess.run(
-            command,
-            input=stdin,
-            capture_output=True,
-            check=True,
-            env=env,
-        )
-        if log:
-            _log_gpg(process)
-        return process.stdout
-    except subprocess.CalledProcessError as error:
-        if log:
-            _log_gpg(error)
-        raise
 
 
 def get_keyring_path(
@@ -159,7 +126,7 @@ class AptKeyManager:
             key_bytes = key
 
         with _temporary_home_dir() as tmpdir:
-            response = _call_gpg(
+            response = gpg.call_gpg(
                 "--homedir",
                 str(tmpdir),
                 "--import-options",
@@ -195,14 +162,7 @@ class AptKeyManager:
             return False
 
         # Ensure the keyring file contains the correct key
-        try:
-            logger.debug("Listing keys in keyring...")
-            _call_gpg("--list-keys", key_id, keyring=keyring_file)
-        except subprocess.CalledProcessError as error:
-            logger.warning(f"gpg error: {error.output.decode()}")
-            return False
-        else:
-            return True
+        return gpg.is_key_in_keyring(key_id, keyring_file)
 
     def install_key(self, *, key: str, key_id: Optional[str] = None) -> None:
         """Install given key.
@@ -233,7 +193,7 @@ class AptKeyManager:
         # how GPG behaves when importing keys.
         with _temporary_home_dir() as tmpdir:
             try:
-                _call_gpg(
+                gpg.call_gpg(
                     "--homedir",
                     str(tmpdir),
                     "--import",
@@ -270,7 +230,7 @@ class AptKeyManager:
             with _temporary_home_dir() as tmpdir:
                 # We use a tmpdir because gpg needs a "homedir" to place temporary
                 # files into during the download process.
-                _call_gpg(
+                gpg.call_gpg(
                     "--homedir",
                     str(tmpdir),
                     "--keyserver",
@@ -351,14 +311,3 @@ def _temporary_home_dir() -> Iterator[pathlib.Path]:
         tmpdir = pathlib.Path(tmpdir_str)
         tmpdir.chmod(0o700)
         yield tmpdir
-
-
-def _log_gpg(
-    entity: Union[subprocess.CompletedProcess[bytes], subprocess.CalledProcessError],
-) -> None:
-    if entity.stdout:
-        logger.debug("gpg stdout:")
-        logger.debug(entity.stdout.decode())
-    if entity.stderr:
-        logger.debug("gpg stderr:")
-        logger.debug(entity.stderr.decode())

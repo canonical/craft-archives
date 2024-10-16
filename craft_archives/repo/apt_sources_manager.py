@@ -21,16 +21,17 @@ import logging
 import pathlib
 import subprocess
 from pathlib import Path
-from typing import List, Optional, cast
+from typing import List, Optional, Sequence, cast
 
 import distro
+from debian.deb822 import Deb822
 
 from craft_archives import utils
 from craft_archives.repo.package_repository import (
     PocketEnum,
 )
 
-from . import apt_key_manager, apt_ppa, apt_uca, errors, package_repository
+from . import apt_key_manager, apt_ppa, apt_uca, errors, gpg, package_repository
 
 logger = logging.getLogger(__name__)
 
@@ -198,9 +199,26 @@ class AptSourcesManager:
 
         name = package_repo.name
 
-        keyring_path = apt_key_manager.get_keyring_path(
-            package_repo.key_id, base_path=self._keyrings_dir
+        url = str(package_repo.url)
+
+        logger.debug(
+            "Looking for existing sources files for url %s and suites %s", url, suites
         )
+        # Check whether this url is already listed in an existing sources file
+        existing_key = _get_existing_keyring_for(
+            key_id=package_repo.key_id,
+            url=url,
+            suites=suites,
+            root=self._signed_by_root,
+        )
+
+        if existing_key:
+            keyring_path = existing_key
+        else:
+            logger.debug("No existing sources found")
+            keyring_path = apt_key_manager.get_keyring_path(
+                package_repo.key_id, base_path=self._keyrings_dir
+            )
 
         return self._install_sources(
             architectures=package_repo.architectures,
@@ -208,7 +226,7 @@ class AptSourcesManager:
             formats=cast(Optional[List[str]], package_repo.formats),
             name=name,
             suites=suites,
-            url=str(package_repo.url),
+            url=url,
             keyring_path=keyring_path,
         )
 
@@ -347,3 +365,77 @@ def _get_suites(pocket: PocketEnum, series: str) -> List[str]:
         suites = [f"{series}-{pocket}"]
 
     return suites
+
+
+def _dirify_url(url: str) -> str:
+    # Apt urls are always directories
+    if not url.endswith("/"):
+        return url + "/"
+    return url
+
+
+def _get_existing_keyring_for(
+    *, key_id: str, url: str, suites: Sequence[str], root: Path
+) -> Path | None:
+    """Look for an existing source that matches a key id, url and suites.
+
+    :param key_id: The ID of the key we want to find.
+    :param url: The source url to look for.
+    :param suites: The suites of interest. Needed because Apt sources are signed
+      at an "url + suite"-level, so the existing sources are parsed to find one
+      that matches ``url`` and at least one of the ``suites``.
+
+    :return: The full path to the signing keyfile, if a matching source is found.
+    """
+    suites_set = set(suites)
+
+    sources_dir = root / "etc/apt/sources.list.d"
+    # Note: this current implementation only looks for official sources in
+    # "ubuntu.sources", present since Noble.
+    sources_file = sources_dir / "ubuntu.sources"
+
+    if not sources_file.is_file():
+        return None
+
+    url = _dirify_url(url)
+
+    logger.debug("Reading sources in '%s' looking for '%s'", sources_file, url)
+
+    for source_dict in Deb822.iter_paragraphs(
+        sequence=sources_file.read_text(), fields=["URIs", "Suites", "Signed-By"]
+    ):
+        try:
+            source_url = _dirify_url(source_dict["URIs"])
+            source_suites = set(source_dict.get("Suites", "").split())
+            source_signed = source_dict["Signed-By"]
+        except KeyError:
+            # Source does not have a Signed-By or URIs - not relevant here.
+            continue
+
+        if url != source_url:
+            logger.debug(
+                "Source does not have a matching url: %s",
+                source_url,
+            )
+            continue
+
+        logger.debug("Source has these suites: %s", sorted(source_suites))
+        if suites_set.intersection(source_suites):
+            logger.debug("Suites match - Signed-By is '%s'", source_signed)
+            full_key_path = root / Path(source_signed).relative_to("/")
+
+            # Check whether the requested key-id matches the existing
+            # Signed-By key.
+            if not gpg.is_key_in_keyring(key_id, full_key_path):
+                # This is impossible to recover: user asked for a specific ID,
+                # and an Apt repository cannot be signed by different keys at
+                # the moment.
+                raise errors.SourcesKeyConflictError(
+                    requested_key_id=key_id,
+                    requested_url=url,
+                    conflict_keyring=source_signed,
+                    conflicting_source=sources_file,
+                )
+            return full_key_path
+
+    return None
