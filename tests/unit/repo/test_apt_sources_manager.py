@@ -16,6 +16,8 @@
 
 
 import http
+import re
+import textwrap
 import urllib.error
 from pathlib import Path
 from textwrap import dedent
@@ -24,7 +26,7 @@ from unittest.mock import call, patch
 
 import distro
 import pytest
-from craft_archives.repo import apt_ppa, apt_sources_manager, errors
+from craft_archives.repo import apt_ppa, apt_sources_manager, errors, gpg
 from craft_archives.repo.apt_sources_manager import (
     _DEFAULT_SOURCES_DIRECTORY,
     AptSourcesManager,
@@ -85,6 +87,7 @@ def apt_sources_mgr(tmp_path):
     yield apt_sources_manager.AptSourcesManager(
         sources_list_d=sources_list_d,
         keyrings_dir=keyrings_dir,
+        signed_by_root=tmp_path,
     )
 
 
@@ -403,3 +406,46 @@ def test_add_architecture_incompatible(mocker, host_arch, repo_arch):
 )
 def test_get_suites(pocket, series, result):
     assert _get_suites(pocket, series) == result
+
+
+def test_existing_key_incompatible(apt_sources_mgr, tmp_path, mocker):
+    repo = PackageRepositoryApt(
+        type="apt",
+        url="http://archive.ubuntu.com/ubuntu",
+        suites=["noble"],
+        components=["main", "universe"],
+        key_id="78E1918602959B9C59103100F1831DDAFC42E99D",
+    )
+
+    # Add a fake "ubuntu.sources" file that has a source that is Signed-By
+    # a fake keyring file that does *not* contain FC42E99D.
+    ubuntu_sources = tmp_path / "etc/apt/sources.list.d/ubuntu.sources"
+    ubuntu_sources.parent.mkdir(parents=True)
+    ubuntu_sources.write_text(
+        textwrap.dedent(
+            """
+            Types: deb
+            URIs: http://archive.ubuntu.com/ubuntu/
+            Suites: noble noble-updates noble-backports
+            Components: main universe restricted multiverse
+            Architectures: i386
+            Signed-By: /usr/share/keyrings/0264B26D.gpg
+            """
+        )
+    )
+
+    mock_is_key_in_keyring = mocker.patch.object(
+        gpg, "is_key_in_keyring", return_value=False
+    )
+
+    expected_message = re.escape(
+        "The key '78E1918602959B9C59103100F1831DDAFC42E99D' for "
+        "the repository with url 'http://archive.ubuntu.com/ubuntu/' conflicts "
+        f"with a source in '{ubuntu_sources}', "
+        "which is signed by '/usr/share/keyrings/0264B26D.gpg'"
+    )
+
+    with pytest.raises(errors.SourcesKeyConflictError, match=expected_message):
+        apt_sources_mgr.install_package_repository_sources(package_repo=repo)
+
+    assert mock_is_key_in_keyring.called
