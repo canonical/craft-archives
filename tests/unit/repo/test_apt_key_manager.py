@@ -100,9 +100,7 @@ def mock_apt_uca_key_id(mocker):
 
 @pytest.fixture()
 def mock_logger(mocker):
-    yield mocker.patch(
-        "craft_archives.repo.apt_key_manager.logger", spec=logging.Logger
-    )
+    yield mocker.patch("craft_archives.repo.gpg.logger", spec=logging.Logger)
 
 
 @pytest.fixture
