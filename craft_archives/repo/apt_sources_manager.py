@@ -202,7 +202,7 @@ class AptSourcesManager:
         url = str(package_repo.url)
 
         logger.debug(
-            "Looking for existing sources files for url %s and suites %s", url, suites
+            "Looking for existing sources files for url '%s' and suites %s", url, suites
         )
         # Check whether this url is already listed in an existing sources file
         existing_key = _get_existing_keyring_for(

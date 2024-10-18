@@ -18,6 +18,7 @@
 import logging
 import textwrap
 
+import pytest
 from craft_archives.repo import gpg
 from craft_archives.repo.apt_sources_manager import AptSourcesManager
 from craft_archives.repo.package_repository import PackageRepositoryApt
@@ -27,17 +28,25 @@ from debian import deb822
 
 EXPECTED_SIGNED_BY = "/usr/share/keyrings/FC42E99D.gpg"
 
-DEFAULT_SOURCE = f"""
+DEFAULT_SOURCE = """
 Types: deb
-URIs: http://archive.ubuntu.com/ubuntu/
+URIs: {source_url}
 Suites: noble noble-updates noble-backports
 Components: main universe restricted multiverse
-Architectures: i386
-Signed-By: {EXPECTED_SIGNED_BY}
+Signed-By: {source_key}
 """
 
 
-def test_install_sources_conflicting_keys(tmp_path, test_data_dir, caplog):
+@pytest.mark.parametrize(
+    ["source_url", "source_arch"],
+    [
+        ("http://archive.ubuntu.com/ubuntu/", "i386"),
+        ("http://ports.ubuntu.com/ubuntu-ports/", "armhf"),
+    ],
+)
+def test_install_sources_conflicting_keys(
+    tmp_path, test_data_dir, caplog, source_url, source_arch
+):
     caplog.set_level(logging.DEBUG)
     fake_system = tmp_path
 
@@ -56,16 +65,22 @@ def test_install_sources_conflicting_keys(tmp_path, test_data_dir, caplog):
     sources_dir.mkdir(parents=True)
     ubuntu_sources = sources_dir / "ubuntu.sources"
 
-    ubuntu_sources.write_text(DEFAULT_SOURCE)
+    ubuntu_sources.write_text(
+        DEFAULT_SOURCE.format(
+            source_url=source_url,
+            source_key=EXPECTED_SIGNED_BY,
+        )
+    )
 
+    # Note that the `url` string is different from the URIs in DEFAULT_SOURCE,
+    # but they mean the same URL.
+    repo_url = source_url[:-1]
     repository = PackageRepositoryApt(
         type="apt",
-        # Note that the `url` string is different from the URIs in DEFAULT_SOURCE,
-        # but they mean the same URL.
-        url="http://archive.ubuntu.com/ubuntu",
+        url=repo_url,
         suites=["noble"],
         components=["main", "universe"],
-        architectures=["i386"],
+        architectures=[source_arch],
         key_id="78E1918602959B9C59103100F1831DDAFC42E99D",
     )
     sources_manager = AptSourcesManager(
@@ -73,7 +88,7 @@ def test_install_sources_conflicting_keys(tmp_path, test_data_dir, caplog):
     )
     sources_manager._install_sources_apt(package_repo=repository)
 
-    craft_source = sources_dir / "craft-http_archive_ubuntu_com_ubuntu.sources"
+    craft_source = next(sources_dir.glob("craft-*"))
     assert craft_source.is_file()
 
     craft_dict = deb822.Deb822(sequence=craft_source.read_text())
@@ -81,8 +96,8 @@ def test_install_sources_conflicting_keys(tmp_path, test_data_dir, caplog):
 
     expected_log = textwrap.dedent(
         f"""
-        Looking for existing sources files for url http://archive.ubuntu.com/ubuntu and suites ['noble']
-        Reading sources in '{ubuntu_sources}' looking for 'http://archive.ubuntu.com/ubuntu/'
+        Looking for existing sources files for url '{repo_url}' and suites ['noble']
+        Reading sources in '{ubuntu_sources}' looking for '{source_url}'
         Source has these suites: ['noble', 'noble-backports', 'noble-updates']
         Suites match - Signed-By is '/usr/share/keyrings/FC42E99D.gpg'
         """

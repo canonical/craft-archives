@@ -8,9 +8,9 @@ included in each version.
 X.Y.Z (YYYY-MMM-DD)
 -------------------
 
-* Fix an issue where declaring a package-repository to an Ubuntu archive (for example,
-  to add an architecture) would cause an error in a later ``apt update`` when
-  in Noble.
+* Fix an issue where declaring a package-repository to an Ubuntu archive (for
+  example, to add an architecture) would cause an error in a later ``apt
+  update`` when in Noble.
 
 2.0.0 (2024-08-08)
 ------------------
