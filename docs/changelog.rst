@@ -5,7 +5,7 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
-X.Y.Z (YYYY-MMM-DD)
+2.0.1 (2024-Oct-21)
 -------------------
 
 * Fix an issue where declaring a package-repository to an Ubuntu archive (for
