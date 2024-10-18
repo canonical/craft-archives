@@ -8,7 +8,7 @@ included in each version.
 X.Y.Z (YYYY-MMM-DD)
 -------------------
 
-* Fix an issue where declaring a package-repository to an Ubuntu archive (e.g.
+* Fix an issue where declaring a package-repository to an Ubuntu archive (for example,
   to add an architecture) would cause an error in a later ``apt update`` when
   in Noble.
 
