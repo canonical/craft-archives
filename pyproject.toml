@@ -36,7 +36,7 @@ dev = [
     "python-gnupg==0.5.1",
 ]
 lint = [
-    "black==24.4.2",
+    "black==24.10.0",
     "codespell[toml]==2.2.5",
     "ruff==0.4.7",
     "yamllint==1.32.0"
