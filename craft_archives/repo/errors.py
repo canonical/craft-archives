@@ -142,3 +142,25 @@ class AptGPGKeyInstallError(PackageRepositoryError):
             details=details,
             resolution="Verify any configured GPG keys",
         )
+
+
+class SourcesKeyConflictError(PackageRepositoryError):
+    """A requested key-id conflicts with existing sources' keys."""
+
+    def __init__(
+        self,
+        *,
+        requested_key_id: str,
+        requested_url: str,
+        conflict_keyring: str,
+        conflicting_source: pathlib.Path,
+    ) -> None:
+        message = (
+            f"The key {requested_key_id!r} for the repository with url "
+            f"{requested_url!r} conflicts with a source in '{conflicting_source}', "
+            f"which is signed by {conflict_keyring!r}."
+        )
+
+        super().__init__(
+            message, resolution="Check the key-id of requested repositories."
+        )

@@ -8,6 +8,7 @@ dependencies = [
     "lazr.uri",
     "overrides",
     "pydantic>=2.0.0,<3.0.0",
+    "python-debian==0.1.49",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -35,7 +36,7 @@ dev = [
     "python-gnupg==0.5.1",
 ]
 lint = [
-    "black==24.4.2",
+    "black==24.10.0",
     "codespell[toml]==2.2.5",
     "ruff==0.4.7",
     "yamllint==1.32.0"
@@ -45,7 +46,7 @@ types = [
     "pyright==1.1.384",
 ]
 docs = [
-    "canonical-sphinx~=0.1",
+    "canonical-sphinx[full]~=0.2",
     "sphinx-autobuild==2021.3.14",
     "sphinx-pydantic==0.1.1",
     "sphinx-toolbox==3.4.0",
