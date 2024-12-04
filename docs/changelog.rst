@@ -5,6 +5,13 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+2.0.2 (2024-Dec-04)
+-------------------
+
+* Fix an issue where declaring a package-repository to an Ubuntu archive
+  using the "https" scheme would cause an error in a later ``apt update``
+  when in Noble.
+
 2.0.1 (2024-Oct-21)
 -------------------
 

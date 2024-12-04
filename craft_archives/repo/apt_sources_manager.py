@@ -22,6 +22,7 @@ import pathlib
 import subprocess
 from pathlib import Path
 from typing import List, Optional, Sequence, cast
+from urllib.parse import urlparse
 
 import distro
 from debian.deb822 import Deb822
@@ -367,8 +368,12 @@ def _get_suites(pocket: PocketEnum, series: str) -> List[str]:
     return suites
 
 
-def _dirify_url(url: str) -> str:
-    # Apt urls are always directories
+def _normalize_archive_url(url: str) -> str:
+    parsed = urlparse(url)
+    # Disregard the scheme: Apt considers both http and https the same for
+    # resolving the archive.
+    url = parsed.netloc + parsed.path
+    # Apt urls are always directories.
     if not url.endswith("/"):
         return url + "/"
     return url
@@ -397,7 +402,8 @@ def _get_existing_keyring_for(
     if not sources_file.is_file():
         return None
 
-    url = _dirify_url(url)
+    original_url = url
+    url = _normalize_archive_url(url)
 
     logger.debug("Reading sources in '%s' looking for '%s'", sources_file, url)
 
@@ -405,7 +411,7 @@ def _get_existing_keyring_for(
         sequence=sources_file.read_text(), fields=["URIs", "Suites", "Signed-By"]
     ):
         try:
-            source_url = _dirify_url(source_dict["URIs"])
+            source_url = _normalize_archive_url(source_dict["URIs"])
             source_suites = set(source_dict.get("Suites", "").split())
             source_signed = source_dict["Signed-By"]
         except KeyError:
@@ -432,7 +438,7 @@ def _get_existing_keyring_for(
                 # the moment.
                 raise errors.SourcesKeyConflictError(
                     requested_key_id=key_id,
-                    requested_url=url,
+                    requested_url=original_url,
                     conflict_keyring=source_signed,
                     conflicting_source=sources_file,
                 )
