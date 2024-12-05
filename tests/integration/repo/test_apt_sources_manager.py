@@ -41,43 +41,49 @@ Signed-By: {source_key}
     ["source_url", "repo_url", "repo_arch", "expected_url"],
     [
         # Exact same url
-        (
+        pytest.param(
             "http://archive.ubuntu.com/ubuntu/",
             "http://archive.ubuntu.com/ubuntu/",
             "i386",
             "archive.ubuntu.com/ubuntu/",
+            id="archive-same-url",
         ),
-        (
+        pytest.param(
             "http://ports.ubuntu.com/ubuntu-ports/",
             "http://ports.ubuntu.com/ubuntu-ports/",
             "armhf",
             "ports.ubuntu.com/ubuntu-ports/",
+            id="ports-same-url",
         ),
         # Different url (no ending /)
-        (
+        pytest.param(
             "http://archive.ubuntu.com/ubuntu/",
             "http://archive.ubuntu.com/ubuntu",
             "i386",
             "archive.ubuntu.com/ubuntu/",
+            id="archive-different-ending",
         ),
-        (
+        pytest.param(
             "http://ports.ubuntu.com/ubuntu-ports/",
             "http://ports.ubuntu.com/ubuntu-ports",
             "armhf",
             "ports.ubuntu.com/ubuntu-ports/",
+            id="ports-different-ending",
         ),
         # Different scheme (http vs https)
-        (
+        pytest.param(
             "http://archive.ubuntu.com/ubuntu/",
             "https://archive.ubuntu.com/ubuntu",
             "i386",
             "archive.ubuntu.com/ubuntu/",
+            id="archive-different-scheme",
         ),
-        (
+        pytest.param(
             "http://ports.ubuntu.com/ubuntu-ports/",
             "https://ports.ubuntu.com/ubuntu-ports",
             "armhf",
             "ports.ubuntu.com/ubuntu-ports/",
+            id="ports-different-scheme",
         ),
     ],
 )
