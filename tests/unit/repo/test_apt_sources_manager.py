@@ -440,7 +440,7 @@ def test_existing_key_incompatible(apt_sources_mgr, tmp_path, mocker):
 
     expected_message = re.escape(
         "The key '78E1918602959B9C59103100F1831DDAFC42E99D' for "
-        "the repository with url 'http://archive.ubuntu.com/ubuntu/' conflicts "
+        "the repository with url 'http://archive.ubuntu.com/ubuntu' conflicts "
         f"with a source in '{ubuntu_sources}', "
         "which is signed by '/usr/share/keyrings/0264B26D.gpg'"
     )

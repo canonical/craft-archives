@@ -38,14 +38,57 @@ Signed-By: {source_key}
 
 
 @pytest.mark.parametrize(
-    ["source_url", "source_arch"],
+    ["source_url", "repo_url", "repo_arch", "expected_url"],
     [
-        ("http://archive.ubuntu.com/ubuntu/", "i386"),
-        ("http://ports.ubuntu.com/ubuntu-ports/", "armhf"),
+        # Exact same url
+        pytest.param(
+            "http://archive.ubuntu.com/ubuntu/",
+            "http://archive.ubuntu.com/ubuntu/",
+            "i386",
+            "archive.ubuntu.com/ubuntu/",
+            id="archive-same-url",
+        ),
+        pytest.param(
+            "http://ports.ubuntu.com/ubuntu-ports/",
+            "http://ports.ubuntu.com/ubuntu-ports/",
+            "armhf",
+            "ports.ubuntu.com/ubuntu-ports/",
+            id="ports-same-url",
+        ),
+        # Different url (no ending /)
+        pytest.param(
+            "http://archive.ubuntu.com/ubuntu/",
+            "http://archive.ubuntu.com/ubuntu",
+            "i386",
+            "archive.ubuntu.com/ubuntu/",
+            id="archive-different-ending",
+        ),
+        pytest.param(
+            "http://ports.ubuntu.com/ubuntu-ports/",
+            "http://ports.ubuntu.com/ubuntu-ports",
+            "armhf",
+            "ports.ubuntu.com/ubuntu-ports/",
+            id="ports-different-ending",
+        ),
+        # Different scheme (http vs https)
+        pytest.param(
+            "http://archive.ubuntu.com/ubuntu/",
+            "https://archive.ubuntu.com/ubuntu",
+            "i386",
+            "archive.ubuntu.com/ubuntu/",
+            id="archive-different-scheme",
+        ),
+        pytest.param(
+            "http://ports.ubuntu.com/ubuntu-ports/",
+            "https://ports.ubuntu.com/ubuntu-ports",
+            "armhf",
+            "ports.ubuntu.com/ubuntu-ports/",
+            id="ports-different-scheme",
+        ),
     ],
 )
 def test_install_sources_conflicting_keys(
-    tmp_path, test_data_dir, caplog, source_url, source_arch
+    tmp_path, test_data_dir, caplog, source_url, repo_url, repo_arch, expected_url
 ):
     caplog.set_level(logging.DEBUG)
     fake_system = tmp_path
@@ -72,15 +115,12 @@ def test_install_sources_conflicting_keys(
         )
     )
 
-    # Note that the `url` string is different from the URIs in DEFAULT_SOURCE,
-    # but they mean the same URL.
-    repo_url = source_url[:-1]
     repository = PackageRepositoryApt(
         type="apt",
         url=repo_url,
         suites=["noble"],
         components=["main", "universe"],
-        architectures=[source_arch],
+        architectures=[repo_arch],
         key_id="78E1918602959B9C59103100F1831DDAFC42E99D",
     )
     sources_manager = AptSourcesManager(
@@ -96,8 +136,8 @@ def test_install_sources_conflicting_keys(
 
     expected_log = textwrap.dedent(
         f"""
-        Looking for existing sources files for url '{repo_url}' and suites ['noble']
-        Reading sources in '{ubuntu_sources}' looking for '{source_url}'
+        Looking for existing sources files for url '{repository.url}' and suites ['noble']
+        Reading sources in '{ubuntu_sources}' looking for '{expected_url}'
         Source has these suites: ['noble', 'noble-backports', 'noble-updates']
         Suites match - Signed-By is '/usr/share/keyrings/FC42E99D.gpg'
         """
