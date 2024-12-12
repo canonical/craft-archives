@@ -28,13 +28,11 @@ requires-python = ">=3.10"
 
 [project.optional-dependencies]
 lint = [
-    "black==24.10.0",
-    "codespell[toml]==2.3.0",
-    "ruff==0.4.7",
-    "yamllint==1.32.0"
+    "codespell[toml]~=2.3",
+    "yamllint~=1.35"
 ]
 types = [
-    "mypy[reports]==1.5.1",
+    "mypy[reports]~=1.5",
     "pyright==1.1.390",
 ]
 docs = [
@@ -245,6 +243,11 @@ lint.ignore = [
     "A003",  # Class attribute shadowing built-in (reason: Class attributes don't often get bare references)
     "UP006", # Use `list` instead of `List` for type annotation
     "UP007", # Use `X | Y` for type annotations
+
+    # Ignored due to conflicts with ruff's formatter:
+    # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "COM812",  # Missing trailing comma - mostly the same, but marginal differences.
+    "ISC001",  # Single-line implicit string concatenation.
 ]
 
 [tool.ruff.lint.per-file-ignores]
