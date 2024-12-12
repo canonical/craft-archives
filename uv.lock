@@ -5,6 +5,32 @@ resolution-markers = [
     "python_full_version >= '3.13'",
 ]
 
+[manifest]
+constraints = [
+    { name = "build", specifier = ">=0.7.0" },
+    { name = "cffi", specifier = ">=1.15" },
+    { name = "httplib2", specifier = ">=0.20.0" },
+    { name = "iniconfig", specifier = ">=1.1.0" },
+    { name = "libnacl", specifier = ">=2.0" },
+    { name = "lxml", specifier = ">=5.0" },
+    { name = "markdown", specifier = ">=3.0" },
+    { name = "markupsafe", specifier = ">=2.0" },
+    { name = "oauthlib", specifier = ">=3.0.0" },
+    { name = "protobuf", specifier = ">=5.0" },
+    { name = "pynacl", specifier = ">=1.5" },
+    { name = "pyparsing", specifier = ">=3.0.0" },
+    { name = "pyproject-hooks", specifier = ">=1.0.0" },
+    { name = "pytz", specifier = ">=2020" },
+    { name = "pyyaml", specifier = ">=5.0" },
+    { name = "regex", specifier = ">=2021.11.10" },
+    { name = "setuptools", specifier = ">=50" },
+    { name = "sphinx-basic-ng", specifier = ">=1.0.0b1" },
+    { name = "tornado", specifier = ">=4.0" },
+    { name = "urllib3", specifier = ">=2.0" },
+    { name = "webencodings", specifier = ">=0.4.0" },
+    { name = "wheel", specifier = ">=0.38" },
+]
+
 [[package]]
 name = "alabaster"
 version = "0.7.16"
@@ -357,7 +383,7 @@ toml = [
 
 [[package]]
 name = "craft-archives"
-version = "2.0.2.post3+g14c0709.d20241212"
+version = "2.0.2.post6+g55920a1.d20241212"
 source = { editable = "." }
 dependencies = [
     { name = "distro" },
@@ -370,14 +396,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "coverage", extra = ["toml"] },
-    { name = "pytest" },
-    { name = "pytest-check" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
-    { name = "python-gnupg" },
-]
 docs = [
     { name = "canonical-sphinx", extra = ["full"] },
     { name = "sphinx-autobuild" },
@@ -396,32 +414,46 @@ types = [
     { name = "pyright" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "coverage", extra = ["toml"] },
+    { name = "pytest" },
+    { name = "pytest-check" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "python-gnupg" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'lint'", specifier = "==24.10.0" },
     { name = "canonical-sphinx", extras = ["full"], marker = "extra == 'docs'", specifier = "~=0.2" },
     { name = "codespell", extras = ["toml"], marker = "extra == 'lint'", specifier = "==2.3.0" },
-    { name = "coverage", extras = ["toml"], marker = "extra == 'dev'", specifier = "==7.3.1" },
     { name = "distro", specifier = ">=1.3.0" },
-    { name = "launchpadlib" },
-    { name = "lazr-restfulclient" },
-    { name = "lazr-uri" },
+    { name = "launchpadlib", specifier = ">=1.11" },
+    { name = "lazr-restfulclient", specifier = ">=0.14.4" },
+    { name = "lazr-uri", specifier = ">=1.0.6" },
     { name = "mypy", extras = ["reports"], marker = "extra == 'types'", specifier = "==1.5.1" },
-    { name = "overrides" },
-    { name = "pydantic", specifier = ">=2.0.0,<3.0.0" },
+    { name = "overrides", specifier = ">=6.0" },
+    { name = "pydantic", specifier = "~=2.7" },
     { name = "pyright", marker = "extra == 'types'", specifier = "==1.1.390" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = "==7.4.2" },
-    { name = "pytest-check", marker = "extra == 'dev'", specifier = "==2.2.1" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = "==4.1.0" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = "==3.11.1" },
     { name = "python-debian", specifier = "==0.1.49" },
-    { name = "python-gnupg", marker = "extra == 'dev'", specifier = "==0.5.1" },
     { name = "ruff", marker = "extra == 'lint'", specifier = "==0.4.7" },
     { name = "sphinx-autobuild", marker = "extra == 'docs'", specifier = "==2021.3.14" },
     { name = "sphinx-lint", marker = "extra == 'docs'", specifier = "==0.6.7" },
     { name = "sphinx-pydantic", marker = "extra == 'docs'", specifier = "==0.1.1" },
     { name = "sphinx-toolbox", marker = "extra == 'docs'", specifier = "==3.4.0" },
     { name = "yamllint", marker = "extra == 'lint'", specifier = "==1.32.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "coverage", extras = ["toml"], specifier = "==7.3.1" },
+    { name = "pytest", specifier = "==7.4.2" },
+    { name = "pytest-check", specifier = "==2.2.1" },
+    { name = "pytest-cov", specifier = "==4.1.0" },
+    { name = "pytest-mock", specifier = "==3.11.1" },
+    { name = "python-gnupg", specifier = "==0.5.1" },
 ]
 
 [[package]]
