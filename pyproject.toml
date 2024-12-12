@@ -134,6 +134,9 @@ line_length = 88
 minversion = "7.0"
 testpaths = "tests"
 xfail_strict = true
+markers = [
+    "slow: tests that are slow to run"
+]
 
 [tool.coverage.run]
 branch = true
