@@ -421,12 +421,14 @@ def test_get_suites(pocket, series, result):
 
 
 def test_existing_key_incompatible(apt_sources_mgr, tmp_path, mocker):
-    repo = PackageRepositoryApt(
-        type="apt",
-        url="http://archive.ubuntu.com/ubuntu",
-        suites=["noble"],
-        components=["main", "universe"],
-        key_id="78E1918602959B9C59103100F1831DDAFC42E99D",
+    repo = PackageRepositoryApt.unmarshal(
+        {
+            "type": "apt",
+            "url": "http://archive.ubuntu.com/ubuntu",
+            "suites": ["noble"],
+            "components": ["main", "universe"],
+            "key_id": "78E1918602959B9C59103100F1831DDAFC42E99D",
+        }
     )
 
     # Add a fake "ubuntu.sources" file that has a source that is Signed-By
