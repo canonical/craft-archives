@@ -1,5 +1,5 @@
 [project]
-name = "craft-archives"
+name = "craft_archives"
 dynamic = ["version", "readme"]
 dependencies = [
     "distro>=1.3.0",
