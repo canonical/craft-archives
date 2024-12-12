@@ -139,7 +139,6 @@ xfail_strict = true
 
 [tool.coverage.run]
 branch = true
-parallel = true
 omit = ["tests/**"]
 
 [tool.coverage.report]
