@@ -62,6 +62,7 @@ def test_install_key(apt_gpg, tmp_path, test_data_dir):
     assert not backup_file.is_file()
 
 
+@pytest.mark.slow
 def test_install_key_from_keyserver(apt_gpg, tmp_path):
     expected_file = tmp_path / "craft-FC42E99D.gpg"
     assert not expected_file.exists()
