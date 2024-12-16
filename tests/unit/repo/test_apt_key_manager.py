@@ -428,13 +428,15 @@ def test_install_package_repository_key_already_installed(
         "craft_archives.repo.apt_key_manager.AptKeyManager.is_key_installed",
         return_value=is_installed,
     )
-    package_repo = PackageRepositoryApt(
-        type="apt",
-        components=["main", "multiverse"],
-        key_id="8" * 40,
-        key_server="xkeyserver.com",
-        suites=["xenial"],
-        url="http://archive.ubuntu.com/ubuntu",
+    package_repo = PackageRepositoryApt.model_validate(
+        {
+            "type": "apt",
+            "components": ["main", "multiverse"],
+            "key-id": "8" * 40,
+            "key-server": "xkeyserver.com",
+            "suites": ["xenial"],
+            "url": "http://archive.ubuntu.com/ubuntu",
+        }
     )
 
     updated = apt_gpg.install_package_repository_key(package_repo=package_repo)
@@ -455,12 +457,14 @@ def test_install_package_repository_key_from_asset(apt_gpg, key_assets, mocker):
     expected_key_path = key_assets / "3456AABB.asc"
     expected_key_path.write_text("key-data")
 
-    package_repo = PackageRepositoryApt(
-        type="apt",
-        components=["main", "multiverse"],
-        key_id=key_id,
-        suites=["xenial"],
-        url="http://archive.ubuntu.com/ubuntu",
+    package_repo = PackageRepositoryApt.model_validate(
+        {
+            "type": "apt",
+            "components": ["main", "multiverse"],
+            "key-id": key_id,
+            "suites": ["xenial"],
+            "url": "http://archive.ubuntu.com/ubuntu",
+        }
     )
 
     updated = apt_gpg.install_package_repository_key(package_repo=package_repo)
@@ -480,13 +484,15 @@ def test_install_package_repository_key_apt_from_keyserver(apt_gpg, mocker):
 
     key_id = "8" * 40
 
-    package_repo = PackageRepositoryApt(
-        type="apt",
-        components=["main", "multiverse"],
-        key_id=key_id,
-        key_server="key.server",
-        suites=["xenial"],
-        url="http://archive.ubuntu.com/ubuntu",
+    package_repo = PackageRepositoryApt.model_validate(
+        {
+            "type": "apt",
+            "components": ["main", "multiverse"],
+            "key-id": key_id,
+            "key-server": "key.server",
+            "suites": ["xenial"],
+            "url": "http://archive.ubuntu.com/ubuntu",
+        }
     )
 
     updated = apt_gpg.install_package_repository_key(package_repo=package_repo)

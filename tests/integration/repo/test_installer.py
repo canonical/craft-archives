@@ -195,6 +195,7 @@ def test_keys_dir(tmp_path, test_data_dir) -> Path:
     return target_dir
 
 
+@pytest.mark.slow
 def test_install(fake_etc_apt, all_repo_types, test_keys_dir):
     """Integrated test that checks the configuration of keys, sources and pins."""
 
@@ -205,6 +206,7 @@ def test_install(fake_etc_apt, all_repo_types, test_keys_dir):
     check_preferences(fake_etc_apt)
 
 
+@pytest.mark.slow
 def test_install_in_root(tmp_path, all_repo_types, test_keys_dir):
     """Integrated test that checks the configuration of keys, sources and pins."""
     etc_apt = tmp_path / "etc/apt"
