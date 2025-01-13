@@ -341,8 +341,7 @@ class PackageRepositoryApt(PackageRepository):
             raise _create_validation_error(
                 url=info.data.get("url"),
                 message=(
-                    f"components {components!r} cannot be combined with "
-                    f"path {path!r}."
+                    f"components {components!r} cannot be combined with path {path!r}."
                 ),
             )
         return components
