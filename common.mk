@@ -8,10 +8,16 @@ ifneq ($(OS),Windows_NT)
 	OS := $(shell uname)
 endif
 ifdef CI
-    APT := apt-get --yes
+	APT := apt-get --yes
 else
 	APT := apt-get
 endif
+
+PRETTIER=npm exec --package=prettier -- prettier
+PRETTIER_FILES=**.yaml **.yml **.json **.json5 **.css **.md
+
+# By default we should not update the uv lock file here.
+export UV_FROZEN := true
 
 .DEFAULT_GOAL := help
 
@@ -42,26 +48,27 @@ help: ## Show this help.
 
 .PHONY: setup
 setup: install-uv setup-precommit ## Set up a development environment
-	uv sync --frozen --all-extras
+	uv sync --all-extras
 
 .PHONY: setup-tests
 setup-tests: install-uv install-build-deps ##- Set up a testing environment without linters
-	uv sync --frozen
+	uv sync
 
 .PHONY: setup-lint
-setup-lint: install-uv install-shellcheck install-lint-build-deps  ##- Set up a linting-only environment
-	uv sync --frozen --no-install-workspace --extra lint --extra types
+setup-lint: install-uv install-shellcheck install-pyright install-lint-build-deps  ##- Set up a linting-only environment
+	uv sync --no-install-workspace --extra lint --extra types
 
 .PHONY: setup-docs
 setup-docs: install-uv  ##- Set up a documentation-only environment
-	uv sync --frozen --no-dev --no-install-workspace --extra docs
+	uv sync --no-dev --no-install-workspace --extra docs
 
 .PHONY: setup-precommit
 setup-precommit: install-uv  ##- Set up pre-commit hooks in this repository.
 ifeq ($(shell which pre-commit),)
-	uv tool install pre-commit
-endif
+	uv tool run pre-commit install
+else
 	pre-commit install
+endif
 
 .PHONY: clean
 clean:  ## Clean up the development environment
@@ -81,6 +88,10 @@ format-ruff: install-ruff  ##- Automatically format with ruff
 .PHONY: format-codespell
 format-codespell:  ##- Fix spelling issues with codespell
 	uv run codespell --toml pyproject.toml --write-changes $(SOURCES)
+
+.PHONY: format-prettier
+format-prettier: install-npm  ##- Format files with prettier
+	$(PRETTIER) --write $(PRETTIER_FILES)
 
 .PHONY: lint-ruff
 lint-ruff: install-ruff  ##- Lint with ruff
@@ -121,9 +132,7 @@ endif
 ifneq ($(shell which pyright),) # Prefer the system pyright
 	pyright --pythonpath .venv/bin/python
 else
-	# Fix for a bug in npm
-	[ -d "/home/ubuntu/.npm/_cacache" ] && chown -R 1000:1000 "/home/ubuntu/.npm" || true
-	uv run pyright --pythonpath .venv/bin/python
+	uv tool run pyright --pythonpath .venv/bin/python
 endif
 ifneq ($(CI),)
 	@echo ::endgroup::
@@ -139,12 +148,12 @@ ifneq ($(CI),)
 	@echo ::endgroup::
 endif
 
-.PHONY: lint-yaml
-lint-yaml:  ##- Lint YAML files with yamllint
+.PHONY: lint-prettier
+lint-prettier: install-npm  ##- Lint files with prettier
 ifneq ($(CI),)
 	@echo ::group::$@
 endif
-	uv run --extra lint yamllint .
+	$(PRETTIER) --check $(PRETTIER_FILES)
 ifneq ($(CI),)
 	@echo ::endgroup::
 endif
@@ -234,6 +243,17 @@ else
 	$(warning Codespell not installed. Please install it yourself.)
 endif
 
+.PHONY: install-pyright
+install-pyright: install-uv
+ifneq ($(shell which pyright),)
+else ifneq ($(shell which snap),)
+	sudo snap install --classic pyright
+else
+	# Workaround for a bug in npm
+	[ -d "$(HOME)/.npm/_cacache" ] && chown -R `id -u`:`id -g` "$(HOME)/.npm" || true
+	uv tool install pyright
+endif
+
 .PHONY: install-ruff
 install-ruff:
 ifneq ($(shell which ruff),)
@@ -253,4 +273,15 @@ else ifneq ($(shell which brew),)
 	brew install shellcheck
 else
 	$(warning Shellcheck not installed. Please install it yourself.)
+endif
+
+.PHONY: install-npm
+install-npm:
+ifneq ($(shell which npm),)
+else ifneq ($(shell which snap),)
+	sudo snap install --classic node
+else ifneq ($(shell which brew),)
+	brew install node
+else
+	$(error npm not installed. Please install it yourself.)
 endif
