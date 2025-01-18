@@ -338,7 +338,6 @@ toml = [
 
 [[package]]
 name = "craft-archives"
-version = "2.0.2.post22+g6788c43.d20250114"
 source = { editable = "." }
 dependencies = [
     { name = "distro" },
@@ -391,7 +390,7 @@ requires-dist = [
     { name = "pyright", marker = "extra == 'types'", specifier = "==1.1.390" },
     { name = "python-debian", specifier = "==0.1.49" },
     { name = "sphinx-autobuild", marker = "extra == 'docs'", specifier = "==2021.3.14" },
-    { name = "sphinx-lint", marker = "extra == 'docs'", specifier = "==0.6.7" },
+    { name = "sphinx-lint", marker = "extra == 'docs'", specifier = "==0.9.1" },
     { name = "sphinx-pydantic", marker = "extra == 'docs'", specifier = "==0.1.1" },
     { name = "sphinx-toolbox", marker = "extra == 'docs'", specifier = "==3.4.0" },
     { name = "yamllint", marker = "extra == 'lint'", specifier = "~=1.35" },
@@ -1618,15 +1617,15 @@ sdist = { url = "https://files.pythonhosted.org/packages/9c/3f/559d054f977596c55
 
 [[package]]
 name = "sphinx-lint"
-version = "0.6.7"
+version = "0.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "polib" },
     { name = "regex" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/33/a7/99a4b5c0a4309b7ae32b67cd5d63f541598774518198060ad4400356056b/sphinx-lint-0.6.7.tar.gz", hash = "sha256:704a9bffd9117c77accf4a3c46f8ab3b4cb6ef51419b5d21a4386042f0616789", size = 14786 }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/98/ae9d0b97fb9340e7dd9b1f709fad9a41201c73e9a0f9c4c933a0449f8e56/sphinx_lint-0.9.1.tar.gz", hash = "sha256:185cee19ff1129549c45e15a3b25404daeb47c54d15112dda589cedad82957aa", size = 33277 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/bd/e6b5ffbd2b2a09d532183c7f9ecfe14d069ce4af7e1527141fcbfd67e27e/sphinx_lint-0.6.7-py3-none-any.whl", hash = "sha256:ab5fda49c551a706ab14cd603c3b30a11178ef7ca6194bfd0e057a2201accadc", size = 15142 },
+    { url = "https://files.pythonhosted.org/packages/30/94/96123989e93449fe4ecd329bc74e554126c8c4a3034abe3c32bd9d98c237/sphinx_lint-0.9.1-py3-none-any.whl", hash = "sha256:df34271ab65ce43676cbd90726f4dea5cd200b43b01448b2aee8f06e609edcbb", size = 20019 },
 ]
 
 [[package]]
