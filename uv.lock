@@ -338,7 +338,6 @@ toml = [
 
 [[package]]
 name = "craft-archives"
-version = "2.0.2.post22+g6788c43.d20250114"
 source = { editable = "." }
 dependencies = [
     { name = "distro" },
