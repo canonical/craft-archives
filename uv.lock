@@ -338,7 +338,6 @@ toml = [
 
 [[package]]
 name = "craft-archives"
-version = "2.0.2.post22+g6788c43.d20250114"
 source = { editable = "." }
 dependencies = [
     { name = "distro" },
@@ -401,7 +400,7 @@ requires-dist = [
 dev = [
     { name = "coverage", extras = ["toml"], specifier = "==7.3.1" },
     { name = "pytest", specifier = "==7.4.4" },
-    { name = "pytest-check", specifier = "==2.2.1" },
+    { name = "pytest-check", specifier = "==2.4.1" },
     { name = "pytest-cov", specifier = "==4.1.0" },
     { name = "pytest-mock", specifier = "==3.11.1" },
     { name = "python-gnupg", specifier = "==0.5.4" },
@@ -1215,14 +1214,14 @@ wheels = [
 
 [[package]]
 name = "pytest-check"
-version = "2.2.1"
+version = "2.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/5a/2906f455496d8b66bf5f76f30ddb0e53b0eba07eb93e3b67ffaa52db5570/pytest_check-2.2.1.tar.gz", hash = "sha256:deb37f881dfa0d5e246f2996238aef745a7900d7b3523a741605772b8a2c4952", size = 29128 }
+sdist = { url = "https://files.pythonhosted.org/packages/15/d3/178a723f0420cf4e06fb6ddf43fc1ec68c1d0d4ea3db1ecf8f6df21b345f/pytest_check-2.4.1.tar.gz", hash = "sha256:5224efcef059bf7f0cda253f8d0f62704b4819ff48c93f51c675aea6a014f650", size = 28933 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/5d/84b4df25643c65b76dfe195e517a41962192587bf68169bebfd65ebbd0c9/pytest_check-2.2.1-py3-none-any.whl", hash = "sha256:1cb9688d0ce3919dc9818fe287dd17e36daefb0d13e4e67702f536c5920101ee", size = 12633 },
+    { url = "https://files.pythonhosted.org/packages/c0/25/465756acbb66db47ad40e0be6b457d8644c7b9f882b2ff7f5e92dde07915/pytest_check-2.4.1-py3-none-any.whl", hash = "sha256:74f38938183880d9921aeb85662437d2b13e1e053e1bed7d186d54613d3068c7", size = 13789 },
 ]
 
 [[package]]
