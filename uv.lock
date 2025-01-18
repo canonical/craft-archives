@@ -16,6 +16,7 @@ constraints = [
     { name = "markdown", specifier = ">=3.0" },
     { name = "markupsafe", specifier = ">=2.0" },
     { name = "oauthlib", specifier = ">=3.0.0" },
+    { name = "pluggy", specifier = ">=1.2.0" },
     { name = "protobuf", specifier = ">=5.0" },
     { name = "pynacl", specifier = ">=1.5" },
     { name = "pyparsing", specifier = ">=3.0.0" },
@@ -337,7 +338,7 @@ toml = [
 
 [[package]]
 name = "craft-archives"
-version = "2.0.2.post8+gcff4467.d20241212"
+version = "2.0.2.post22+g6788c43.d20250114"
 source = { editable = "." }
 dependencies = [
     { name = "distro" },
@@ -399,11 +400,11 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "coverage", extras = ["toml"], specifier = "==7.3.1" },
-    { name = "pytest", specifier = "==7.4.2" },
+    { name = "pytest", specifier = "==7.4.4" },
     { name = "pytest-check", specifier = "==2.2.1" },
     { name = "pytest-cov", specifier = "==4.1.0" },
     { name = "pytest-mock", specifier = "==3.11.1" },
-    { name = "python-gnupg", specifier = "==0.5.1" },
+    { name = "python-gnupg", specifier = "==0.5.4" },
 ]
 
 [[package]]
@@ -1197,7 +1198,7 @@ wheels = [
 
 [[package]]
 name = "pytest"
-version = "7.4.2"
+version = "7.4.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
@@ -1207,9 +1208,9 @@ dependencies = [
     { name = "pluggy" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e5/d0/18209bb95db8ee693a9a04fe056ab0663c6d6b1baf67dd50819dd9cd4bd7/pytest-7.4.2.tar.gz", hash = "sha256:a766259cfab564a2ad52cb1aae1b881a75c3eb7e34ca3779697c23ed47c47069", size = 1354640 }
+sdist = { url = "https://files.pythonhosted.org/packages/80/1f/9d8e98e4133ffb16c90f3b405c43e38d3abb715bb5d7a63a5a684f7e46a3/pytest-7.4.4.tar.gz", hash = "sha256:2cf0005922c6ace4a3e2ec8b4080eb0d9753fdc93107415332f50ce9e7994280", size = 1357116 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/d0/e192c4275aecabf74faa1aacd75ef700091913236ec78b1a98f62a2412ee/pytest-7.4.2-py3-none-any.whl", hash = "sha256:1d881c6124e08ff0a1bb75ba3ec0bfd8b5354a01c194ddd5a0a870a48d99b002", size = 324497 },
+    { url = "https://files.pythonhosted.org/packages/51/ff/f6e8b8f39e08547faece4bd80f89d5a8de68a38b2d179cc1c4490ffa3286/pytest-7.4.4-py3-none-any.whl", hash = "sha256:b090cdf5ed60bf4c45261be03239c2c1c22df034fbffe691abe93cd80cea01d8", size = 325287 },
 ]
 
 [[package]]
@@ -1263,11 +1264,11 @@ wheels = [
 
 [[package]]
 name = "python-gnupg"
-version = "0.5.1"
+version = "0.5.4"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/98/62/7737485f44bd4d7d904f4094372f4119195865b29f119fa51a98e121a13a/python-gnupg-0.5.1.tar.gz", hash = "sha256:5674bad4e93876c0b0d3197e314d7f942d39018bf31e2b833f6788a6813c3fb8", size = 64377 }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/3e/ba0dc69c9f4e0aeb24d93175230ef057c151790a7516012f61014918992d/python-gnupg-0.5.4.tar.gz", hash = "sha256:f2fdb5fb29615c77c2743e1cb3d9314353a6e87b10c37d238d91ae1c6feae086", size = 65705 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/22/ad/12d8df0a1b465593e736fa14a5d8144381bc64b222e6cd59bb13c6af95b4/python_gnupg-0.5.1-py2.py3-none-any.whl", hash = "sha256:bf9b2d9032ef38139b7d64184176cd0b293eaeae6e4f93f50e304c7051174482", size = 20893 },
+    { url = "https://files.pythonhosted.org/packages/7b/5b/6666ed5a0d3ce4d5444af62e373d5ba8ab253a03487c86f2f9f1078e7c31/python_gnupg-0.5.4-py2.py3-none-any.whl", hash = "sha256:40ce25cde9df29af91fe931ce9df3ce544e14a37f62b13ca878c897217b2de6c", size = 21730 },
 ]
 
 [[package]]
