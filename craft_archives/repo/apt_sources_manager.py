@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """Manage the host's apt source repository configuration."""
-
+import functools
 import io
 import logging
 import pathlib
@@ -173,9 +173,9 @@ class AptSourcesManager:
         2) If path is specified, convert path to a suite entry,
            ending with "/".
 
-        Relatedly, this assumes all of the error-checking has been
+        Relatedly, this assumes all the error-checking has been
         done already on the package_repository object in a proper
-        fashion, but do some sanity checks here anyways.
+        fashion, but do some checks here anyways.
 
         :returns: True if source configuration was changed.
         """
@@ -324,15 +324,45 @@ class AptSourcesManager:
         raise RuntimeError(f"unhandled package repository: {package_repository!r}")
 
 
+def _is_deb822_default() -> bool:
+    """Return true if the default sources are in deb822 format."""
+    # TODO
+
+    return bool("You're using core24, right?")
+
+
+_COMPATIBLE_ARCHITECTURES = {
+    "amd64": ["amd64", "i386"],
+    "i386": ["amd64", "i386"],
+    "arm64": ["arm64", "armhf"],
+    "armhf": ["arm64", "armhf"],
+}
+
+
 def _add_architecture(architectures: List[str], root: Path) -> None:
-    """Add package repository architecture."""
+    """Add package repository architecture.
+
+    For systems that who default to deb822 sources, `dpkg --add-architecture`
+    works for any architecture. For systems that use the traditional sources.list,
+    only compatible architectures can be added.
+    """
     current_arch = _get_current_architecture()
-    compatible_pairs = {"amd64": "i386", "arm64": "armhf"}
+
+    # Sources in 'ubuntu.sources' don't list architectures, so apt assumes the default
+    # repository can serve all architectures. These need to be restricted before adding
+    # other architectures with `dpkg --add-architecture`.
+    if _is_deb822_default():
+        _update_sources_file(
+            sources_file=_DEFAULT_SOURCES_DIRECTORY / "ubuntu.sources",
+            field="Architectures",
+            values=_COMPATIBLE_ARCHITECTURES.get(current_arch, current_arch),
+        )
+    else:
+        logger.debug("Not updating sources.list because the format is not deb822")
+
     for arch in architectures:
-        # We can only add architectures if they are compatible with the running host,
-        # because of the way the default repositories are typically setup.
-        if compatible_pairs.get(current_arch) == arch:
-            logger.info(f"Add repository architecture: {arch}")
+        if _is_deb822_default() or arch in _COMPATIBLE_ARCHITECTURES.keys():
+            logger.info(f"Adding repository architecture: {arch}")
             subprocess.run(
                 # Note: the order of parameters matters here, as "--add-architecture"
                 # must come last because of the way dpkg parses the command.
@@ -341,6 +371,7 @@ def _add_architecture(architectures: List[str], root: Path) -> None:
             )
 
 
+@functools.lru_cache()
 def _get_current_architecture() -> str:
     """Get the "main" architecture of the running system, as reported by dpkg."""
     return (
@@ -377,6 +408,37 @@ def _normalize_archive_url(url: str) -> str:
     if not url.endswith("/"):
         return url + "/"
     return url
+
+
+def _update_sources_file(
+    *, sources_file: Path, field: str, values: Sequence[str] | str
+) -> None:
+    """Update a field in a deb822 sources file.
+
+    :param sources_file: The file to update.
+    :param field: The field to update.
+    :param values: The new values for the field. If the field doesn't exist, it is added.
+      The existing value is overwritten. Sequences are joined with a space.
+    """
+    if not sources_file.is_file():
+        logger.debug("Sources file %r does not exist", sources_file)
+        return
+
+    logger.debug("Reading sources from %r", sources_file)
+    sources = list(Deb822.iter_paragraphs(sequence=sources_file.read_text()))
+
+    # convert sequence to a space-delimited string
+    value = values if isinstance(values, str) else " ".join(values)
+    logger.debug("Updating field %r to %r", field, value)
+
+    for source in sources:
+        logger.debug("Updating source %r", source.get("URIs"))
+        source[field] = value
+
+    with sources_file.open("w") as f:
+        for source in sources:
+            logger.debug("Writing updated sources to %r", sources_file)
+            f.write(str(source)+"\n")
 
 
 def _get_existing_keyring_for(
