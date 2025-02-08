@@ -382,7 +382,7 @@ requires-dist = [
     { name = "pyright", marker = "extra == 'types'", specifier = "==1.1.390" },
     { name = "python-debian", specifier = "==0.1.49" },
     { name = "sphinx-autobuild", marker = "extra == 'docs'", specifier = "==2021.3.14" },
-    { name = "sphinx-lint", marker = "extra == 'docs'", specifier = "==0.6.7" },
+    { name = "sphinx-lint", marker = "extra == 'docs'", specifier = "==1.0.0" },
     { name = "sphinx-pydantic", marker = "extra == 'docs'", specifier = "==0.1.1" },
     { name = "sphinx-toolbox", marker = "extra == 'docs'", specifier = "==3.4.0" },
     { name = "yamllint", marker = "extra == 'lint'", specifier = "~=1.35" },
@@ -1613,15 +1613,15 @@ sdist = { url = "https://files.pythonhosted.org/packages/9c/3f/559d054f977596c55
 
 [[package]]
 name = "sphinx-lint"
-version = "0.6.7"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "polib" },
     { name = "regex" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/33/a7/99a4b5c0a4309b7ae32b67cd5d63f541598774518198060ad4400356056b/sphinx-lint-0.6.7.tar.gz", hash = "sha256:704a9bffd9117c77accf4a3c46f8ab3b4cb6ef51419b5d21a4386042f0616789", size = 14786 }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/46/f2dad36a4076e9ce88498b25b3f0de82eb7d341ea0ef715cd6c48005bcef/sphinx_lint-1.0.0.tar.gz", hash = "sha256:6eafdb44172ce526f405bf36c713eb246f1340ec2d667e7298e2487ed76decd2", size = 33574 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/bd/e6b5ffbd2b2a09d532183c7f9ecfe14d069ce4af7e1527141fcbfd67e27e/sphinx_lint-0.6.7-py3-none-any.whl", hash = "sha256:ab5fda49c551a706ab14cd603c3b30a11178ef7ca6194bfd0e057a2201accadc", size = 15142 },
+    { url = "https://files.pythonhosted.org/packages/31/d2/a130ffba531af7cbbb0e7ad24c7d577d3de0b797437f61d3a7234ed6d836/sphinx_lint-1.0.0-py3-none-any.whl", hash = "sha256:6117a0f340b2dc73eadfc57db7531d4477e0929f92a0c1a2f61e6edbc272f0bc", size = 20163 },
 ]
 
 [[package]]
