@@ -384,7 +384,7 @@ requires-dist = [
     { name = "sphinx-autobuild", marker = "extra == 'docs'", specifier = "==2021.3.14" },
     { name = "sphinx-lint", marker = "extra == 'docs'", specifier = "==0.6.7" },
     { name = "sphinx-pydantic", marker = "extra == 'docs'", specifier = "==0.1.1" },
-    { name = "sphinx-toolbox", marker = "extra == 'docs'", specifier = "==3.4.0" },
+    { name = "sphinx-toolbox", marker = "extra == 'docs'", specifier = "==3.8.2" },
     { name = "yamllint", marker = "extra == 'lint'", specifier = "~=1.35" },
 ]
 
@@ -649,15 +649,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/43/6e/f2748665839812a9bbe5c75d3f983edbf3ab05fa5cd2f7c2f36fffdf65bd/livereload-2.7.1.tar.gz", hash = "sha256:3d9bf7c05673df06e32bea23b494b8d36ca6d10f7d5c3c8a6989608c09c986a9", size = 22255 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e4/3e/de54dc7f199e85e6ca37e2e5dae2ec3bce2151e9e28f8eb9076d71e83d56/livereload-2.7.1-py3-none-any.whl", hash = "sha256:5201740078c1b9433f4b2ba22cd2729a39b9d0ec0a2cc6b4d3df257df5ad0564", size = 22657 },
-]
-
-[[package]]
-name = "lockfile"
-version = "0.12.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/17/47/72cb04a58a35ec495f96984dddb48232b551aafb95bde614605b754fe6f7/lockfile-0.12.2.tar.gz", hash = "sha256:6aed02de03cba24efabcd600b30540140634fc06cfa603822d508d5361e9f799", size = 20874 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/22/9460e311f340cb62d26a38c419b1381b8593b0bb6b5d1f056938b086d362/lockfile-0.12.2-py2.py3-none-any.whl", hash = "sha256:6c3cb24f344923d30b2785d5ad75182c8ea7ac1b6171b08657258ec7429d50fa", size = 13564 },
 ]
 
 [[package]]
@@ -1677,21 +1668,21 @@ wheels = [
 
 [[package]]
 name = "sphinx-tabs"
-version = "3.4.7"
+version = "3.4.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docutils" },
     { name = "pygments" },
     { name = "sphinx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6a/53/a9a91995cb365e589f413b77fc75f1c0e9b4ac61bfa8da52a779ad855cc0/sphinx-tabs-3.4.7.tar.gz", hash = "sha256:991ad4a424ff54119799ba1491701aa8130dd43509474aef45a81c42d889784d", size = 15891 }
+sdist = { url = "https://files.pythonhosted.org/packages/27/32/ab475e252dc2b704e82a91141fa404cdd8901a5cf34958fd22afacebfccd/sphinx-tabs-3.4.5.tar.gz", hash = "sha256:ba9d0c1e3e37aaadd4b5678449eb08176770e0fc227e769b6ce747df3ceea531", size = 16070 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6b/c6/f47505b564b918a3ba60c1e99232d4942c4a7e44ecaae603e829e3d05dae/sphinx_tabs-3.4.7-py3-none-any.whl", hash = "sha256:c12d7a36fd413b369e9e9967a0a4015781b71a9c393575419834f19204bd1915", size = 9727 },
+    { url = "https://files.pythonhosted.org/packages/20/9f/4ac7dbb9f23a2ff5a10903a4f9e9f43e0ff051f63a313e989c962526e305/sphinx_tabs-3.4.5-py3-none-any.whl", hash = "sha256:92cc9473e2ecf1828ca3f6617d0efc0aa8acb06b08c56ba29d1413f2f0f6cf09", size = 9904 },
 ]
 
 [[package]]
 name = "sphinx-toolbox"
-version = "3.4.0"
+version = "3.8.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "apeye" },
@@ -1701,8 +1692,8 @@ dependencies = [
     { name = "dict2css" },
     { name = "docutils" },
     { name = "domdf-python-tools" },
+    { name = "filelock" },
     { name = "html5lib" },
-    { name = "lockfile" },
     { name = "ruamel-yaml" },
     { name = "sphinx" },
     { name = "sphinx-autodoc-typehints" },
@@ -1712,9 +1703,9 @@ dependencies = [
     { name = "tabulate" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f1/9c/bbf8bf24ea33e805f62362d4021e109ec86fb2e23fb4baed958a61262422/sphinx_toolbox-3.4.0.tar.gz", hash = "sha256:e1cf2a3dea5ce80e175a6a9cee8b5b2792240ecf6c28993d87a63b6fcf606293", size = 112202 }
+sdist = { url = "https://files.pythonhosted.org/packages/39/91/61445ccb49f653f706230daf874f0fb4385c748f8e221f44881717c80c1d/sphinx_toolbox-3.8.2.tar.gz", hash = "sha256:2d65b9cee1d313c84cdb01317764791b1bdfbd6a1e6aa056e464137d18a6b9eb", size = 111998 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/63/ba/7eb6695cf42038545be89f839de5ffd06d1de7197f0f5a58544facdb87eb/sphinx_toolbox-3.4.0-py3-none-any.whl", hash = "sha256:cdf70facee515a2d9406d568a253fa3e89f930fde23c4e8095ba0c675f7c0a48", size = 525140 },
+    { url = "https://files.pythonhosted.org/packages/e3/c4/be739b65467ff53bef26fc36478dbb0e01e289375983338d2247a8c2f87e/sphinx_toolbox-3.8.2-py3-none-any.whl", hash = "sha256:c65d03274f07a6bfb3f56123ae40e1e003a49709b7cda9b75d9e53e569d34581", size = 194693 },
 ]
 
 [[package]]
