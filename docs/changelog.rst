@@ -5,6 +5,15 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+2.1.0 (2025-MMM-DD)
+-------------------
+
+Features
+
+* Allow installing apt packages for foreign architectures. This is supported
+  in Ubuntu 24.04 or newer or on Ubuntu systems where the default sources file
+  ``ubuntu.sources`` is in the `deb822`_ format.
+
 2.0.2 (2024-Dec-04)
 -------------------
 
@@ -68,4 +77,5 @@ has been on internal refactorings and tooling.
 - Add support for Ubuntu Cloud Archive repositories
 - Unify package repositories representations
 
+.. _deb822: https://manpages.debian.org/unstable/apt/sources.list.5.en.html
 .. _Releases page: https://github.com/canonical/craft-archives/releases
