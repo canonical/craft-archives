@@ -1,4 +1,5 @@
 version = 1
+revision = 1
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -379,7 +380,7 @@ requires-dist = [
     { name = "mypy", extras = ["reports"], marker = "extra == 'types'", specifier = "~=1.5" },
     { name = "overrides", specifier = ">=6.0" },
     { name = "pydantic", specifier = "~=2.7" },
-    { name = "pyright", marker = "extra == 'types'", specifier = "==1.1.390" },
+    { name = "pyright", marker = "extra == 'types'", specifier = "==1.1.395" },
     { name = "python-debian", specifier = "==0.1.49" },
     { name = "sphinx-autobuild", marker = "extra == 'docs'", specifier = "==2021.3.14" },
     { name = "sphinx-lint", marker = "extra == 'docs'", specifier = "==0.6.7" },
@@ -387,6 +388,7 @@ requires-dist = [
     { name = "sphinx-toolbox", marker = "extra == 'docs'", specifier = "==3.4.0" },
     { name = "yamllint", marker = "extra == 'lint'", specifier = "~=1.35" },
 ]
+provides-extras = ["docs", "lint", "types"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1162,15 +1164,15 @@ wheels = [
 
 [[package]]
 name = "pyright"
-version = "1.1.390"
+version = "1.1.395"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nodeenv" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ba/42/1e0392f35dd275f9f775baf7c86407cef7f6a0d9b8e099a93e5422a7e571/pyright-1.1.390.tar.gz", hash = "sha256:aad7f160c49e0fbf8209507a15e17b781f63a86a1facb69ca877c71ef2e9538d", size = 21950 }
+sdist = { url = "https://files.pythonhosted.org/packages/fb/47/a2e1dfd70f9f0db34f70d5b108c82be57bf24185af69c95acff57f9239fa/pyright-1.1.395.tar.gz", hash = "sha256:53703169068c160bfb41e1b44ba3e2512492869c26cfad927e1268cb3fbb1b1c", size = 3813566 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/43/20/3f492ca789fb17962ad23619959c7fa642082621751514296c58de3bb801/pyright-1.1.390-py3-none-any.whl", hash = "sha256:ecebfba5b6b50af7c1a44c2ba144ba2ab542c227eb49bc1f16984ff714e0e110", size = 18579 },
+    { url = "https://files.pythonhosted.org/packages/5f/a1/531897f8caa6c6cc99862cd1c908ddd8a366a51d968e83ab4523ded98b30/pyright-1.1.395-py3-none-any.whl", hash = "sha256:f9bc726870e740c6c77c94657734d90563a3e9765bb523b39f5860198ed75eef", size = 5688787 },
 ]
 
 [[package]]
