@@ -16,6 +16,7 @@
 #
 """Manage the host's apt source repository configuration."""
 
+import functools
 import io
 import logging
 import pathlib
@@ -38,6 +39,11 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_SOURCES_DIRECTORY = Path("/etc/apt/sources.list.d")
 _DEFAULT_SIGNED_BY_ROOT = Path("/")
+# a mapping of architectures to a list of architectures with compatible packages
+_COMPATIBLE_ARCHS = {
+    "amd64": ["amd64", "i386"],
+    "arm64": ["arm64", "armhf"],
+}
 
 
 def _construct_deb822_source(  # noqa: PLR0913
@@ -173,9 +179,9 @@ class AptSourcesManager:
         2) If path is specified, convert path to a suite entry,
            ending with "/".
 
-        Relatedly, this assumes all of the error-checking has been
+        Relatedly, this assumes all the error-checking has been
         done already on the package_repository object in a proper
-        fashion, but do some sanity checks here anyways.
+        fashion, but do some checks here anyways.
 
         :returns: True if source configuration was changed.
         """
@@ -318,21 +324,53 @@ class AptSourcesManager:
             changed = self._install_sources_apt(package_repo=package_repo)
             architectures = package_repo.architectures
             if changed and architectures:
-                _add_architecture(architectures, root=self._signed_by_root)
+                _add_architecture(
+                    architectures=architectures,
+                    root=self._signed_by_root,
+                    sources_dir=self._sources_list_d,
+                )
             return changed
 
         raise RuntimeError(f"unhandled package repository: {package_repository!r}")
 
 
-def _add_architecture(architectures: List[str], root: Path) -> None:
-    """Add package repository architecture."""
+def _add_architecture(
+    architectures: List[str],
+    root: Path,
+    sources_dir: Path,
+) -> None:
+    """Add package repository architecture.
+
+    For systems that who default to deb822 sources, `dpkg --add-architecture`
+    works for any architecture. For systems that use the traditional sources.list,
+    only compatible architectures can be added.
+
+    :param architectures: The architectures to add.
+    :param root: The root of the system to add the architectures to.
+    :param sources_dir: The directory containing the sources listings.
+    """
     current_arch = _get_current_architecture()
-    compatible_pairs = {"amd64": "i386", "arm64": "armhf"}
+
+    # Sources in 'ubuntu.sources' don't list architectures, so apt assumes the default
+    # repository provides packages for all architectures. These need to be restricted
+    # before adding other architectures with `dpkg --add-architecture`.
+    if _is_deb822_default(sources_dir):
+        _update_sources_file(
+            sources_file=sources_dir / "ubuntu.sources",
+            field="Architectures",
+            values=_COMPATIBLE_ARCHS.get(current_arch, current_arch),
+        )
+    else:
+        logger.debug(
+            "Not updating sources.list because it doesn't exist "
+            "or isn't in the deb822 format."
+        )
+
     for arch in architectures:
-        # We can only add architectures if they are compatible with the running host,
-        # because of the way the default repositories are typically setup.
-        if compatible_pairs.get(current_arch) == arch:
-            logger.info(f"Add repository architecture: {arch}")
+        if _is_deb822_default(sources_dir) or arch in _COMPATIBLE_ARCHS.get(
+            current_arch, []
+        ):
+            logger.info(f"Adding repository architecture: {arch}")
             subprocess.run(
                 # Note: the order of parameters matters here, as "--add-architecture"
                 # must come last because of the way dpkg parses the command.
@@ -348,6 +386,65 @@ def _get_current_architecture() -> str:
         .decode("utf-8")
         .strip()
     )
+
+
+@functools.lru_cache
+def _is_deb822_default(sources_dir: Path) -> bool:
+    """Check if the default sources are in deb822 format.
+
+    :param sources_dir: The directory containing the sources listings.
+
+    :return: True if the default sources are in deb822 format.
+    """
+    sources_file = sources_dir / "ubuntu.sources"
+
+    if not (sources_dir / "ubuntu.sources").is_file():
+        return False
+
+    # an empty list means there are no sources
+    return bool(list(Deb822.iter_paragraphs(sequence=sources_file.read_text())))
+
+
+def _update_sources_file(
+    *, sources_file: Path, field: str, values: Sequence[str] | str
+) -> None:
+    """Update a field in a deb822 sources file.
+
+    :param sources_file: The file to update.
+    :param field: The field to update.
+    :param values: The new values for the field. If the field doesn't exist, it is added.
+      The existing value is overwritten. Sequences are joined with a space. If the value
+      is falsey (empty string or empty list), the field is removed.
+    """
+    if not sources_file.is_file():
+        logger.debug("Sources file %r doesn't exist.", sources_file)
+        return
+
+    logger.debug("Reading sources from %r.", str(sources_file))
+    sources = list(Deb822.iter_paragraphs(sequence=sources_file.read_text()))
+
+    # convert sequence to a space-delimited string
+    value = values if isinstance(values, str) else " ".join(values)
+    logger.debug("Updating field %r to %r", field, value)
+
+    if not sources:
+        logger.debug(
+            "Not updating %r because it doesn't contain any deb822 sources.",
+            str(sources_file),
+        )
+        return
+
+    for source in sources:
+        logger.debug("Updating source %r.", source.get("URIs"))
+        if value:
+            source[field] = value
+        else:
+            source.pop(field, None)
+
+    with sources_file.open("w") as f:
+        for source in sources:
+            logger.debug("Writing updated sources to %r.", str(sources_file))
+            f.write(str(source) + "\n")
 
 
 def _get_suites(pocket: PocketEnum, series: str) -> List[str]:

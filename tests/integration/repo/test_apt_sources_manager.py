@@ -115,13 +115,15 @@ def test_install_sources_conflicting_keys(
         )
     )
 
-    repository = PackageRepositoryApt(
-        type="apt",
-        url=repo_url,
-        suites=["noble"],
-        components=["main", "universe"],
-        architectures=[repo_arch],
-        key_id="78E1918602959B9C59103100F1831DDAFC42E99D",
+    repository = PackageRepositoryApt.unmarshal(
+        {
+            "type": "apt",
+            "url": repo_url,
+            "suites": ["noble"],
+            "components": ["main", "universe"],
+            "architectures": [repo_arch],
+            "key_id": "78E1918602959B9C59103100F1831DDAFC42E99D",
+        }
     )
     sources_manager = AptSourcesManager(
         sources_list_d=sources_dir, signed_by_root=fake_system
