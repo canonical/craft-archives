@@ -14,7 +14,7 @@ specifies the fingerprint of the repository's public key. This public key can ei
 stored locally or automatically fetched by Craft Archives.
 
 If the key file is located as part of the project's assets, Craft Archives uses the
-``gpg`` application as provided by the official Ubuntu archives to ensure that the file
+GPG as provided by the official Ubuntu archives to ensure that the file
 matches the declared fingerprint. If the key file is not present locally, Craft Archives
 uses GPG in conjunction with `dirmngr`_ (also from the Ubuntu archives) to fetch the key
 from the OpenPGP keyserver ``keyserver.ubuntu.com``.
