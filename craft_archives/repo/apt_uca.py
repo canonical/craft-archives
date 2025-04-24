@@ -18,7 +18,6 @@
 
 import http
 import urllib.error
-import urllib.parse
 import urllib.request
 
 from . import errors
