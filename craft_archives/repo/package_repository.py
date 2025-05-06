@@ -163,8 +163,8 @@ class PackageRepository(BaseModel, abc.ABC):
     )
     """The priority of the repository.
 
-    This keyword is used to override the default behavior when picking the source
-    for a package.
+    This key is used to override the default behavior when picking the source for a
+    package.
 
     **Values**
 
@@ -287,8 +287,8 @@ class PackageRepositoryAptPPA(PackageRepository):
 
     The key is also known as a long-form thumbprint or fingerprint.
 
-    Before reaching out to the keyserver defined with ``key-server``, Snapcraft will
-    look for the corresponding key in the project directory under
+    Before reaching out to the keyserver defined with ``key-server``, the application
+    will look for the corresponding key in the project directory under
     ``snap/keys/<short-thumbprint>.asc`` where ``<short-thumbprint>`` is the last 8
     characters of the key ID.
 
@@ -379,15 +379,15 @@ class PackageRepositoryApt(PackageRepository):
 
     The key is also known as a long-form thumbprint or fingerprint.
 
-    Before reaching out to the keyserver defined with ``key-server``, Snapcraft will
-    look for the corresponding key in the project directory under
+    Before reaching out to the keyserver defined with ``key-server``, the application
+    will look for the corresponding key in the project directory under
     ``snap/keys/<short-thumbprint>.asc`` where ``<short-thumbprint>`` is the last 8
     characters of the key ID.
 
     To determine a ``key-id`` from a key file with ``gpg``, type the following: ``gpg
     --import-options show-only --import <file>``.
 
-    Unlike deb repositories, the key is optional for PPA repositories.
+    Unlike Debian package repositories, the key is optional for PPA repositories.
     """
 
     architectures: Optional[UniqueList[str]] = Field(
@@ -428,10 +428,10 @@ class PackageRepositoryApt(PackageRepository):
     )
     """The absolute path to the repository from the base URL.
 
-    This keyword can't be used with the ``components`` keywords.
+    This key can't be used with the ``components`` key.
 
-    This is an uncommonly used keyword that is only needed for repositories that
-    don't use suites, or series and pockets.
+    This key is only needed for repositories that don't use suites, or series and
+    pockets.
     """
 
     components: Optional[UniqueList[str]] = Field(
@@ -444,7 +444,7 @@ class PackageRepositoryApt(PackageRepository):
     If ``components`` is specified, then either ``suites`` must specified or ``series``
     and ``pocket`` must be specified.
 
-    This keyword can't be used with the ``path`` keyword.
+    This key can't be used with the ``path`` key.
     """
 
     key_server: Optional[str] = Field(
@@ -466,7 +466,7 @@ class PackageRepositoryApt(PackageRepository):
     """The suites to enable for the repository.
 
     If the ``url`` does not look like it has a suite defined, it is likely that the
-    repository uses an absolute URL and the ``path`` keyword should be used instead.
+    repository uses an absolute URL and the ``path`` key should be used instead.
 
     This key can't be used with the ``path``, ``series``, or ``pocket`` keys.
     """
@@ -499,7 +499,7 @@ class PackageRepositoryApt(PackageRepository):
     )
     """The series to enable for the repository.
 
-    This keyword can't be used with the ``suites`` keyword.
+    This key can't be used with the ``suites`` key.
     """
 
     # class Config(PackageRepository.Config):  # - no docstring needed
