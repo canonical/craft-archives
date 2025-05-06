@@ -156,7 +156,7 @@ class PackageRepository(BaseModel, abc.ABC):
 
     """
 
-    priority: Optional[PriorityValue] | None = Field(
+    priority: Optional[PriorityValue] = Field(
         default=None,
         description="The priority of the repository",
         examples=["always", "999"],
@@ -390,7 +390,7 @@ class PackageRepositoryApt(PackageRepository):
     Unlike deb repositories, the key is optional for PPA repositories.
     """
 
-    architectures: Optional[UniqueList[str]] | None = Field(
+    architectures: Optional[UniqueList[str]] = Field(
         default=None,
         description="The architectures to enable for the repository.",
         examples=["[i386, amd64]"],
