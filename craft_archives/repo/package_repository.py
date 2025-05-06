@@ -413,6 +413,8 @@ class PackageRepositoryApt(PackageRepository):
     .. list-table::
         :header-rows: 1
 
+        * - Value
+          - Description
         * - ``deb``
           - Default. Enable the ``deb`` format.
         * - ``deb-src``
@@ -481,7 +483,7 @@ class PackageRepositoryApt(PackageRepository):
     .. list-table::
         :header-rows: 1
 
-        * - Values
+        * - Value
           - Description
         * - ``updates
           - Default. Get packages from the ``updates`` pocket.
