@@ -163,7 +163,7 @@ class PackageRepository(BaseModel, abc.ABC):
     )
     """The priority of the repository.
 
-    This key is used to override the default behavior when picking the source for a
+    If set, this key overrides the default behavior when picking the source for a
     package.
 
     **Values**
@@ -285,17 +285,20 @@ class PackageRepositoryAptPPA(PackageRepository):
     )
     """The GPG identifier of the repository.
 
-    The key is also known as a long-form thumbprint or fingerprint.
+    A GPG key is also known as a long-form thumbprint or fingerprint.
 
     Before reaching out to the keyserver defined with ``key-server``, the application
-    will look for the corresponding key in the project directory under
+    looks for the corresponding key in the project directory under
     ``snap/keys/<short-thumbprint>.asc`` where ``<short-thumbprint>`` is the last 8
     characters of the key ID.
 
-    To determine a ``key-id`` from a key file with ``gpg``, type the following: ``gpg
-    --import-options show-only --import <file>``.
+    To determine the ``key-id`` from a key file, run:
 
-    Unlike deb repositories, the key is optional for PPA repositories.
+    .. code-block:: bash
+
+        gpg --import-options show-only --import <file>
+
+    Unlike Debian package repositories, the key is optional for PPA repositories.
     """
 
     @field_validator("ppa")
@@ -377,15 +380,18 @@ class PackageRepositoryApt(PackageRepository):
     )
     """The GPG identifier of the repository.
 
-    The key is also known as a long-form thumbprint or fingerprint.
+    A GPG key is also known as a long-form thumbprint or fingerprint.
 
     Before reaching out to the keyserver defined with ``key-server``, the application
-    will look for the corresponding key in the project directory under
+    looks for the corresponding key in the project directory under
     ``snap/keys/<short-thumbprint>.asc`` where ``<short-thumbprint>`` is the last 8
     characters of the key ID.
 
-    To determine a ``key-id`` from a key file with ``gpg``, type the following: ``gpg
-    --import-options show-only --import <file>``.
+    To determine the ``key-id`` from a key file, run:
+
+    .. code-block:: bash
+
+        gpg --import-options show-only --import <file>
 
     Unlike Debian package repositories, the key is optional for PPA repositories.
     """
@@ -416,9 +422,10 @@ class PackageRepositoryApt(PackageRepository):
         * - Value
           - Description
         * - ``deb``
-          - Default. Enable the ``deb`` format.
+          - Default. Enable the ``.deb`` format.
         * - ``deb-src``
-          - Enable the ``deb-src`` format.
+          - Enable the ``.deb-src`` format.
+
     """
 
     path: Optional[str] = Field(
@@ -441,8 +448,8 @@ class PackageRepositoryApt(PackageRepository):
     )
     """The components to enable for the repository.
 
-    If ``components`` is specified, then either ``suites`` must specified or ``series``
-    and ``pocket`` must be specified.
+    If ``components`` is specified, then either ``suites`` must be specified or
+    ``series`` and ``pocket`` must be specified.
 
     This key can't be used with the ``path`` key.
     """
@@ -455,7 +462,7 @@ class PackageRepositoryApt(PackageRepository):
     )
     """The URL of the key server to fetch the key from.
 
-    The key defined in the ``key-id`` keyword will be fetched.
+    The key defined in ``key-id`` is fetched.
     """
 
     suites: Optional[List[SuiteStr]] = Field(
@@ -485,7 +492,7 @@ class PackageRepositoryApt(PackageRepository):
 
         * - Value
           - Description
-        * - ``updates
+        * - ``updates``
           - Default. Get packages from the ``updates`` pocket.
         * -  ``proposed``
           - Get packages from the ``proposed`` pocket.
