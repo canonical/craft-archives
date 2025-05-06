@@ -144,7 +144,43 @@ class PackageRepository(BaseModel, abc.ABC):
     )
 
     type: Literal["apt"]
-    priority: Optional[PriorityValue] = None
+    """The type of the repository.
+
+    Only APT repositories are supported.
+
+    **Examples**
+
+    .. code-block:: yaml
+
+        type: apt
+
+    """
+
+    priority: Optional[PriorityValue] | None = Field(
+        default=None,
+        description="The priority of the repository",
+        examples=["always", "999"],
+    )
+    """The priority of the repository.
+
+    This keyword is used to override the default behavior when picking the source
+    for a package.
+
+    **Values**
+
+    .. list-table::
+        :header-rows: 1
+
+        * - Value
+          - Description
+        * - ``always``
+          - Always use the repository. Maps to 1000.
+        * - ``prefer``
+          - Prefer using the repository. Maps to 990.
+        * - ``defer``
+          - Use other repositories instead. Maps to 100.
+
+    """
 
     @model_validator(mode="before")
     @classmethod
@@ -236,8 +272,31 @@ class PackageRepository(BaseModel, abc.ABC):
 class PackageRepositoryAptPPA(PackageRepository):
     """A PPA package repository."""
 
-    ppa: str
-    key_id: KeyIdStr | None = Field(default=None, alias="key-id")
+    ppa: str = Field(
+        description="The short name for the PPA.",
+        examples=["mozillateam/firefox-next"],
+    )
+
+    key_id: KeyIdStr | None = Field(
+        default=None,
+        alias="key-id",
+        description="The GPG identifier of the repository.",
+        examples=["590CA3D8E4826565BE3200526A634116E00F4C82"],
+    )
+    """The GPG identifier of the repository.
+
+    The key is also known as a long-form thumbprint or fingerprint.
+
+    Before reaching out to the keyserver defined with ``key-server``, Snapcraft will
+    look for the corresponding key in the project directory under
+    ``snap/keys/<short-thumbprint>.asc`` where ``<short-thumbprint>`` is the last 8
+    characters of the key ID.
+
+    To determine a ``key-id`` from a key file with ``gpg``, type the following: ``gpg
+    --import-options show-only --import <file>``.
+
+    Unlike deb repositories, the key is optional for PPA repositories.
+    """
 
     @field_validator("ppa")
     @classmethod
@@ -264,8 +323,25 @@ class PackageRepositoryAptPPA(PackageRepository):
 class PackageRepositoryAptUCA(PackageRepository):
     """A cloud package repository."""
 
-    cloud: str
+    cloud: str = Field(
+        description="The UCA release name.",
+        examples=["antelope"],
+    )
+
     pocket: PocketUCAEnum = PocketUCAEnum.UPDATES
+    """The pocket to get packages from.
+
+    **Examples**
+
+    .. code-block:: yaml
+
+        pocket: updates
+
+    .. code-block:: yaml
+
+        pocket: proposed
+
+    """
 
     @field_validator("cloud")
     @classmethod
@@ -289,16 +365,140 @@ class PackageRepositoryAptUCA(PackageRepository):
 class PackageRepositoryApt(PackageRepository):
     """An APT package repository."""
 
-    url: AnyUrl | FileUrl
-    key_id: KeyIdStr = Field(alias="key-id")
-    architectures: Optional[UniqueList[str]] = None
-    formats: Optional[List[Literal["deb", "deb-src"]]] = None
-    path: Optional[str] = None
-    components: Optional[UniqueList[str]] = None
-    key_server: Optional[str] = Field(default=None, alias="key-server")
-    suites: Optional[List[SuiteStr]] = None
-    pocket: Optional[PocketEnum] = None
-    series: Optional[SeriesStr] = None
+    url: AnyUrl | FileUrl = Field(
+        description="The URL of the repository",
+        examples=["https://ppa.launchpad.net/snappy-dev/snapcraft-daily/ubuntu"],
+    )
+
+    key_id: KeyIdStr = Field(
+        alias="key-id",
+        description="The GPG identifier of the repository.",
+        examples=["590CA3D8E4826565BE3200526A634116E00F4C82"],
+    )
+    """The GPG identifier of the repository.
+
+    The key is also known as a long-form thumbprint or fingerprint.
+
+    Before reaching out to the keyserver defined with ``key-server``, Snapcraft will
+    look for the corresponding key in the project directory under
+    ``snap/keys/<short-thumbprint>.asc`` where ``<short-thumbprint>`` is the last 8
+    characters of the key ID.
+
+    To determine a ``key-id`` from a key file with ``gpg``, type the following: ``gpg
+    --import-options show-only --import <file>``.
+
+    Unlike deb repositories, the key is optional for PPA repositories.
+    """
+
+    architectures: Optional[UniqueList[str]] | None = Field(
+        default=None,
+        description="The architectures to enable for the repository.",
+        examples=["[i386, amd64]"],
+    )
+    """The architectures to enable for the repository.
+
+    If unspecified, the repository's architecture is assumed to match the host
+    architecture.
+    """
+
+    formats: Optional[List[Literal["deb", "deb-src"]]] = Field(
+        default=None,
+        description="The Debian package types to enable",
+        examples=["[deb, deb-src]"],
+    )
+    """The Debian package types to enable.
+
+    **Values**
+
+    .. list-table::
+        :header-rows: 1
+
+        * - ``deb``
+          - Default. Enable the ``deb`` format.
+        * - ``deb-src``
+          - Enable the ``deb-src`` format.
+    """
+
+    path: Optional[str] = Field(
+        default=None,
+        description="The absolute path to the repository from the base URL.",
+        examples=["/my-repo"],
+    )
+    """The absolute path to the repository from the base URL.
+
+    This keyword can't be used with the ``components`` keywords.
+
+    This is an uncommonly used keyword that is only needed for repositories that
+    don't use suites, or series and pockets.
+    """
+
+    components: Optional[UniqueList[str]] = Field(
+        default=None,
+        description="The components to enable for the repository.",
+        examples=["[main, multiverse, universe, restricted]"],
+    )
+    """The components to enable for the repository.
+
+    If ``components`` is specified, then either ``suites`` must specified or ``series``
+    and ``pocket`` must be specified.
+
+    This keyword can't be used with the ``path`` keyword.
+    """
+
+    key_server: Optional[str] = Field(
+        default=None,
+        alias="key-server",
+        description="The URL of the key server to fetch the key from.",
+        examples=["hkp://keyserver.ubuntu.com:80"],
+    )
+    """The URL of the key server to fetch the key from.
+
+    The key defined in the ``key-id`` keyword will be fetched.
+    """
+
+    suites: Optional[List[SuiteStr]] = Field(
+        default=None,
+        description="The suites to enable for the repository.",
+        examples=["[noble, noble-updates]"],
+    )
+    """The suites to enable for the repository.
+
+    If the ``url`` does not look like it has a suite defined, it is likely that the
+    repository uses an absolute URL and the ``path`` keyword should be used instead.
+
+    This key can't be used with the ``path``, ``series``, or ``pocket`` keys.
+    """
+
+    pocket: Optional[PocketEnum] = Field(
+        default=None,
+        description="The pocket to get packages from.",
+        examples=["updates", "proposed"],
+    )
+    """The pocket to get packages from.
+
+    **Values**
+
+    .. list-table::
+        :header-rows: 1
+
+        * - Values
+          - Description
+        * - ``updates
+          - Default. Get packages from the ``updates`` pocket.
+        * -  ``proposed``
+          - Get packages from the ``proposed`` pocket.
+
+    """
+
+    series: Optional[SeriesStr] = Field(
+        default=None,
+        description="The series to enable for the repository.",
+        examples=["jammy", "noble"],
+    )
+    """The series to enable for the repository.
+
+    This keyword can't be used with the ``suites`` keyword.
+    """
 
     # class Config(PackageRepository.Config):  # - no docstring needed
     #     error_msg_templates = {
