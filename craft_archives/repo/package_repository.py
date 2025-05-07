@@ -435,10 +435,10 @@ class PackageRepositoryApt(PackageRepository):
     )
     """The absolute path to the repository from the base URL.
 
-    This key can't be used with the ``components`` key.
-
     This key is only needed for repositories that don't use suites, or series and
     pockets.
+
+    This key is mutually incompatible with the ``components`` and ``suites`` keys.
     """
 
     components: Optional[UniqueList[str]] = Field(
@@ -451,7 +451,7 @@ class PackageRepositoryApt(PackageRepository):
     If ``components`` is specified, then either ``suites`` must be specified or
     ``series`` and ``pocket`` must be specified.
 
-    This key can't be used with the ``path`` key.
+    This key is mutually incompatible with the ``path`` key.
     """
 
     key_server: Optional[str] = Field(
@@ -475,7 +475,8 @@ class PackageRepositoryApt(PackageRepository):
     If the ``url`` does not look like it has a suite defined, it is likely that the
     repository uses an absolute URL and the ``path`` key should be used instead.
 
-    This key can't be used with the ``path``, ``series``, or ``pocket`` keys.
+    This key is mutually incompatible with the ``path``, ``series``, and ``pocket``
+    keys.
     """
 
     pocket: Optional[PocketEnum] = Field(
@@ -497,6 +498,7 @@ class PackageRepositoryApt(PackageRepository):
         * -  ``proposed``
           - Get packages from the ``proposed`` pocket.
 
+    This key is mutually incompatible with the ``suites`` key.
     """
 
     series: Optional[SeriesStr] = Field(
@@ -506,7 +508,7 @@ class PackageRepositoryApt(PackageRepository):
     )
     """The series to enable for the repository.
 
-    This key can't be used with the ``suites`` key.
+    This key is mutually incompatible with the ``suites`` key.
     """
 
     # class Config(PackageRepository.Config):  # - no docstring needed
