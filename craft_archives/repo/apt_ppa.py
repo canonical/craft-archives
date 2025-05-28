@@ -23,8 +23,8 @@
 import logging
 from typing import cast
 
-import lazr.restfulclient.errors  # type: ignore
-from launchpadlib.launchpad import Launchpad  # type: ignore
+import lazr.restfulclient.errors  # type: ignore[import-untyped]
+from launchpadlib.launchpad import Launchpad  # type: ignore[import-untyped]
 
 from . import errors
 

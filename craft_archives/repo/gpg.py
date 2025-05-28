@@ -65,11 +65,12 @@ def call_gpg(
         )
         if log:
             _log_gpg(process)
-        return process.stdout
     except subprocess.CalledProcessError as error:
         if log:
             _log_gpg(error)
         raise
+    else:
+        return process.stdout
 
 
 def _log_gpg(

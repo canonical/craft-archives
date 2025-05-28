@@ -63,7 +63,6 @@ def apt_repository():
             "formats": ["deb", "deb-src"],
             "key_id": "A" * 40,
             "key_server": "keyserver.ubuntu.com",
-            # name="test-name",
             "suites": ["xenial", "xenial-updates"],
             "url": Url("http://archive.ubuntu.com/ubuntu"),
             "priority": 123,
@@ -341,7 +340,7 @@ def test_apt_key_id_valid():
 
 @pytest.mark.parametrize(
     "key_id",
-    ("KEYID12345" * 4, "abcde12345" * 4),
+    ["KEYID12345" * 4, "abcde12345" * 4],
 )
 def test_apt_key_id_invalid(key_id):
     repo = {
@@ -412,7 +411,6 @@ def test_apt_unmarshal_invalid_type():
         "formats": ["deb", "deb-src"],
         "key-id": "A" * 40,
         "key-server": "keyserver.ubuntu.com",
-        # "name": "test-name",
         "suites": ["xenial", "xenial-updates"],
         "type": "aptx",
         "url": "http://archive.ubuntu.com/ubuntu",
@@ -479,7 +477,7 @@ def test_apt_invalid_priority():
 
 
 @pytest.mark.parametrize(
-    "priority_str,priority_int",
+    ("priority_str", "priority_int"),
     [
         ("always", 1000),
         ("prefer", 990),
@@ -495,7 +493,7 @@ def test_priority_correctly_converted(priority_str, priority_int):
 
 
 @pytest.mark.parametrize(
-    "url,pin",
+    ("url", "pin"),
     [
         ("https://example.com/repo", 'origin "example.com"'),
         ("http://archive.debian.org/debian/stable/blah", 'origin "archive.debian.org"'),
@@ -540,7 +538,7 @@ def test_ppa_invalid_ppa():
 
 
 @pytest.mark.parametrize(
-    "priority_str,priority_int",
+    ("priority_str", "priority_int"),
     [
         ("always", 1000),
         ("prefer", 990),
@@ -556,7 +554,7 @@ def test_ppa_priority_correctly_converted(priority_str, priority_int):
 
 
 @pytest.mark.parametrize(
-    "ppa,pin",
+    ("ppa", "pin"),
     [
         ("ppa/ppa", "release o=LP-PPA-ppa-ppa"),
         ("deadsnakes/nightly", "release o=LP-PPA-deadsnakes-nightly"),
@@ -648,7 +646,7 @@ def test_uca_invalid_cloud():
 
 
 @pytest.mark.parametrize(
-    "priority_str,priority_int",
+    ("priority_str", "priority_int"),
     [
         ("always", 1000),
         ("prefer", 990),
@@ -664,7 +662,7 @@ def test_uca_priority_correctly_converted(priority_str, priority_int):
 
 
 @pytest.mark.parametrize(
-    "cloud,pin",
+    ("cloud", "pin"),
     [
         ("antelope", 'origin "ubuntu-cloud.archive.canonical.com"'),
         ("zed", 'origin "ubuntu-cloud.archive.canonical.com"'),

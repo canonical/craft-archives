@@ -167,7 +167,7 @@ def test_get_key_fingerprints(apt_gpg, mock_run):
 
 
 @pytest.mark.parametrize(
-    "sample_output,expected_keys",
+    ("sample_output", "expected_keys"),
     [
         (SAMPLE_GPG_DOCKER_OUTPUT, ["9DC858229FC7DD38854AE2D88D81803C0EBFCD88"]),
         (
@@ -191,7 +191,7 @@ def test_get_key_fingerprints_multi_keys(
 
 
 @pytest.mark.parametrize(
-    "should_raise,expected_is_installed",
+    ("should_raise", "expected_is_installed"),
     [
         (True, False),
         (False, True),
@@ -254,7 +254,7 @@ def test_is_key_installed_with_gpg_failure(
     mock_logger.warning.assert_called_once_with("gpg error: some error")
 
 
-@pytest.mark.parametrize("key_id", (None, "FAKE-KEY-ID-FROM-GNUPG"))
+@pytest.mark.parametrize("key_id", [None, "FAKE-KEY-ID-FROM-GNUPG"])
 def test_install_key(
     apt_gpg, mock_run, mock_chmod, sample_key_string, sample_key_bytes, tmp_path, key_id
 ):

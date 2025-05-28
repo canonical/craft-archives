@@ -91,14 +91,14 @@ def test_install_key_missing_directory(key_assets, tmp_path, test_data_dir):
 
 
 @pytest.mark.parametrize(
-    "key_id, expected_keyfile",
-    (
+    ("key_id", "expected_keyfile"),
+    [
         # Desired key-id is provided: imported file has its shortid
         ("D6811ED3ADEEB8441AF5AA8F4528B6CD9E61EF26", "craft-9E61EF26.gpg"),
         # Desired key-id is *not* provided: imported file has the shortid of the
         # first fingerprint in the original file.
         (None, "craft-07BB6C57.gpg"),
-    ),
+    ],
 )
 def test_install_key_gpg_errors_valid(
     apt_gpg, tmp_path, test_data_dir, key_id, expected_keyfile, caplog

@@ -49,7 +49,7 @@ class AptPreferencesError(PackageRepositoryError):
     def __init__(
         self,
         component: Literal["pin", "priority"],
-        value: Any | None = None,
+        value: Any | None = None,  # noqa: ANN401 (no use of Any)
         details: str | None = None,
         resolution: str | None = None,
     ) -> None:

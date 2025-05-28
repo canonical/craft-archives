@@ -121,10 +121,7 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
-        if isinstance(key, str):
-            key_bytes = key.encode()
-        else:
-            key_bytes = key
+        key_bytes = key.encode() if isinstance(key, str) else key
 
         with _temporary_home_dir() as tmpdir:
             response = gpg.call_gpg(
@@ -276,7 +273,7 @@ class AptKeyManager:
             if package_repo.key_server:
                 key_server = package_repo.key_server
         else:
-            raise RuntimeError(f"unhandled package repo type: {package_repo!r}")
+            raise RuntimeError(f"unhandled package repo type: {package_repo!r}")  # noqa: TRY004, this is the wrong exception type but it would be breaking to change it
 
         # Already installed, nothing to do.
         if self.is_key_installed(key_id=key_id):

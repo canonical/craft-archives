@@ -26,7 +26,6 @@ from typing import (
     Any,
     Literal,
     TypeVar,
-    Union,
 )
 from urllib.parse import urlparse
 
@@ -101,7 +100,7 @@ class PriorityString(enum.IntEnum):
     DEFER = 100
 
 
-PriorityValue = Union[int, Literal["always", "prefer", "defer"]]
+PriorityValue = int |Literal["always", "prefer", "defer"]
 SeriesStr = Annotated[
     str, StringConstraints(min_length=1, pattern=re.compile(r"^[a-z]+$"))
 ]
@@ -507,11 +506,6 @@ class PackageRepositoryApt(PackageRepository):
 
     This key is mutually incompatible with the ``suites`` key.
     """
-
-    # class Config(PackageRepository.Config):  # - no docstring needed
-    #     error_msg_templates = {
-    #         "value_error.any_str.min_length": "Invalid URL; URLs must be non-empty strings"
-    #     }
 
     @property
     def name(self) -> str:

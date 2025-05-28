@@ -97,11 +97,7 @@ def _install_repos(
         if (
             isinstance(
                 package_repo,
-                (
-                    PackageRepositoryApt,
-                    PackageRepositoryAptPPA,
-                    PackageRepositoryAptUCA,
-                ),
+                PackageRepositoryApt | PackageRepositoryAptPPA | PackageRepositoryAptUCA,
             )
             and package_repo.priority is not None
         ):
