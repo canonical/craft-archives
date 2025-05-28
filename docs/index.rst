@@ -20,13 +20,13 @@ framework that need to provide support for additional software archives.
    :hidden:
 
    tutorials/index
-   howto/index
+   how-to-guides/index
    reference/index
    explanation/index
+   release-notes/index
 
-.. grid:: 1 1 2 2
 
-   .. grid-item-card:: :ref:`Tutorial <tutorial>`
+.. list-table::
 
       **Get started** with a hands-on introduction to Craft Archives
 
@@ -46,7 +46,7 @@ framework that need to provide support for additional software archives.
       **Discussion and clarification** of key topics
 
 Project and community
-=====================
+---------------------
 
 Craft Archives is a member of the Canonical family. It's an open source project
 that warmly welcomes community projects, contributions, suggestions, fixes
@@ -55,10 +55,3 @@ and constructive feedback.
 * `Ubuntu Code of Conduct <https://ubuntu.com/community/code-of-conduct>`_.
 * `Canonical contributor licence agreement
   <https://ubuntu.com/legal/contributors>`_.
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

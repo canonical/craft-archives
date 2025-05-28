@@ -30,21 +30,34 @@ html_context = {
     "github_url": "https://github.com/canonical/craft-archives",
 }
 
+# Target repository for the edit button on pages
+html_theme_options = {
+    "source_edit_link": "https://github.com/canonical/craft-archives",
+}
+
 extensions = [
     "canonical_sphinx",
 ]
 # endregion
 
+# region General configuration
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
+
 extensions.extend(
     [
         "sphinx.ext.intersphinx",
         "sphinx.ext.viewcode",
+        "sphinx.ext.coverage",
+        "sphinx.ext.doctest",
         "sphinx-pydantic",
         "sphinx_toolbox",
         "sphinx_toolbox.more_autodoc",
         "sphinx.ext.autodoc",  # Must be loaded after more_autodoc
+        "sphinxext.rediraffe",
     ]
 )
+
+# endregion
 
 # region Options for extensions
 # Intersphinx extension
@@ -64,3 +77,6 @@ github_username = "canonical"
 github_repository = "craft-archives"
 
 # endregion
+
+# Client-side page redirects.
+rediraffe_redirects = "redirects.txt"
