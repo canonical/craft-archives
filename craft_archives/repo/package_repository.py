@@ -100,7 +100,7 @@ class PriorityString(enum.IntEnum):
     DEFER = 100
 
 
-PriorityValue = int |Literal["always", "prefer", "defer"]
+PriorityValue = int | Literal["always", "prefer", "defer"]
 SeriesStr = Annotated[
     str, StringConstraints(min_length=1, pattern=re.compile(r"^[a-z]+$"))
 ]
@@ -523,9 +523,7 @@ class PackageRepositoryApt(PackageRepository):
 
     @field_validator("path")
     @classmethod
-    def _path_non_empty(
-        cls, path: str | None, info: ValidationInfo
-    ) -> str | None:
+    def _path_non_empty(cls, path: str | None, info: ValidationInfo) -> str | None:
         if path is not None and not path:
             raise _create_validation_error(
                 url=info.data.get("url"),

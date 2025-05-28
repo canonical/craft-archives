@@ -98,9 +98,7 @@ class AptKeyManager:
         return None
 
     @classmethod
-    def keyrings_path_for_root(
-        cls, root: pathlib.Path | None = None
-    ) -> pathlib.Path:
+    def keyrings_path_for_root(cls, root: pathlib.Path | None = None) -> pathlib.Path:
         """Get the location for Apt keyrings with ``root`` as the system root.
 
         :param root: The optional system root to consider, or None to assume the standard
