@@ -18,7 +18,6 @@
 
 import logging
 import tempfile
-from typing import List
 
 import gnupg
 import pytest
@@ -88,7 +87,7 @@ def test_install_key_missing_directory(key_assets, tmp_path, test_data_dir):
     apt_gpg.install_key(key=keypath.read_text())
 
     assert keyrings_path.exists()
-    assert keyrings_path.stat().st_mode == 0o40755  # noqa: PLR2004 magic value
+    assert keyrings_path.stat().st_mode == 0o40755
 
 
 @pytest.mark.parametrize(
@@ -147,7 +146,7 @@ def test_install_key_gpg_errors_invalid_key_id(
     # not the second.
     # A better test would need a key file that actually has this behavior, but we don't
     # have one right now.
-    def fake_get_fingerprints(*, key: str) -> List[str]:
+    def fake_get_fingerprints(*, key: str) -> list[str]:
         result = original_get_fingerprints(key=key)
         if key is key_contents:
             result.append(missing_key_id)
@@ -170,7 +169,7 @@ def test_install_key_gpg_errors_invalid_key_id(
     assert expected_gpg_log in gpg_log
 
 
-def get_fingerprints_via_python_gnupg(key: str) -> List[str]:
+def get_fingerprints_via_python_gnupg(key: str) -> list[str]:
     with tempfile.NamedTemporaryFile(suffix="keyring") as temp_file:
         return gnupg.GPG(keyring=temp_file.name).import_keys(key_data=key).fingerprints
 

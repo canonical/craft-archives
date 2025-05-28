@@ -41,7 +41,7 @@ SAMPLE_PINS = (
 
 @pytest.fixture
 def manager(tmp_path):
-    yield AptPreferencesManager(path=tmp_path / "preferences")
+    return AptPreferencesManager(path=tmp_path / "preferences")
 
 
 # region Preference

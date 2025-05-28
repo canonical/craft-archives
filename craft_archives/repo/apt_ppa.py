@@ -21,7 +21,7 @@
 # pyright: reportUnknownMemberType=false
 
 import logging
-from typing import Tuple, cast
+from typing import cast
 
 import lazr.restfulclient.errors  # type: ignore
 from launchpadlib.launchpad import Launchpad  # type: ignore
@@ -31,7 +31,7 @@ from . import errors
 logger = logging.getLogger(__name__)
 
 
-def split_ppa_parts(*, ppa: str) -> Tuple[str, str]:
+def split_ppa_parts(*, ppa: str) -> tuple[str, str]:
     """Obtain user and repository components from a PPA line."""
     ppa_split = ppa.split("/")
     if len(ppa_split) != 2:  # noqa: PLR2004

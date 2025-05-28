@@ -30,7 +30,7 @@ def mock_launchpad(mocker):
     m.login_anonymously.return_value.load.return_value.signing_key_fingerprint = (
         "FAKE-PPA-SIGNING-KEY"
     )
-    yield m
+    return m
 
 
 def test_split_ppa_parts():

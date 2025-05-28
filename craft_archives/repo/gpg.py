@@ -18,7 +18,7 @@
 import logging
 import pathlib
 import subprocess
-from typing import Iterable
+from collections.abc import Iterable
 
 logger = logging.getLogger(__name__)
 

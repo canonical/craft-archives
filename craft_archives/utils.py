@@ -20,7 +20,6 @@ import logging
 import platform
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +76,7 @@ def get_os_platform(
         except FileNotFoundError:
             logger.debug("Unable to locate 'os-release' file, using default values")
         else:
-            os_release: Dict[str, str] = {}
+            os_release: dict[str, str] = {}
             for line in lines:
                 line = line.strip()  # noqa PLW2901 — overwriting outer loop variable
                 if not line or line.startswith("#") or "=" not in line:
