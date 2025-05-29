@@ -23,6 +23,7 @@ classifiers = [
     "Topic :: System :: Archiving :: Packaging",
 ]
 requires-python = ">=3.10"
+readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.scripts]
 
