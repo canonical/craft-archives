@@ -25,8 +25,6 @@ requires-python = ">=3.10"
 readme = { file = "README.md", content-type = "text/markdown" }
 license = "LGPL-3.0-or-later"
 
-[project.scripts]
-
 [dependency-groups]
 lint = [
     "codespell[toml]~=2.3",
