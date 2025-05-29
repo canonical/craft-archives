@@ -8,9 +8,3 @@ Reference
 
    repo_properties
    ../changelog
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`

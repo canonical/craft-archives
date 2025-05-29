@@ -153,7 +153,7 @@ filecache = [
 
 [[package]]
 name = "canonical-sphinx"
-version = "0.3.0"
+version = "0.4.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "furo" },
@@ -161,15 +161,16 @@ dependencies = [
     { name = "myst-parser" },
     { name = "sphinx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/54/19/b2101265969ba6bfacbb9b3355a32a22abdcccceba61542813f07fe0e965/canonical_sphinx-0.3.0.tar.gz", hash = "sha256:7914a1281e7520a032058e7a511d019fee25a152c032499a7bf9e15852f9d9e7", size = 1051001, upload-time = "2025-01-05T23:17:30.366Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7b/86/7731f280e00073f53e041a0338d2c12b5a0007f96f1e01d93d97f04bb707/canonical_sphinx-0.4.1.tar.gz", hash = "sha256:288ac950fbbda5715e9569069da0116a5b1bff9352f561115e831da73dcbfffa", size = 1052442, upload-time = "2025-04-08T05:02:47.86Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/ba/ab2e2113841f88a9725c6c55f4918a3031ef3efad6afd154d9444cd40c8e/canonical_sphinx-0.3.0-py3-none-any.whl", hash = "sha256:55dc07c54038ea7016a5a6a12fafa1bde8558a00009237f5224db1c65e919b0f", size = 1027670, upload-time = "2025-01-05T23:17:28.132Z" },
+    { url = "https://files.pythonhosted.org/packages/41/52/631041a7fb3c0928e6529a05a5ed56c8bbecf7452e83d50af18ea0cdb9fc/canonical_sphinx-0.4.1-py3-none-any.whl", hash = "sha256:e2e4142e9b7e01a8dff9ad8e7b68d62bd27ff9daa7998b56f449b9b2ef5c2125", size = 1029462, upload-time = "2025-04-08T05:02:46.132Z" },
 ]
 
 [package.optional-dependencies]
 full = [
     { name = "canonical-sphinx-extensions" },
     { name = "pyspelling" },
+    { name = "sphinx-autobuild" },
     { name = "sphinx-copybutton" },
     { name = "sphinx-design" },
     { name = "sphinx-notfound-page" },
@@ -404,7 +405,7 @@ dev = [
     { name = "python-gnupg", specifier = "==0.5.4" },
 ]
 docs = [
-    { name = "canonical-sphinx", extras = ["full"], specifier = "~=0.2" },
+    { name = "canonical-sphinx", extras = ["full"], specifier = "~=0.4" },
     { name = "sphinx-autobuild", specifier = "==2021.3.14" },
     { name = "sphinx-lint", specifier = "~=1.0" },
     { name = "sphinx-pydantic", specifier = "==0.1.1" },

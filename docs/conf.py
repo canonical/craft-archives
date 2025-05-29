@@ -80,3 +80,8 @@ github_repository = "craft-archives"
 
 # Client-side page redirects.
 rediraffe_redirects = "redirects.txt"
+
+exclude_patterns = [
+    # No tutorials yet, so just hide the category
+    "tutorials"
+]

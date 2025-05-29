@@ -4,8 +4,8 @@
 [![Codecov Status][codecov-badge]][codecov-status]
 [![Ruff status][ruff-badge]][ruff-site]
 
-Craft Archives is a Python package to manage interaction with software package repositories
-on behalf of tools using the [Craft Parts] library.
+Craft Archives is a Python package to manage interaction with software package
+repositories on behalf of tools using the [Craft Parts] library.
 
 Craft Archives provides a set of common interfaces to define the locations of
 and install new repositories.
