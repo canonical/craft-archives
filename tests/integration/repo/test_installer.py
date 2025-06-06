@@ -19,11 +19,11 @@
 import shutil
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Dict, List
+from typing import Any
 
 import distro
 import pytest
-from craft_archives import repo
+from craft_archives import repo, utils
 
 APT_SOURCES = dedent(
     """
@@ -31,7 +31,7 @@ APT_SOURCES = dedent(
     URIs: http://ppa.launchpad.net/snappy-dev/snapcraft-daily/ubuntu
     Suites: focal
     Components: main
-    Architectures: amd64
+    Architectures: {host_arch}
     Signed-By: {key_location}/craft-FC42E99D.gpg
     """
 ).lstrip()
@@ -44,7 +44,7 @@ PPA_SOURCES = dedent(
     URIs: http://ppa.launchpad.net/deadsnakes/ppa/ubuntu
     Suites: {codename}
     Components: main
-    Architectures: amd64
+    Architectures: {host_arch}
     Signed-By: {key_location}/craft-6A755776.gpg
     """
 ).lstrip()
@@ -65,7 +65,7 @@ CLOUD_SOURCES = dedent(
     URIs: http://ubuntu-cloud.archive.canonical.com/ubuntu
     Suites: {codename}-updates/{cloud}
     Components: main
-    Architectures: amd64
+    Architectures: {host_arch}
     Signed-By: {key_location}/craft-EC4926EA.gpg
     """
 ).lstrip()
@@ -76,7 +76,7 @@ PUPPET_SOURCES = dedent(
     URIs: http://apt.puppet.com
     Suites: focal
     Components: puppet-tools
-    Architectures: amd64
+    Architectures: {host_arch}
     Signed-By: {key_location}/craft-9E61EF26.gpg
     """
 ).lstrip()
@@ -143,8 +143,8 @@ def fake_etc_apt(tmp_path, mocker) -> Path:
     return etc_apt
 
 
-@pytest.fixture()
-def all_repo_types() -> List[Dict[str, Any]]:
+@pytest.fixture
+def all_repo_types() -> list[dict[str, Any]]:
     repo_types = [
         # a "standard" repo, with a key coming from the assets dir
         {
@@ -195,6 +195,7 @@ def test_keys_dir(tmp_path, test_data_dir) -> Path:
     return target_dir
 
 
+@pytest.mark.slow
 def test_install(fake_etc_apt, all_repo_types, test_keys_dir):
     """Integrated test that checks the configuration of keys, sources and pins."""
 
@@ -205,6 +206,7 @@ def test_install(fake_etc_apt, all_repo_types, test_keys_dir):
     check_preferences(fake_etc_apt)
 
 
+@pytest.mark.slow
 def test_install_in_root(tmp_path, all_repo_types, test_keys_dir):
     """Integrated test that checks the configuration of keys, sources and pins."""
     etc_apt = tmp_path / "etc/apt"
@@ -251,18 +253,25 @@ def check_sources(etc_apt_dir: Path, signed_by_location: Path) -> None:
     # Must have exactly these sources files, one for each repo
     source_to_contents = {
         "http_ppa_launchpad_net_snappy_dev_snapcraft_daily_ubuntu": APT_SOURCES.format(
-            key_location=signed_by_location
+            key_location=signed_by_location,
+            host_arch=utils.get_host_architecture(),
         ),
         "ppa-deadsnakes_ppa": PPA_SOURCES.format(
-            codename=VERSION_CODENAME, key_location=signed_by_location
+            codename=VERSION_CODENAME,
+            key_location=signed_by_location,
+            host_arch=utils.get_host_architecture(),
         ),
-        "http_apt_puppet_com": PUPPET_SOURCES.format(key_location=signed_by_location),
+        "http_apt_puppet_com": PUPPET_SOURCES.format(
+            key_location=signed_by_location,
+            host_arch=utils.get_host_architecture(),
+        ),
     }
     if CLOUD_DATA:
         source_to_contents[f"cloud-{cloud_name}"] = CLOUD_SOURCES.format(
             cloud=cloud_name,
             codename=codename,
             key_location=signed_by_location,
+            host_arch=utils.get_host_architecture(),
         )
 
     assert len(list(keyrings_on_fs.iterdir())) == len(source_to_contents)

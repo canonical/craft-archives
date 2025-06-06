@@ -18,7 +18,6 @@
 
 import http
 import urllib.error
-import urllib.parse
 import urllib.request
 
 from . import errors
@@ -34,7 +33,7 @@ def check_release_compatibility(
     """Raise an exception if the release is incompatible with codename."""
     request = UCA_ARCHIVE + f"/dists/{codename}-{pocket.value}/{cloud}/"
     try:
-        urllib.request.urlopen(request)
+        urllib.request.urlopen(request)  # noqa: S310, mitigated because UCA_ARCHIVE is hardcoded to a trusted protocol
     except urllib.error.HTTPError as e:
         if e.code == http.HTTPStatus.NOT_FOUND:
             raise errors.AptUCAInstallError(

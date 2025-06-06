@@ -38,7 +38,7 @@ Signed-By: {source_key}
 
 
 @pytest.mark.parametrize(
-    ["source_url", "repo_url", "repo_arch", "expected_url"],
+    ("source_url", "repo_url", "repo_arch", "expected_url"),
     [
         # Exact same url
         pytest.param(

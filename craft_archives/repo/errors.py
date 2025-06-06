@@ -17,7 +17,7 @@
 """Package repository error definitions."""
 
 import pathlib
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from craft_archives.errors import ArchivesError
 
@@ -33,8 +33,8 @@ class PackageRepositoryValidationError(PackageRepositoryError):
         self,
         url: str,
         brief: str,
-        details: Optional[str] = None,
-        resolution: Optional[str] = None,
+        details: str | None = None,
+        resolution: str | None = None,
     ) -> None:
         super().__init__(
             f"Invalid package repository for {url!r}: {brief}",
@@ -49,9 +49,9 @@ class AptPreferencesError(PackageRepositoryError):
     def __init__(
         self,
         component: Literal["pin", "priority"],
-        value: Optional[Any] = None,
-        details: Optional[str] = None,
-        resolution: Optional[str] = None,
+        value: Any | None = None,  # noqa: ANN401 (no use of Any)
+        details: str | None = None,
+        resolution: str | None = None,
     ) -> None:
         super().__init__(
             brief=f"Invalid repository preference {component}",
@@ -98,9 +98,9 @@ class AptGPGKeyInstallError(PackageRepositoryError):
         self,
         output: str,
         *,
-        key: Optional[str] = None,
-        key_id: Optional[str] = None,
-        key_server: Optional[str] = None,
+        key: str | None = None,
+        key_id: str | None = None,
+        key_server: str | None = None,
     ) -> None:
         """Convert apt-key's output into a more user-friendly message."""
         message = output.replace(
