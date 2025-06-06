@@ -23,8 +23,9 @@ import logging
 import pathlib
 import subprocess
 import tempfile
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator, List, Optional, Union, cast
+from typing import cast
 
 from . import apt_ppa, errors, gpg, package_repository
 
@@ -71,13 +72,13 @@ class AptKeyManager:
     def __init__(
         self,
         *,
-        keyrings_path: Optional[pathlib.Path] = None,
+        keyrings_path: pathlib.Path | None = None,
         key_assets: pathlib.Path,
     ) -> None:
         self._keyrings_path = keyrings_path or KEYRINGS_PATH
         self._key_assets = key_assets
 
-    def find_asset_with_key_id(self, *, key_id: str) -> Optional[pathlib.Path]:
+    def find_asset_with_key_id(self, *, key_id: str) -> pathlib.Path | None:
         """Find snap key asset matching key_id.
 
         The key asset much be named with the last 8 characters of the key
@@ -97,9 +98,7 @@ class AptKeyManager:
         return None
 
     @classmethod
-    def keyrings_path_for_root(
-        cls, root: Optional[pathlib.Path] = None
-    ) -> pathlib.Path:
+    def keyrings_path_for_root(cls, root: pathlib.Path | None = None) -> pathlib.Path:
         """Get the location for Apt keyrings with ``root`` as the system root.
 
         :param root: The optional system root to consider, or None to assume the standard
@@ -110,7 +109,7 @@ class AptKeyManager:
         return root / "etc/apt/keyrings"
 
     @classmethod
-    def get_key_fingerprints(cls, *, key: Union[str, bytes]) -> List[str]:
+    def get_key_fingerprints(cls, *, key: str | bytes) -> list[str]:
         """List fingerprints found in the specified key.
 
         Fingerprints for subkeys are not returned. Fingerprints for primary keys are
@@ -120,10 +119,7 @@ class AptKeyManager:
 
         :returns: List of key fingerprints/IDs.
         """
-        if isinstance(key, str):
-            key_bytes = key.encode()
-        else:
-            key_bytes = key
+        key_bytes = key.encode() if isinstance(key, str) else key
 
         with _temporary_home_dir() as tmpdir:
             response = gpg.call_gpg(
@@ -134,7 +130,7 @@ class AptKeyManager:
                 "--import",
                 stdin=key_bytes,
             ).splitlines()
-        fingerprints: List[str] = []
+        fingerprints: list[str] = []
         # Only export fingerprints for primary keys.
         is_primary = False
         for line in response:
@@ -164,7 +160,7 @@ class AptKeyManager:
         # Ensure the keyring file contains the correct key
         return gpg.is_key_in_keyring(key_id, keyring_file)
 
-    def install_key(self, *, key: str, key_id: Optional[str] = None) -> None:
+    def install_key(self, *, key: str, key_id: str | None = None) -> None:
         """Install given key.
 
         :param key: Contents of key to install.
@@ -275,7 +271,7 @@ class AptKeyManager:
             if package_repo.key_server:
                 key_server = package_repo.key_server
         else:
-            raise RuntimeError(f"unhandled package repo type: {package_repo!r}")
+            raise RuntimeError(f"unhandled package repo type: {package_repo!r}")  # noqa: TRY004, this is the wrong exception type but it would be breaking to change it
 
         # Already installed, nothing to do.
         if self.is_key_installed(key_id=key_id):

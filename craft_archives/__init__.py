@@ -16,7 +16,7 @@
 """craft-archives package demo."""
 
 try:
-    from ._version import __version__  # type: ignore[import]
+    from ._version import __version__
 except ImportError:  # pragma: no cover
     from importlib.metadata import version, PackageNotFoundError
 

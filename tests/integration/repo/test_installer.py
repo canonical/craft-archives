@@ -19,7 +19,7 @@
 import shutil
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Dict, List
+from typing import Any
 
 import distro
 import pytest
@@ -143,8 +143,8 @@ def fake_etc_apt(tmp_path, mocker) -> Path:
     return etc_apt
 
 
-@pytest.fixture()
-def all_repo_types() -> List[Dict[str, Any]]:
+@pytest.fixture
+def all_repo_types() -> list[dict[str, Any]]:
     repo_types = [
         # a "standard" repo, with a key coming from the assets dir
         {
