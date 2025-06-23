@@ -24,8 +24,6 @@ from craft_archives.repo.package_repository import (
     PackageRepositoryAptUCA,
 )
 
-# ruff: noqa: PLR2004
-
 
 def test_unmarshal_repositories():
     data = [
