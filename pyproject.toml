@@ -42,7 +42,7 @@ docs = [
     "sphinxext-rediraffe==0.2.7",
 ]
 dev = [
-    "coverage[toml]==7.3.1",
+    "coverage[toml]~=7.8",
     "pytest~=8.4",
     "pytest-cov==4.1.0",
     "pytest-check==2.2.1",
