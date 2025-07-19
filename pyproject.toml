@@ -8,7 +8,7 @@ dependencies = [
     "lazr.uri>=1.0.6",
     "overrides>=6.0",
     "pydantic~=2.7",
-    "python-debian==0.1.49",
+    "python-debian==1.0.1",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
