@@ -35,7 +35,7 @@ types = [
 ]
 docs = [
     "canonical-sphinx[full]~=0.4",
-    "sphinx-autobuild==2021.3.14",
+    "sphinx-autobuild==2024.10.3",
     "sphinx-pydantic==0.1.1",
     "sphinx-toolbox~=3.5",
     "sphinx-lint~=1.0",
