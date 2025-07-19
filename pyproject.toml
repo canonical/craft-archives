@@ -39,7 +39,7 @@ lint = [
     "black==24.10.0",
     "codespell[toml]==2.3.0",
     "ruff==0.4.7",
-    "yamllint==1.32.0"
+    "yamllint==1.37.1"
 ]
 types = [
     "mypy[reports]==1.5.1",
