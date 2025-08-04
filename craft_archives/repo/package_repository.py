@@ -62,6 +62,7 @@ OPTIONAL_KEY_URLS = (
     re.compile(r"https?://([a-z0-9-]+\.)*archive.debian.org/debian"),
     re.compile(r"https?://security.debian.org/debian"),
     re.compile(r"https?://([a-z0-9-]+\.)*archive.ubuntu.com/ubuntu"),
+    re.compile(r"https?://([a-z0-9-]+\.)*ports.ubuntu.com/ubuntu-ports"),
     re.compile(r"https?://security.ubuntu.com/ubuntu"),
     re.compile(r"https?://old-releases.ubuntu.com/ubuntu"),
 )
