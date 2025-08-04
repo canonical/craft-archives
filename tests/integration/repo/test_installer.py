@@ -16,6 +16,8 @@
 
 """Integration tests for repo.installer"""
 
+import json
+import pathlib
 import shutil
 from pathlib import Path
 from textwrap import dedent
@@ -24,6 +26,9 @@ from typing import Any
 import distro
 import pytest
 from craft_archives import repo, utils
+from craft_archives.repo.installer import get_default_repos, set_default_repos
+from craft_archives.repo.package_repository import PackageRepositoryApt
+from pydantic import TypeAdapter
 
 APT_SOURCES = dedent(
     """
@@ -290,3 +295,95 @@ def check_preferences(etc_apt_dir: Path) -> None:
     preferences_file = preferences_dir / "craft-archives"
     assert preferences_file.is_file()
     assert preferences_file.read_text() == PREFERENCES
+
+
+@pytest.mark.skipif(
+    distro.id() != "debian" and "debian" not in distro.like().split(),
+    reason="This test reads your real sources.list file and expects to run on Ubuntu.",
+)
+def test_get_default_repos_host_system():
+    assert len(get_default_repos(distro_id=distro.id())) >= 1
+
+
+_TEST_SOURCES_DIRECTORY = pathlib.Path(__file__).parent / "default_sources_files"
+
+
+@pytest.mark.parametrize(
+    "root",
+    [
+        pytest.param(p, id=str(p.relative_to(_TEST_SOURCES_DIRECTORY)))
+        for p in _TEST_SOURCES_DIRECTORY.iterdir()
+    ],
+)
+def test_get_default_repos(tmp_path: pathlib.Path, root: pathlib.Path):
+    shutil.copytree(root, tmp_path / "etc/apt")
+    if (sources_file := root / "sources.list.d/ubuntu.sources").exists():
+        expected = TypeAdapter(list[PackageRepositoryApt]).validate_json(
+            sources_file.with_suffix(".sources.json").read_text()
+        )
+    else:
+        expected = TypeAdapter(list[PackageRepositoryApt]).validate_json(
+            (root / "sources.list.json").read_text()
+        )
+
+    actual = get_default_repos(root=tmp_path)
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "root",
+    [
+        pytest.param(p, id=str(p.relative_to(_TEST_SOURCES_DIRECTORY)))
+        for p in _TEST_SOURCES_DIRECTORY.iterdir()
+    ],
+)
+def test_set_default_repos_no_changes(tmp_path: pathlib.Path, root: pathlib.Path):
+    shutil.copytree(root, tmp_path / "etc/apt")
+    if (sources_file := root / "sources.list.d/ubuntu.sources").exists():
+        sources = TypeAdapter(list[PackageRepositoryApt]).validate_json(
+            sources_file.with_suffix(".sources.json").read_text()
+        )
+    else:
+        sources = TypeAdapter(list[PackageRepositoryApt]).validate_json(
+            (root / "sources.list.json").read_text()
+        )
+
+    assert set_default_repos(sources, root=tmp_path) is False
+
+
+@pytest.mark.parametrize(
+    "root",
+    [
+        pytest.param(p, id=str(p.relative_to(_TEST_SOURCES_DIRECTORY)))
+        for p in _TEST_SOURCES_DIRECTORY.iterdir()
+    ],
+)
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"url": "http://old-releases.ubuntu.com/ubuntu"},
+        {"components": ["fish", "chips"]},
+    ],
+)
+def test_set_default_repos_with_changes(
+    tmp_path: pathlib.Path, root: pathlib.Path, updates
+):
+    shutil.copytree(root, tmp_path / "etc/apt")
+    if (sources_file := root / "sources.list.d/ubuntu.sources").exists():
+        sources_json = json.loads(sources_file.with_suffix(".sources.json").read_text())
+    else:
+        sources_json = json.loads((root / "sources.list.json").read_text())
+
+    original_sources = TypeAdapter(list[PackageRepositoryApt]).validate_python(
+        sources_json
+    )
+
+    for source in sources_json:
+        source.update(updates)
+
+    sources = TypeAdapter(list[PackageRepositoryApt]).validate_python(sources_json)
+
+    assert original_sources != sources
+    assert get_default_repos(root=tmp_path) == original_sources
+    assert set_default_repos(sources, root=tmp_path) is True
+    assert get_default_repos(root=tmp_path) == sources

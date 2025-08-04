@@ -5,6 +5,20 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+2.2.0 (2025-Mon-DD)
+-------------------
+
+Features
+
+* Get a system's default repositories with
+  :py:func:`~craft_archives.repo.installer.get_default_repos`
+* Set a system's default repositories with
+  :py:func:`~craft_archives.repo.installer.set_default_repos`
+
+Documentation
+
+* New how-to guide: :doc:`/how-to-guides/modify_default_repos`
+
 2.1.0 (2025-Feb-24)
 -------------------
 

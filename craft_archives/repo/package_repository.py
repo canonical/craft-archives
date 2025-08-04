@@ -59,9 +59,11 @@ T = TypeVar("T")
 
 OPTIONAL_KEY_URLS = (
     re.compile(r"https?://([a-z0-9-]+\.)*deb.debian.org/debian"),
+    re.compile(r"https?://([a-z0-9-]+\.)*archive.debian.org/debian"),
     re.compile(r"https?://security.debian.org/debian"),
     re.compile(r"https?://([a-z0-9-]+\.)*archive.ubuntu.com/ubuntu"),
     re.compile(r"https?://security.ubuntu.com/ubuntu"),
+    re.compile(r"https?://old-releases.ubuntu.com/ubuntu"),
 )
 """Regular expressions to match repository URLs for which the key-id field is optional.
 """
