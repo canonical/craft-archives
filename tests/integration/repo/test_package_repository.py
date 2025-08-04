@@ -39,7 +39,12 @@ def test_read_sources_lists(path: pathlib.Path):
         path.with_suffix(".list.json").read_text()
     )
 
-    assert PackageRepository.from_sources_list(path) == expected
+    actual = PackageRepository.from_sources_list(path)
+    assert actual == expected
+    sources_lines = path.read_text().splitlines()
+    for source in actual:
+        for line in source.to_sources_list():
+            assert line in sources_lines
 
 
 @pytest.mark.parametrize(
@@ -53,5 +58,9 @@ def test_read_deb822_sources(path: pathlib.Path):
     expected = TypeAdapter(list[PackageRepositoryApt]).validate_json(
         path.with_suffix(".sources.json").read_text()
     )
+    sources_text = path.read_text()
 
-    assert PackageRepository.from_deb822(path) == expected
+    actual = PackageRepository.from_deb822(path)
+    assert actual == expected
+    for source in actual:
+        assert source.to_deb822() in sources_text

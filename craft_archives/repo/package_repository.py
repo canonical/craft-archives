@@ -22,6 +22,7 @@ import enum
 import logging
 import pathlib
 import re
+import textwrap
 from collections.abc import Mapping, Sequence
 from typing import (
     Annotated,
@@ -31,6 +32,7 @@ from typing import (
 )
 from urllib.parse import urlparse
 
+import distro
 from overrides import overrides  # pyright: ignore[reportUnknownVariableType]
 from pydantic import (
     AfterValidator,
@@ -46,6 +48,8 @@ from pydantic import (
     model_validator,  # pyright: ignore[reportUnknownVariableType]
 )
 from typing_extensions import Self
+
+from craft_archives.repo import apt_key_manager, apt_ppa
 
 from . import errors
 
@@ -361,6 +365,14 @@ class PackageRepository(BaseModel, abc.ABC):
 
         return repositories
 
+    @abc.abstractmethod
+    def to_sources_list(self) -> list[str]:
+        """Convert this repository to one or more lines for a sources.list file."""
+
+    @abc.abstractmethod
+    def to_deb822(self) -> str:
+        """Convert this repository to a deb822 paragraph."""
+
 
 class PackageRepositoryAptPPA(PackageRepository):
     """A PPA package repository."""
@@ -415,6 +427,33 @@ class PackageRepositoryAptPPA(PackageRepository):
         ppa_origin = self.ppa.replace("/", "-")
         return f"release o=LP-PPA-{ppa_origin}"
 
+    @overrides
+    def to_sources_list(self) -> list[str]:
+        """Convert this repository to one or more lines for a sources.list file."""
+        return [
+            f"deb http://ppa.launchpad.net/{self.ppa}/ubuntu {distro.codename()} main"
+        ]
+
+    def to_deb822(self) -> str:
+        """Convert this repository to a deb822 paragraph."""
+        owner, name = apt_ppa.split_ppa_parts(ppa=self.ppa)
+        if self.key_id is None:
+            signed_line = ""
+        else:
+            keyring_path = apt_key_manager.get_keyring_path(
+                self.key_id, base_path=apt_key_manager.KEYRINGS_PATH
+            )
+            signed_line = f"Signed-By: {keyring_path}"
+        return textwrap.dedent(
+            f"""\
+                Types: deb
+                URIs: http://ppa.launchpad.net/{owner}/{name}/ubuntu
+                Suites: {distro.codename()}
+                Components: main
+                {signed_line}
+            """
+        ).rstrip()
+
 
 class PackageRepositoryAptUCA(PackageRepository):
     """A cloud package repository."""
@@ -456,6 +495,24 @@ class PackageRepositoryAptUCA(PackageRepository):
     def pin(self) -> str:
         """The pin string for this repository if needed."""
         return f'origin "{UCA_NETLOC}"'
+
+    @overrides
+    def to_sources_list(self) -> list[str]:
+        """Convert this repository to one or more lines for a sources.list file."""
+        suite = f"{distro.codename()}-{self.pocket}/{self.cloud}"
+        return [f"deb {UCA_ARCHIVE} {suite} main"]
+
+    def to_deb822(self) -> str:
+        """Convert this repository to a deb822 paragraph."""
+        suite = f"{distro.codename()}-{self.pocket}/{self.cloud}"
+        return textwrap.dedent(
+            f"""\
+                Types: deb
+                URIs: {UCA_ARCHIVE}
+                Suites: {suite}
+                Components: main
+            """
+        ).rstrip()
 
 
 class PackageRepositoryApt(PackageRepository):
@@ -716,6 +773,47 @@ class PackageRepositoryApt(PackageRepository):
         """The pin string for this repository if needed."""
         domain = urlparse(str(self.url)).netloc
         return f'origin "{domain}"'
+
+    @overrides
+    def to_sources_list(self) -> list[str]:
+        """Convert this repository to one or more lines for a sources.list file."""
+        suites = self.suites
+        if suites is None:
+            if self.pocket == PocketEnum.RELEASE:
+                suites = [self.series or distro.codename()]
+            else:
+                suites = [f"{self.series}-{self.pocket}"]
+        components = " ".join(self.components) if self.components else "main"
+        return [
+            f"{fmt} {self.url} {suite} {components}"
+            for suite in suites
+            for fmt in self.formats or ["deb"]
+        ]
+
+    def to_deb822(self) -> str:
+        """Convert this repository to a deb822 paragraph."""
+        if self.key_id is None:
+            signed_line = ""
+        else:
+            keyring_path = apt_key_manager.get_keyring_path(
+                self.key_id, base_path=apt_key_manager.KEYRINGS_PATH
+            )
+            signed_line = f"Signed-By: {keyring_path}"
+        if self.suites:
+            suites = self.suites
+        elif self.pocket == PocketEnum.RELEASE:
+            suites = [self.series or distro.codename()]
+        else:
+            suites = [f"{self.series}-{self.pocket}"]
+        return textwrap.dedent(
+            f"""\
+                Types: {" ".join(self.formats) if self.formats else "deb"}
+                URIs: {self.url}
+                Suites: {" ".join(suites)}
+                Components: {" ".join(self.components) if self.components else "./"}
+                {signed_line}
+            """
+        ).rstrip()
 
 
 def _create_validation_error(*, url: str | None = None, message: str) -> ValueError:
