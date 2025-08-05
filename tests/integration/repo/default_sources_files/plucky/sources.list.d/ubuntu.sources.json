@@ -1,0 +1,18 @@
+[
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["plucky", "plucky-updates", "plucky-backports"],
+    "components": ["main", "universe", "restricted", "multiverse"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://security.ubuntu.com/ubuntu",
+    "suites": ["plucky-security"],
+    "components": ["main", "universe", "restricted", "multiverse"]
+  }
+]

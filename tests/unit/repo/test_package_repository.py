@@ -355,6 +355,35 @@ def test_apt_key_id_invalid(key_id):
 
 
 @pytest.mark.parametrize(
+    "url",
+    [
+        "https://archive.ubuntu.com/ubuntu",
+        "https://br.archive.ubuntu.com/ubuntu",
+        "https://us.archive.ubuntu.com/ubuntu",
+        "http://deb.debian.org/debian/",
+        "http://security.debian.org/debian/",
+        "http://security.ubuntu.com/ubuntu/",
+    ],
+)
+def test_apt_null_key_id_valid(url):
+    result = create_apt(key_id=None, url=url)
+    assert result.url == url.rstrip("/")
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://ppa.launchpad.net",
+        "http://ubuntu-cloud.archive.canonical.com/ubuntu",
+        "file:///tmp/repo",
+    ],
+)
+def test_apt_null_key_id_invalid(url):
+    with pytest.raises(pydantic.ValidationError, match="'key-id' must be set"):
+        create_apt(key_id=None, url=url)
+
+
+@pytest.mark.parametrize(
     "formats",
     [
         ["deb"],
@@ -616,6 +645,44 @@ def test_unmarshal_package_repositories_invalid_data():
         "Verify 'package-repositories' configuration and ensure that "
         "the correct syntax is used."
     )
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        pytest.param(
+            # Extra spaces are intentional since they're allowed in sources.list
+            "deb http://deb.debian.org/debian/            bookworm main non-free-firmware contrib non-free",
+            PackageRepositoryApt.model_validate(
+                {
+                    "key-id": None,
+                    "type": "apt",
+                    "formats": ["deb"],
+                    "url": "http://deb.debian.org/debian/",
+                    "suites": ["bookworm"],
+                    "components": ["main", "non-free-firmware", "contrib", "non-free"],
+                }
+            ),
+            id="bookworm-basic",
+        ),
+        pytest.param(
+            "deb http://us.archive.ubuntu.com/ubuntu/ xenial main restricted",
+            PackageRepositoryApt.model_validate(
+                {
+                    "key-id": None,
+                    "type": "apt",
+                    "formats": ["deb"],
+                    "url": "http://us.archive.ubuntu.com/ubuntu/",
+                    "suites": ["xenial"],
+                    "components": ["main", "restricted"],
+                }
+            ),
+            id="xenial-us",
+        ),
+    ],
+)
+def test_package_repository_from_sources_list_line(data, expected):
+    assert PackageRepository._from_sources_list_line(data) == expected
 
 
 # endregion

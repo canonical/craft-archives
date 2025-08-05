@@ -1,0 +1,82 @@
+[
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["bionic"],
+    "components": ["main", "restricted"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["bionic-updates"],
+    "components": ["main", "restricted"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["bionic"],
+    "components": ["universe"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["bionic-updates"],
+    "components": ["universe"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["bionic"],
+    "components": ["multiverse"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["bionic-updates"],
+    "components": ["multiverse"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["bionic-backports"],
+    "components": ["main", "restricted", "universe", "multiverse"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://security.ubuntu.com/ubuntu",
+    "suites": ["bionic-security"],
+    "components": ["main", "restricted"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://security.ubuntu.com/ubuntu",
+    "suites": ["bionic-security"],
+    "components": ["universe"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://security.ubuntu.com/ubuntu",
+    "suites": ["bionic-security"],
+    "components": ["multiverse"]
+  }
+]

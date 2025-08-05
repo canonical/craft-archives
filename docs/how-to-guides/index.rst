@@ -7,3 +7,4 @@ How-to guides
    :maxdepth: 1
 
    add_repo
+   modify_default_repos

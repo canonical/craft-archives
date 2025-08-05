@@ -54,7 +54,7 @@ def _construct_deb822_source(
     formats: list[str] | None = None,
     suites: list[str],
     url: str,
-    signed_by: pathlib.Path,
+    signed_by: pathlib.Path | None,
 ) -> str:
     """Construct deb-822 formatted sources string."""
     with io.StringIO() as deb822:
@@ -78,7 +78,8 @@ def _construct_deb822_source(
 
         print(f"Architectures: {arch_text}", file=deb822)
 
-        print(f"Signed-By: {str(signed_by)}", file=deb822)
+        if signed_by is not None:
+            print(f"Signed-By: {str(signed_by)}", file=deb822)
 
         return deb822.getvalue()
 
@@ -130,7 +131,7 @@ class AptSourcesManager:
         name: str,
         suites: list[str],
         url: str,
-        keyring_path: pathlib.Path,
+        keyring_path: pathlib.Path | None,
     ) -> bool:
         """Install sources list configuration.
 
@@ -142,7 +143,8 @@ class AptSourcesManager:
         if keyring_path and not keyring_path.is_file():
             raise errors.AptGPGKeyringError(keyring_path)
 
-        keyring_path = Path("/") / keyring_path.relative_to(self._signed_by_root)
+        if keyring_path is not None:
+            keyring_path = Path("/") / keyring_path.relative_to(self._signed_by_root)
 
         config = _construct_deb822_source(
             architectures=architectures,
@@ -209,21 +211,25 @@ class AptSourcesManager:
         logger.debug(
             "Looking for existing sources files for url '%s' and suites %s", url, suites
         )
-        # Check whether this url is already listed in an existing sources file
-        existing_key = _get_existing_keyring_for(
-            key_id=package_repo.key_id,
-            url=url,
-            suites=suites,
-            root=self._signed_by_root,
-        )
-
-        if existing_key:
-            keyring_path = existing_key
+        # If no key ID, don't install a key.
+        if package_repo.key_id is None:
+            keyring_path = None
         else:
-            logger.debug("No existing sources found")
-            keyring_path = apt_key_manager.get_keyring_path(
-                package_repo.key_id, base_path=self._keyrings_dir
+            # Check whether this url is already listed in an existing sources file
+            existing_key = _get_existing_keyring_for(
+                key_id=package_repo.key_id,
+                url=url,
+                suites=suites,
+                root=self._signed_by_root,
             )
+
+            if existing_key:
+                keyring_path = existing_key
+            else:
+                logger.debug("No existing sources found")
+                keyring_path = apt_key_manager.get_keyring_path(
+                    package_repo.key_id, base_path=self._keyrings_dir
+                )
 
         return self._install_sources(
             architectures=package_repo.architectures,

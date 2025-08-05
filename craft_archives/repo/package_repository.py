@@ -19,8 +19,11 @@
 import abc
 import collections
 import enum
+import logging
+import pathlib
 import re
-from collections.abc import Mapping
+import textwrap
+from collections.abc import Mapping, Sequence
 from typing import (
     Annotated,
     Any,
@@ -29,6 +32,7 @@ from typing import (
 )
 from urllib.parse import urlparse
 
+import distro
 from overrides import overrides  # pyright: ignore[reportUnknownVariableType]
 from pydantic import (
     AfterValidator,
@@ -45,9 +49,25 @@ from pydantic import (
 )
 from typing_extensions import Self
 
+from craft_archives.repo import apt_key_manager, apt_ppa
+
 from . import errors
 
+logger = logging.getLogger(__name__)
+
 T = TypeVar("T")
+
+OPTIONAL_KEY_URLS = (
+    re.compile(r"https?://([a-z0-9-]+\.)*deb.debian.org/debian"),
+    re.compile(r"https?://([a-z0-9-]+\.)*archive.debian.org/debian"),
+    re.compile(r"https?://security.debian.org/debian"),
+    re.compile(r"https?://([a-z0-9-]+\.)*archive.ubuntu.com/ubuntu"),
+    re.compile(r"https?://([a-z0-9-]+\.)*ports.ubuntu.com/ubuntu-ports"),
+    re.compile(r"https?://security.ubuntu.com/ubuntu"),
+    re.compile(r"https?://old-releases.ubuntu.com/ubuntu"),
+)
+"""Regular expressions to match repository URLs for which the key-id field is optional.
+"""
 
 
 def _validate_list_is_unique(value: list[T]) -> list[T]:
@@ -240,6 +260,90 @@ class PackageRepository(BaseModel, abc.ABC):
         return PackageRepositoryApt.unmarshal(data)
 
     @classmethod
+    def _from_sources_list_line(cls, data: str) -> "PackageRepository":
+        """Parse a line from sources.list file.
+
+        This method parses a line from a sources.list file to an apt repository. It
+        uses the one-line format defined at:
+        https://www.debian.org/doc/manuals/debian-reference/ch02#_debian_archive_basics
+        """
+        repo_format, uri, suite, components = data.split(maxsplit=3)
+        return PackageRepositoryApt.model_validate(
+            {
+                "key-id": None,
+                "type": "apt",
+                "formats": [repo_format],
+                "url": uri,
+                "suites": [suite],
+                "components": components.split(),
+            }
+        )
+
+    @classmethod
+    def from_sources_list(cls, path: pathlib.Path) -> Sequence["PackageRepository"]:
+        """Read a sequence of Package Repositoriues from a sources.list file.
+
+        This parses a sources.list file into a sequence of PackageRepository models
+        using the one-line format defined at:
+        https://www.debian.org/doc/manuals/debian-reference/ch02#_debian_archive_basics
+        """
+        repositories: list[PackageRepository] = []
+        with path.open("r") as f:
+            for line in f:
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#"):
+                    continue
+                repositories.append(cls._from_sources_list_line(stripped))
+        return repositories
+
+    @classmethod
+    def _from_deb822_paragraph(
+        cls, paragraph: Sequence[str]
+    ) -> "PackageRepository | None":
+        model_dict: dict[str, str | list[str] | None] = {}
+        for line in paragraph:
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                continue
+            field, _, value = stripped.partition(": ")
+            match field:
+                case "Types":
+                    model_dict["formats"] = value.split()
+                case "URIs":
+                    uris = value.split()
+                    if len(uris) > 1:
+                        raise ValueError(
+                            "deb822 paragraphs with multiple URIs are unsupported."
+                        )
+                    model_dict["url"] = uris[0]
+                case "Suites":
+                    model_dict["suites"] = value.split()
+                case "Components":
+                    model_dict["components"] = value.split()
+                case "Enabled":
+                    model_dict["enabled"] = value
+                case _:
+                    logger.debug("Skipping unknown Deb822 field: %s", field)
+        if not model_dict:
+            return None
+        model_dict.update({"type": "apt", "key-id": None})
+        return cls.unmarshal(model_dict)
+
+    @classmethod
+    def from_deb822(cls, path: pathlib.Path) -> Sequence["PackageRepository"]:
+        """Read a Deb822 Sources file.
+
+        Reference: https://repolib.readthedocs.io/en/latest/deb822-format.html
+        """
+        with path.open("r") as f:
+            paragraphs = f.read().split("\n\n")
+        repositories = (
+            cls._from_deb822_paragraph(paragraph.splitlines())
+            for paragraph in paragraphs
+        )
+        return [repo for repo in repositories if repo is not None]
+
+    @classmethod
     def unmarshal_package_repositories(
         cls, data: list[dict[str, Any]] | None
     ) -> list["PackageRepository"]:
@@ -263,6 +367,14 @@ class PackageRepository(BaseModel, abc.ABC):
                 repositories.append(package_repo)
 
         return repositories
+
+    @abc.abstractmethod
+    def to_sources_list(self) -> list[str]:
+        """Convert this repository to one or more lines for a sources.list file."""
+
+    @abc.abstractmethod
+    def to_deb822(self) -> str:
+        """Convert this repository to a deb822 paragraph."""
 
 
 class PackageRepositoryAptPPA(PackageRepository):
@@ -318,6 +430,33 @@ class PackageRepositoryAptPPA(PackageRepository):
         ppa_origin = self.ppa.replace("/", "-")
         return f"release o=LP-PPA-{ppa_origin}"
 
+    @overrides
+    def to_sources_list(self) -> list[str]:
+        """Convert this repository to one or more lines for a sources.list file."""
+        return [
+            f"deb http://ppa.launchpad.net/{self.ppa}/ubuntu {distro.codename()} main"
+        ]
+
+    def to_deb822(self) -> str:
+        """Convert this repository to a deb822 paragraph."""
+        owner, name = apt_ppa.split_ppa_parts(ppa=self.ppa)
+        if self.key_id is None:
+            signed_line = ""
+        else:
+            keyring_path = apt_key_manager.get_keyring_path(
+                self.key_id, base_path=apt_key_manager.KEYRINGS_PATH
+            )
+            signed_line = f"Signed-By: {keyring_path}"
+        return textwrap.dedent(
+            f"""\
+                Types: deb
+                URIs: http://ppa.launchpad.net/{owner}/{name}/ubuntu
+                Suites: {distro.codename()}
+                Components: main
+                {signed_line}
+            """
+        ).rstrip()
+
 
 class PackageRepositoryAptUCA(PackageRepository):
     """A cloud package repository."""
@@ -360,6 +499,24 @@ class PackageRepositoryAptUCA(PackageRepository):
         """The pin string for this repository if needed."""
         return f'origin "{UCA_NETLOC}"'
 
+    @overrides
+    def to_sources_list(self) -> list[str]:
+        """Convert this repository to one or more lines for a sources.list file."""
+        suite = f"{distro.codename()}-{self.pocket}/{self.cloud}"
+        return [f"deb {UCA_ARCHIVE} {suite} main"]
+
+    def to_deb822(self) -> str:
+        """Convert this repository to a deb822 paragraph."""
+        suite = f"{distro.codename()}-{self.pocket}/{self.cloud}"
+        return textwrap.dedent(
+            f"""\
+                Types: deb
+                URIs: {UCA_ARCHIVE}
+                Suites: {suite}
+                Components: main
+            """
+        ).rstrip()
+
 
 class PackageRepositoryApt(PackageRepository):
     """An APT package repository."""
@@ -369,7 +526,7 @@ class PackageRepositoryApt(PackageRepository):
         examples=["https://ppa.launchpad.net/snappy-dev/snapcraft-daily/ubuntu"],
     )
 
-    key_id: KeyIdStr = Field(
+    key_id: KeyIdStr | None = Field(
         alias="key-id",
         description="The GPG identifier of the repository.",
         examples=["590CA3D8E4826565BE3200526A634116E00F4C82"],
@@ -590,6 +747,24 @@ class PackageRepositoryApt(PackageRepository):
 
         return self
 
+    @model_validator(mode="after")
+    def _key_id_only_optional_for_distro_repos(self) -> Self:
+        """Validate that key-id is only optional for distro repositories.
+
+        If key-id is set to None, the URL must be one from an official Ubuntu or Debian
+        repository.
+        """
+        if self.key_id is not None:
+            return self
+        url_str = str(self.url)
+        for regex in OPTIONAL_KEY_URLS:
+            if regex.fullmatch(url_str):
+                return self
+        raise _create_validation_error(
+            url=str(self.url),
+            message="'key-id' must be set for this url.",
+        )
+
     @classmethod
     @overrides
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepositoryApt":
@@ -601,6 +776,47 @@ class PackageRepositoryApt(PackageRepository):
         """The pin string for this repository if needed."""
         domain = urlparse(str(self.url)).netloc
         return f'origin "{domain}"'
+
+    @overrides
+    def to_sources_list(self) -> list[str]:
+        """Convert this repository to one or more lines for a sources.list file."""
+        suites = self.suites
+        if suites is None:
+            if self.pocket == PocketEnum.RELEASE:
+                suites = [self.series or distro.codename()]
+            else:
+                suites = [f"{self.series}-{self.pocket}"]
+        components = " ".join(self.components) if self.components else "main"
+        return [
+            f"{fmt} {self.url} {suite} {components}"
+            for suite in suites
+            for fmt in self.formats or ["deb"]
+        ]
+
+    def to_deb822(self) -> str:
+        """Convert this repository to a deb822 paragraph."""
+        if self.key_id is None:
+            signed_line = ""
+        else:
+            keyring_path = apt_key_manager.get_keyring_path(
+                self.key_id, base_path=apt_key_manager.KEYRINGS_PATH
+            )
+            signed_line = f"Signed-By: {keyring_path}"
+        if self.suites:
+            suites = self.suites
+        elif self.pocket == PocketEnum.RELEASE:
+            suites = [self.series or distro.codename()]
+        else:
+            suites = [f"{self.series}-{self.pocket}"]
+        return textwrap.dedent(
+            f"""\
+                Types: {" ".join(self.formats) if self.formats else "deb"}
+                URIs: {self.url}
+                Suites: {" ".join(suites)}
+                Components: {" ".join(self.components) if self.components else "./"}
+                {signed_line}
+            """
+        ).rstrip()
 
 
 def _create_validation_error(*, url: str | None = None, message: str) -> ValueError:

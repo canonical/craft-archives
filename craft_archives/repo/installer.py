@@ -17,6 +17,7 @@
 """Package repository installer."""
 
 import pathlib
+from collections.abc import Sequence
 from typing import Any
 
 from . import errors
@@ -148,3 +149,65 @@ def _unmarshal_repositories(
         repositories.append(pkg_repo)
 
     return repositories
+
+
+def get_default_repos(
+    *, root: pathlib.Path = pathlib.Path("/"), distro_id: str = "ubuntu"
+) -> Sequence[PackageRepository]:
+    """Get the current default repositories.
+
+    Gets the current set of default repositories (in either ``/etc/apt/sources.list``
+    or ``/etc/apt/sources.list.d/{distro_id}.sources``).
+
+    :param root: (Optional) use the repositories from this directory.
+    :param distro_id: (Optional) the distribution id expected for a deb822 sources file.
+    :returns: A Sequence of PackageRepository objects representing the default distro
+        repositories for a distribution.
+    """
+    sources_path = root / f"etc/apt/sources.list.d/{distro_id}.sources"
+    if sources_path.exists():
+        sources = PackageRepository.from_deb822(sources_path)
+    else:
+        sources_path = root / "etc/apt/sources.list"
+        sources = PackageRepository.from_sources_list(sources_path)
+    return sources
+
+
+def set_default_repos(
+    repos: Sequence[PackageRepository],
+    *,
+    root: pathlib.Path = pathlib.Path("/"),
+    distro_id: str = "ubuntu",
+) -> bool:
+    """Set the default repositories to the given sequence of repositories.
+
+    If an ``etc/apt/sources.list.d/{distro_id}.sources`` file exists under the given
+    root, the sources are written there using the deb822 format. Otherwise, they are
+    written to ``etc/apt/sources.list`` using the old single-line format.
+
+    :param repos: A sequence of PackageRepository objects containing the new default
+        repositories.
+    :param root: (Optional) the root directory in which to look for the apt
+        configuration (default "/")
+    :param distro_id: (Optional) the distribution id expected for a deb822 sources file.
+    :returns: Whether the sources have changed, requiring a refresh.
+    """
+    current_sources = get_default_repos(root=root)
+    if current_sources == repos:
+        return False  # No update necessary
+
+    sources_path = root / f"etc/apt/sources.list.d/{distro_id}.sources"
+    if not sources_path.exists():
+        sources_path = root / "etc/apt/sources.list"
+
+    with sources_path.open("w") as f:
+        if sources_path.suffix == ".sources":
+            for source in repos:
+                f.write(source.to_deb822())
+                f.write("\n\n")
+        else:
+            for source in repos:
+                for line in source.to_sources_list():
+                    print(line, file=f)
+
+    return True

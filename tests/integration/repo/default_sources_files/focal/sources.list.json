@@ -1,0 +1,82 @@
+[
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["focal"],
+    "components": ["main", "restricted"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["focal-updates"],
+    "components": ["main", "restricted"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["focal"],
+    "components": ["universe"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["focal-updates"],
+    "components": ["universe"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["focal"],
+    "components": ["multiverse"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["focal-updates"],
+    "components": ["multiverse"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://archive.ubuntu.com/ubuntu",
+    "suites": ["focal-backports"],
+    "components": ["main", "restricted", "universe", "multiverse"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://security.ubuntu.com/ubuntu",
+    "suites": ["focal-security"],
+    "components": ["main", "restricted"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://security.ubuntu.com/ubuntu",
+    "suites": ["focal-security"],
+    "components": ["universe"]
+  },
+  {
+    "type": "apt",
+    "key-id": null,
+    "formats": ["deb"],
+    "url": "http://security.ubuntu.com/ubuntu",
+    "suites": ["focal-security"],
+    "components": ["multiverse"]
+  }
+]

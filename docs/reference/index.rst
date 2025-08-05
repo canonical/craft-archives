@@ -7,4 +7,5 @@ Reference
    :maxdepth: 1
 
    repo_properties
+   installer
    ../changelog

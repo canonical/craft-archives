@@ -267,6 +267,8 @@ class AptKeyManager:
         elif isinstance(package_repo, package_repository.PackageRepositoryAptUCA):
             key_id = package_repository.UCA_KEY_ID
         elif isinstance(package_repo, package_repository.PackageRepositoryApt):
+            if package_repo.key_id is None:  # Don't install  if there's no key.
+                return False
             key_id = package_repo.key_id
             if package_repo.key_server:
                 key_server = package_repo.key_server
