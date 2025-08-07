@@ -404,9 +404,9 @@ def test_install_key_from_keyserver(apt_gpg, mock_run, mock_chmod):
     assert mock_chmod.mock_calls == [call(mock.ANY, 0o700), call(mock.ANY, 0o644)]
 
 
-def test_install_key_from_keyserver_with_apt_key_failure(apt_gpg, mock_run):
+def test_install_key_from_keyserver_with_gpg_failure(apt_gpg, mock_run):
     mock_run.side_effect = subprocess.CalledProcessError(
-        cmd=["gpg"], returncode=1, output=b"some error"
+        cmd=["gpg"], returncode=1, stderr=b"some error"
     )
 
     with pytest.raises(errors.AptGPGKeyInstallError) as raised:
