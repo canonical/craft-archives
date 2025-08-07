@@ -21,7 +21,11 @@ from unittest.mock import call
 
 import pytest
 from craft_archives.repo import apt_ppa, errors, package_repository
-from craft_archives.repo.apt_key_manager import KEYRINGS_PATH, AptKeyManager
+from craft_archives.repo.apt_key_manager import (
+    DEFAULT_APT_KEYSERVER,
+    KEYRINGS_PATH,
+    AptKeyManager,
+)
 from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
@@ -415,6 +419,21 @@ def test_install_key_from_keyserver_with_gpg_failure(apt_gpg, mock_run):
         )
 
     assert str(raised.value) == "Failed to install GPG key: some error"
+
+
+def test_install_key_from_keyserver_with_gpg_timeout(apt_gpg, mock_run, mock_chmod):
+    mock_run.side_effect = [
+        subprocess.CalledProcessError(
+            cmd=["gpg"], returncode=1, stderr=errors.GPG_TIMEOUT_MESSAGE.encode()
+        ),
+        subprocess.CompletedProcess(
+            ["gpg"], returncode=0, stdout=SAMPLE_GPG_SHOW_KEY_OUTPUT
+        ),
+    ]
+
+    apt_gpg.install_key_from_keyserver(
+        key_id="fake-key-id", key_server=DEFAULT_APT_KEYSERVER
+    )
 
 
 @pytest.mark.parametrize(
