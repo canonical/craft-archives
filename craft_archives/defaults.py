@@ -25,9 +25,11 @@ import textwrap
 import time
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Literal, cast
+from urllib.parse import urlparse
 from urllib.request import HTTPError, urlopen
 
 import pydantic
+from debian._deb822_repro import parse_deb822_file
 
 if TYPE_CHECKING:
     from http.client import HTTPResponse
@@ -38,57 +40,31 @@ logger = logging.getLogger(__name__)
 class AptSource(pydantic.BaseModel):
     """A generic model for an apt source."""
 
-    types: list[Literal["deb", "deb-src"]]
-    uris: list[pydantic.AnyUrl | pydantic.FileUrl]
-    suites: list[str]
-    components: list[str]
-    signed_by: pathlib.Path | None = None
-    architectures: list[str] | None = None
+    types: list[Literal["deb", "deb-src"]] = pydantic.Field(alias="Types")
+    uris: list[pydantic.AnyUrl | pydantic.FileUrl] = pydantic.Field(alias="URIs")
+    suites: list[str] = pydantic.Field(alias="Suites")
+    components: list[str] = pydantic.Field(alias="Components")
+    signed_by: pathlib.Path | None = pydantic.Field(default=None, alias="Signed-By")
+    architectures: list[str] | None = pydantic.Field(
+        default=None, alias="Architectures"
+    )
 
+    @pydantic.field_validator(
+        "types", "uris", "suites", "components", "architectures", mode="before"
+    )
     @classmethod
-    def _from_deb822_paragraph(cls, paragraph: Sequence[str]) -> AptSource | None:
-        model_dict: dict[str, str | list[str] | None] = {}
-        for line in paragraph:
-            stripped = line.strip()
-            if stripped.startswith("#"):
-                continue
-            field, _, value = stripped.partition(": ")
-            match field:
-                case "Types":
-                    model_dict["types"] = value.split()
-                case "URIs":
-                    uris = value.split()
-                    if len(uris) > 1:
-                        raise ValueError(
-                            "deb822 paragraphs with multiple URIs are unsupported."
-                        )
-                    model_dict["uris"] = uris
-                case "Suites":
-                    model_dict["suites"] = value.split()
-                case "Components":
-                    model_dict["components"] = value.split()
-                case "Enabled":
-                    model_dict["enabled"] = value
-                case "Signed-By":
-                    model_dict["signed_by"] = value
-                case "Architectures":
-                    model_dict["architectures"] = value.split()
-                case _:
-                    logger.debug("Skipping unknown Deb822 field: %s", field)
-        if not model_dict:
-            return None
-        return cls.model_validate(model_dict)
+    def _vectorise(cls, value: str | list[str]) -> list[str]:
+        if isinstance(value, str):
+            return value.split()
+        return value
 
     @classmethod
     def from_deb822(cls, path: pathlib.Path) -> Sequence[AptSource]:
         """Get a sequence of AptSource objects from a deb822 formatted file."""
         with path.open("r") as f:
-            paragraphs = f.read().split("\n\n")
-        repositories = (
-            cls._from_deb822_paragraph(paragraph.splitlines())
-            for paragraph in paragraphs
-        )
-        return [repo for repo in repositories if repo is not None]
+            paragraphs = parse_deb822_file(f)
+
+        return [cls.model_validate(paragraph) for paragraph in paragraphs]
 
     @classmethod
     def _from_sources_list_line(cls, data: str) -> AptSource:
@@ -101,10 +77,10 @@ class AptSource(pydantic.BaseModel):
         repo_format, uri, suite, components = data.split(maxsplit=3)
         return cls.model_validate(
             {
-                "types": [repo_format],
-                "uris": [uri],
-                "suites": [suite],
-                "components": components.split(),
+                "Types": [repo_format],
+                "URIs": [uri],
+                "Suites": [suite],
+                "Components": components.split(),
             }
         )
 
@@ -151,6 +127,19 @@ class AptSource(pydantic.BaseModel):
             + "\n"
         )
 
+    def replace_uris(self, *, new_uri: str, old_domain: str) -> None:
+        """Replace any URIs on this model that are on the old domain with the new URI.
+
+        :param new_uri: The full new URI. E.g. ``http://old-releases.ubuntu.com/ubuntu``
+        :param old_domain: The old domain to search for. E.g. ``ubuntu.com``
+        """
+        source_indeces: list[int] = []
+        for i, uri in enumerate(self.uris):
+            if cast(str, urlparse(str(uri)).hostname).endswith(old_domain):
+                source_indeces.append(i)
+        for i in source_indeces:
+            self.uris[i] = pydantic.AnyUrl(new_uri)
+
 
 @functools.cache
 def _is_on_old_releases(
@@ -195,6 +184,7 @@ def use_old_releases(
     *,
     deb822_name: str = "ubuntu.sources",
     old_releases_url: str = "http://old-releases.ubuntu.com/ubuntu",
+    change_domain: str = "ubuntu.com",
 ) -> bool:
     """Migrate the given root to use an old-releases archive if relevant.
 
@@ -206,33 +196,43 @@ def use_old_releases(
         (Default: ``ubuntu.sources``)
     :param old_releases_url: The URL of the old-releases site.
         (Default: ``http://old-releases.ubuntu.com/ubuntu``)
+    :param change_domain: Only change sources on this domain.
+        (Default: ``ubuntu.com``)
     :returns: True if any default releases were changed, False otherwise.
     """
     needs_update = False
-    sources_file = root / "etc/apt/sources.list"
-    default_sources = AptSource.from_sources_list(sources_file)
-    uses_deb822 = False
-    if not default_sources:
-        sources_file = root / "etc/apt/sources.list.d" / deb822_name
-        default_sources = AptSource.from_deb822(sources_file)
-        uses_deb822 = True
-    for source in default_sources:
+    sources_list_file = root / "etc/apt/sources.list"
+    deb822_sources_file = root / "etc/apt/sources.list.d" / deb822_name
+    try:
+        sources_list: Sequence[AptSource] = AptSource.from_sources_list(
+            sources_list_file
+        )
+    except FileNotFoundError:
+        sources_list = []
+
+    try:
+        deb822_sources: Sequence[AptSource] = AptSource.from_deb822(deb822_sources_file)
+    except FileNotFoundError:
+        deb822_sources = []
+
+    for source in (*sources_list, *deb822_sources):
         for suite in source.suites:
             if _is_on_old_releases(suite, archive_url=old_releases_url):
-                source.uris = [pydantic.AnyUrl(old_releases_url)]
+                source.replace_uris(new_uri=old_releases_url, old_domain=change_domain)
                 needs_update = True
+                break
 
     if not needs_update:
         return False
 
-    if uses_deb822:
+    if deb822_sources:
         sources_paragraphs: list[str] = [
-            source.to_deb822() for source in default_sources
+            source.to_deb822() for source in deb822_sources
         ]
-        sources_file.write_text("\n".join(sources_paragraphs))
-    else:
+        deb822_sources_file.write_text("\n".join(sources_paragraphs))
+    if sources_list:
         sources_lines: list[str] = []
-        for source in default_sources:
+        for source in sources_list:
             sources_lines.extend(source.to_sources_list())
-        sources_file.write_text("\n".join(sources_lines) + "\n")
+        sources_list_file.write_text("\n".join(sources_lines) + "\n")
     return True

@@ -62,6 +62,7 @@ def test_is_on_old_releases_custom(
     [
         pytest.param(path, id=path.name)
         for path in (pathlib.Path(__file__).parent / "default_sources_data").iterdir()
+        if path.is_dir()
     ],
 )
 def test_use_old_releases(tmp_path: pathlib.Path, directory: pathlib.Path):
