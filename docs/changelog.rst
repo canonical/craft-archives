@@ -5,6 +5,14 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+2.2.0 (2025-08-12)
+------------------
+
+Features
+
+* Add :py:func:`~craft_archives.defaults.use_old_releases` for changing the default
+  repositories for a system if they exist on ``old-releases.ubuntu.com``
+
 2.1.0 (2025-Feb-24)
 -------------------
 
