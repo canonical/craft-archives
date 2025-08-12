@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import pathlib
 import subprocess
 import tempfile
@@ -298,25 +299,35 @@ def _temporary_home_dir() -> Iterator[pathlib.Path]:
 
 
 def _try_gpg_receive_key(
-    key_server: str, key_id: str, keyring_path: pathlib.Path, *, retry: bool
+    key_server: str,
+    key_id: str,
+    keyring_path: pathlib.Path,
+    proxy_url: str | None = None,
+    *,
+    retry: bool,
 ) -> None:
     try:
         with _temporary_home_dir() as tmpdir:
             # We use a tmpdir because gpg needs a "homedir" to place temporary
             # files into during the download process.
+            keyserver_options: list[str] = []
+            if proxy_url is not None:
+                keyserver_options = ["--keyserver-options", f"http-proxy={proxy_url}"]
             gpg.call_gpg(
                 "--homedir",
                 str(tmpdir),
                 "--keyserver",
                 key_server,
+                *keyserver_options,
                 "--recv-keys",
                 key_id,
                 keyring=keyring_path,
             )
     except subprocess.CalledProcessError as error:
         if retry and retry_with_fallback_keyserver(error, key_server):
+            proxy_url = os.getenv("http_proxy")
             _try_gpg_receive_key(
-                FALLBACK_APT_KEYSERVER, key_id, keyring_path, retry=False
+                FALLBACK_APT_KEYSERVER, key_id, keyring_path, proxy_url, retry=False
             )
         else:
             raise errors.AptGPGKeyInstallError(

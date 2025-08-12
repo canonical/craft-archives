@@ -421,7 +421,13 @@ def test_install_key_from_keyserver_with_gpg_failure(apt_gpg, mock_run):
     assert str(raised.value) == "Failed to install GPG key: some error"
 
 
-def test_install_key_from_keyserver_with_gpg_timeout(apt_gpg, mock_run, mock_chmod):
+def test_install_key_from_keyserver_with_gpg_timeout(
+    apt_gpg,
+    monkeypatch,
+    mock_run,
+    mock_chmod,
+):
+    monkeypatch.setenv("http_proxy", "http://a-proxy-url:3128")
     mock_run.side_effect = [
         subprocess.CalledProcessError(
             cmd=["gpg"], returncode=1, stderr=errors.GPG_TIMEOUT_MESSAGE.encode()
@@ -434,6 +440,51 @@ def test_install_key_from_keyserver_with_gpg_timeout(apt_gpg, mock_run, mock_chm
     apt_gpg.install_key_from_keyserver(
         key_id="fake-key-id", key_server=DEFAULT_APT_KEYSERVER
     )
+
+    assert mock_run.mock_calls == [
+        call(
+            [
+                "gpg",
+                "--batch",
+                "--no-default-keyring",
+                "--with-colons",
+                "--keyring",
+                mock.ANY,
+                "--homedir",
+                mock.ANY,
+                "--keyserver",
+                "keyserver.ubuntu.com",
+                "--recv-keys",
+                "fake-key-id",
+            ],
+            check=True,
+            env={"LANG": "C.UTF-8"},
+            input=None,
+            capture_output=True,
+        ),
+        call(
+            [
+                "gpg",
+                "--batch",
+                "--no-default-keyring",
+                "--with-colons",
+                "--keyring",
+                mock.ANY,
+                "--homedir",
+                mock.ANY,
+                "--keyserver",
+                "hkp://keyserver.ubuntu.com:80",
+                "--keyserver-options",
+                "http-proxy=http://a-proxy-url:3128",
+                "--recv-keys",
+                "fake-key-id",
+            ],
+            check=True,
+            env={"LANG": "C.UTF-8"},
+            input=None,
+            capture_output=True,
+        ),
+    ]
 
 
 @pytest.mark.parametrize(
