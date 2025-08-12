@@ -10,8 +10,8 @@ included in each version.
 
 Features
 
-* Add :py:func:`~craft_archives.defaults.use_old_releases` for changing the default
-  repositories for a system if they exist on ``old-releases.ubuntu.com``
+* Add :py:func:`~craft_archives.defaults.use_old_releases`, which changes a
+  system's default repositories to those hosted on ``old-releases.ubuntu.com``.
 
 2.1.0 (2025-Feb-24)
 -------------------
