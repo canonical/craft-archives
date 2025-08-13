@@ -6,11 +6,12 @@ See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
 
-2.1.1 (2025-MM-DD)
+2.1.1 (2025-08-13)
 -------------------
 
-* When gpg timeout trying to connect to the default keyserver while getting a key,
-  retry with on port TCP/80 and respect the system HTTP proxy.
+* Fix an issue where gpg timeouts trying to connect to the default keyserver
+  while getting a key. It now retries on port TCP/80 and respects the system
+  HTTP proxy.
 
 2.1.0 (2025-Feb-24)
 -------------------
