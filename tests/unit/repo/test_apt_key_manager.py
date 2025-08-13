@@ -21,7 +21,11 @@ from unittest.mock import call
 
 import pytest
 from craft_archives.repo import apt_ppa, errors, package_repository
-from craft_archives.repo.apt_key_manager import KEYRINGS_PATH, AptKeyManager
+from craft_archives.repo.apt_key_manager import (
+    DEFAULT_APT_KEYSERVER,
+    KEYRINGS_PATH,
+    AptKeyManager,
+)
 from craft_archives.repo.package_repository import (
     PackageRepositoryApt,
     PackageRepositoryAptPPA,
@@ -404,9 +408,9 @@ def test_install_key_from_keyserver(apt_gpg, mock_run, mock_chmod):
     assert mock_chmod.mock_calls == [call(mock.ANY, 0o700), call(mock.ANY, 0o644)]
 
 
-def test_install_key_from_keyserver_with_apt_key_failure(apt_gpg, mock_run):
+def test_install_key_from_keyserver_with_gpg_failure(apt_gpg, mock_run):
     mock_run.side_effect = subprocess.CalledProcessError(
-        cmd=["gpg"], returncode=1, output=b"some error"
+        cmd=["gpg"], returncode=1, stderr=b"some error"
     )
 
     with pytest.raises(errors.AptGPGKeyInstallError) as raised:
@@ -415,6 +419,72 @@ def test_install_key_from_keyserver_with_apt_key_failure(apt_gpg, mock_run):
         )
 
     assert str(raised.value) == "Failed to install GPG key: some error"
+
+
+def test_install_key_from_keyserver_with_gpg_timeout(
+    apt_gpg,
+    monkeypatch,
+    mock_run,
+    mock_chmod,
+):
+    monkeypatch.setenv("http_proxy", "http://a-proxy-url:3128")
+    mock_run.side_effect = [
+        subprocess.CalledProcessError(
+            cmd=["gpg"], returncode=1, stderr=errors.GPG_TIMEOUT_MESSAGE.encode()
+        ),
+        subprocess.CompletedProcess(
+            ["gpg"], returncode=0, stdout=SAMPLE_GPG_SHOW_KEY_OUTPUT
+        ),
+    ]
+
+    apt_gpg.install_key_from_keyserver(
+        key_id="fake-key-id", key_server=DEFAULT_APT_KEYSERVER
+    )
+
+    assert mock_run.mock_calls == [
+        call(
+            [
+                "gpg",
+                "--batch",
+                "--no-default-keyring",
+                "--with-colons",
+                "--keyring",
+                mock.ANY,
+                "--homedir",
+                mock.ANY,
+                "--keyserver",
+                "keyserver.ubuntu.com",
+                "--recv-keys",
+                "fake-key-id",
+            ],
+            check=True,
+            env={"LANG": "C.UTF-8"},
+            input=None,
+            capture_output=True,
+        ),
+        call(
+            [
+                "gpg",
+                "--batch",
+                "--no-default-keyring",
+                "--with-colons",
+                "--keyring",
+                mock.ANY,
+                "--homedir",
+                mock.ANY,
+                "--keyserver",
+                "hkp://keyserver.ubuntu.com:80",
+                "--keyserver-options",
+                "http-proxy=http://a-proxy-url:3128",
+                "--recv-keys",
+                "fake-key-id",
+            ],
+            check=True,
+            env={"LANG": "C.UTF-8"},
+            input=None,
+            capture_output=True,
+        ),
+    ]
 
 
 @pytest.mark.parametrize(

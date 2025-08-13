@@ -5,6 +5,14 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+
+2.1.1 (2025-08-13)
+-------------------
+
+* Fix an issue where gpg times out when attempting to connect to the default
+  key server. If the initial attempt fails, it now retries over TCP port 80
+  and respects the system's HTTP proxy settings.
+
 2.1.0 (2025-Feb-24)
 -------------------
 
