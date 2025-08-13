@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import pathlib
 import subprocess
 import tempfile
@@ -32,6 +33,7 @@ from . import apt_ppa, errors, gpg, package_repository
 logger = logging.getLogger(__name__)
 
 DEFAULT_APT_KEYSERVER = "keyserver.ubuntu.com"
+FALLBACK_APT_KEYSERVER = f"hkp://{DEFAULT_APT_KEYSERVER}:80"
 
 # Directory for apt keyrings as recommended by Debian for third-party keyrings.
 KEYRINGS_PATH = pathlib.Path("/etc/apt/keyrings")
@@ -215,6 +217,9 @@ class AptKeyManager:
     ) -> None:
         """Install key from specified key server.
 
+        If the default keyserver is used and cannot be reached, retry
+        with the default keyserver but on port TCP/80.
+
         :param key_id: Key ID to install.
         :param key_server: Key server to query.
 
@@ -222,24 +227,8 @@ class AptKeyManager:
         """
         self._create_keyrings_path()
         keyring_path = get_keyring_path(key_id, base_path=self._keyrings_path)
-        try:
-            with _temporary_home_dir() as tmpdir:
-                # We use a tmpdir because gpg needs a "homedir" to place temporary
-                # files into during the download process.
-                gpg.call_gpg(
-                    "--homedir",
-                    str(tmpdir),
-                    "--keyserver",
-                    key_server,
-                    "--recv-keys",
-                    key_id,
-                    keyring=keyring_path,
-                )
-            _configure_keyring_file(keyring_path)
-        except subprocess.CalledProcessError as error:
-            raise errors.AptGPGKeyInstallError(
-                error.output.decode(), key_id=key_id, key_server=key_server
-            )
+        _try_gpg_receive_key(key_server, key_id, keyring_path, retry=True)
+        _configure_keyring_file(keyring_path)
 
     def install_package_repository_key(
         self, *, package_repo: package_repository.PackageRepository
@@ -307,3 +296,50 @@ def _temporary_home_dir() -> Iterator[pathlib.Path]:
         tmpdir = pathlib.Path(tmpdir_str)
         tmpdir.chmod(0o700)
         yield tmpdir
+
+
+def _try_gpg_receive_key(
+    key_server: str,
+    key_id: str,
+    keyring_path: pathlib.Path,
+    proxy_url: str | None = None,
+    *,
+    retry: bool,
+) -> None:
+    try:
+        with _temporary_home_dir() as tmpdir:
+            # We use a tmpdir because gpg needs a "homedir" to place temporary
+            # files into during the download process.
+            keyserver_options: list[str] = []
+            if proxy_url is not None:
+                keyserver_options = ["--keyserver-options", f"http-proxy={proxy_url}"]
+            gpg.call_gpg(
+                "--homedir",
+                str(tmpdir),
+                "--keyserver",
+                key_server,
+                *keyserver_options,
+                "--recv-keys",
+                key_id,
+                keyring=keyring_path,
+            )
+    except subprocess.CalledProcessError as error:
+        if retry and retry_with_fallback_keyserver(error, key_server):
+            proxy_url = os.getenv("http_proxy")
+            _try_gpg_receive_key(
+                FALLBACK_APT_KEYSERVER, key_id, keyring_path, proxy_url, retry=False
+            )
+        else:
+            raise errors.AptGPGKeyInstallError(
+                error.stderr.decode(), key_id=key_id, key_server=key_server
+            )
+
+
+def retry_with_fallback_keyserver(
+    error: subprocess.CalledProcessError, key_server: str
+) -> bool:
+    """Check if the gpg error should be retried using the fallback default keyserver."""
+    return (
+        errors.GPG_TIMEOUT_MESSAGE in error.stderr.decode()
+        and key_server == DEFAULT_APT_KEYSERVER
+    )

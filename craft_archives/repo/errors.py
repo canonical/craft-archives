@@ -91,6 +91,9 @@ class AptGPGKeyringError(PackageRepositoryError):
         )
 
 
+GPG_TIMEOUT_MESSAGE = "gpg: keyserver receive failed: Connection timed out"
+
+
 class AptGPGKeyInstallError(PackageRepositoryError):
     """Installation of GPG key failed."""
 
@@ -102,11 +105,8 @@ class AptGPGKeyInstallError(PackageRepositoryError):
         key_id: str | None = None,
         key_server: str | None = None,
     ) -> None:
-        """Convert apt-key's output into a more user-friendly message."""
-        message = output.replace(
-            "Warning: apt-key output should not be parsed (stdout is not a terminal)",
-            "",
-        ).strip()
+        """Convert gpg's error into a more user-friendly message."""
+        message = output.strip()
 
         # Improve error messages that we can.
         if (
@@ -120,10 +120,7 @@ class AptGPGKeyInstallError(PackageRepositoryError):
             and key_server
         ):
             message = f"unable to establish connection to key server {key_server!r}"
-        elif (
-            "gpg: keyserver receive failed: Connection timed out" in message
-            and key_server
-        ):
+        elif GPG_TIMEOUT_MESSAGE in message and key_server:
             message = (
                 f"unable to establish connection to key server {key_server!r} "
                 f"(connection timed out)"
