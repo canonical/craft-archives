@@ -1,0 +1,18 @@
+deb http://old-releases.ubuntu.com/ubuntu precise main restricted
+deb-src http://old-releases.ubuntu.com/ubuntu precise main restricted
+deb http://old-releases.ubuntu.com/ubuntu precise-updates main restricted
+deb-src http://old-releases.ubuntu.com/ubuntu precise-updates main restricted
+deb http://old-releases.ubuntu.com/ubuntu precise universe
+deb-src http://old-releases.ubuntu.com/ubuntu precise universe
+deb http://old-releases.ubuntu.com/ubuntu precise-updates universe
+deb-src http://old-releases.ubuntu.com/ubuntu precise-updates universe
+deb http://old-releases.ubuntu.com/ubuntu precise multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu precise multiverse
+deb http://old-releases.ubuntu.com/ubuntu precise-updates multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu precise-updates multiverse
+deb http://old-releases.ubuntu.com/ubuntu precise-backports main restricted universe multiverse
+deb-src http://old-releases.ubuntu.com/ubuntu precise-backports main restricted universe multiverse
+deb http://old-releases.ubuntu.com/ubuntu precise-security main
+deb-src http://old-releases.ubuntu.com/ubuntu precise-security main
+deb http://old-releases.ubuntu.com/ubuntu precise-security universe
+deb-src http://old-releases.ubuntu.com/ubuntu precise-security universe

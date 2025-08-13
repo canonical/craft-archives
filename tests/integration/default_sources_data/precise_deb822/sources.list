@@ -1,0 +1,2 @@
+# This is a fake version of the Debian Precise sources ported to a deb822 format.
+# The purpose here is to test the rewriting of a real old-release.
