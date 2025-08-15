@@ -16,6 +16,6 @@ jobs:
     uses: canonical/starflow/.github/workflows/test-python.yaml@main
     with:
       # Testing on both amd64 and arm64 to prevent architecture-specific bugs.
-      fast-test-platforms: '["jammy", ["noble", "amd64"], ["noble", "arm64"]]'
-      slow-test-platforms: '[["jammy", "amd64"], ["jammy", "arm64"]]'
-      lowest-python-platform: jammy
+      fast-test-platforms: '["ubuntu-22.04", "ubuntu-24.04", "ubuntu-24.04-arm"]'
+      slow-test-platforms: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
+      lowest-python-platform: ubuntu-22.04
