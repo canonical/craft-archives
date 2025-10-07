@@ -27,11 +27,11 @@ license = "LGPL-3.0-or-later"
 
 [dependency-groups]
 lint = [
+    { include-group = "types" },
     "codespell[toml]~=2.3",
 ]
 types = [
     "mypy[reports]~=1.5",
-    "pyright==1.1.406",
 ]
 docs = [
     "canonical-sphinx[full]~=0.4",
