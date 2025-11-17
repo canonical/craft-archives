@@ -43,7 +43,7 @@ docs = [
 ]
 dev = [
     "coverage[toml]~=7.8",
-    "pytest~=8.4",
+    "pytest~=9.0",
     "pytest-cov==7.0.0",
     "pytest-check~=2.5",
     "pytest-mock~=3.14",
