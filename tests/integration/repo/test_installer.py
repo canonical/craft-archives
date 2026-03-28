@@ -58,9 +58,7 @@ RELEASE_TO_CLOUD = {
     "focal": {"cloud": "wallaby", "codename": "focal"},
 }
 
-CLOUD_DATA = (
-    RELEASE_TO_CLOUD.get(VERSION_CODENAME) if distro.id() == "ubuntu" else None
-)
+CLOUD_DATA = RELEASE_TO_CLOUD.get(VERSION_CODENAME) if distro.id() == "ubuntu" else None
 
 CLOUD_SOURCES = dedent(
     """
