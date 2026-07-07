@@ -92,6 +92,10 @@ class AptGPGKeyringError(PackageRepositoryError):
 
 
 GPG_TIMEOUT_MESSAGE = "gpg: keyserver receive failed: Connection timed out"
+GPG_NETWORK_UNREACHABLE = "gpg: keyserver receive failed: Network is unreachable"
+
+# Errors that are possibly caused by a proxy server not being used.
+GPG_PROXY_ERRORS = (GPG_TIMEOUT_MESSAGE, GPG_NETWORK_UNREACHABLE)
 
 
 class AptGPGKeyInstallError(PackageRepositoryError):
