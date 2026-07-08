@@ -5,6 +5,13 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+2.2.1 (2026-07-08)
+------------------
+
+Bug Fixes
+
+* Retry with the system's HTTP proxy settings on more gpg failure scenarios.
+
 2.2.0 (2025-08-13)
 ------------------
 

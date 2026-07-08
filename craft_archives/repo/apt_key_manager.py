@@ -339,7 +339,6 @@ def retry_with_fallback_keyserver(
     error: subprocess.CalledProcessError, key_server: str
 ) -> bool:
     """Check if the gpg error should be retried using the fallback default keyserver."""
-    return (
-        errors.GPG_TIMEOUT_MESSAGE in error.stderr.decode()
-        and key_server == DEFAULT_APT_KEYSERVER
+    return key_server == DEFAULT_APT_KEYSERVER and any(
+        message in error.stderr.decode() for message in errors.GPG_PROXY_ERRORS
     )
