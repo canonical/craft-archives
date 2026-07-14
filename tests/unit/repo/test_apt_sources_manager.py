@@ -20,6 +20,7 @@ import logging
 import re
 import textwrap
 import urllib.error
+from email.message import Message
 from pathlib import Path
 from textwrap import dedent
 from typing import Any
@@ -336,7 +337,9 @@ def test_install_ppa_invalid(apt_sources_mgr):
 
 @patch(
     "urllib.request.urlopen",
-    side_effect=urllib.error.HTTPError("", http.HTTPStatus.NOT_FOUND, "", {}, None),  # type: ignore[reportArgumentType, arg-type]
+    side_effect=urllib.error.HTTPError(
+        "", http.HTTPStatus.NOT_FOUND, "", Message(), None
+    ),
 )
 def test_install_uca_invalid(urllib, apt_sources_mgr):
     repo = PackageRepositoryAptUCA(type="apt", cloud="FAKE-CLOUD")

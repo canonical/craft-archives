@@ -16,6 +16,7 @@
 
 import http
 import urllib.error
+from email.message import Message
 from unittest.mock import Mock, patch
 
 import pytest
@@ -33,7 +34,7 @@ def test_check_release_compatibility(urllib):
         "",
         http.HTTPStatus.NOT_FOUND,
         "NOT FOUND",
-        {},  # type: ignore[argument-type]
+        Message(),
         None,
     ),
 )
@@ -51,7 +52,7 @@ def test_check_release_compatibility_invalid(urllib):
         "",
         http.HTTPStatus.BAD_GATEWAY,
         "BAD GATEWAY",
-        {},  # type: ignore[argument-type]
+        Message(),
         None,
     ),
 )

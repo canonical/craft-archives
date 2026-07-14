@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any, cast
+
 import pydantic
 import pytest
 from craft_archives.repo.projects import validate_repository
@@ -39,7 +41,7 @@ def test_validate_repository(repo):
 
 def test_validate_repository_invalid():
     with pytest.raises(TypeError, match="must be a dictionary"):
-        validate_repository("invalid repository")  # type: ignore[invalidArgumentType]
+        validate_repository(cast(dict[str, Any], "invalid repository"))
 
 
 def test_validate_repository_empty_dict():

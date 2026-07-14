@@ -32,6 +32,8 @@ Open Graph
 openapi
 otf
 PDF
+pydantic
+PPAs
 plantuml
 PNG
 PR
@@ -53,6 +55,7 @@ Starbase
 Starcraft
 subproject
 subprojects
+subkeys
 SVG
 tex
 texlive
@@ -72,3 +75,5 @@ xindy
 xml
 yaml
 YouTube
+filepaths
+refactorings

@@ -13,6 +13,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from typing import Any, cast
+
 import pydantic
 import pytest
 from craft_archives.repo import errors
@@ -605,7 +607,9 @@ def test_unmarshal_package_repositories_list_none():
 
 def test_unmarshal_package_repositories_invalid_data():
     with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepository.unmarshal_package_repositories("not-a-list")  # pyright: ignore[reportArgumentType]
+        PackageRepository.unmarshal_package_repositories(
+            cast(list[dict[str, Any]] | None, "not-a-list")
+        )
 
     err = raised.value
     assert str(err) == (
