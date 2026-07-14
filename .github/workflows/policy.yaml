@@ -20,4 +20,3 @@ jobs:
         docs
       uv-export-no-groups: |
         docs
-        docs-sphinx-stack
