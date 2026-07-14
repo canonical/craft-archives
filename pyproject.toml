@@ -71,6 +71,7 @@ constraint-dependencies = [
     "regex>=2021.11.10",
     "setuptools>=83.0.0",
     "sphinx-basic-ng>=1.0.0b1",
+    "starlette>=1.0.1",
     "tornado>=4.0",
     "urllib3>=2.0",
     "webencodings>=0.4.0",
@@ -244,9 +245,9 @@ select = [ # Base linting rule selections.
     "SLF",    # Prevent accessing private class members.
     "SIM",    # Code simplification
     "TID",    # Tidy imports
-    # The team have chosen to only use type-checking blocks when necessary to prevent circular imports.
-    # As such, the only enabled type-checking checks are those that warn of an import that needs to be
-    # removed from a type-checking block.
+    "TC001",  # Checks for first-party imports that are only used for type annotations
+    "TC002",  # Checks for third-party imports that are only used for type annotations
+    "TC003",  # Checks for standard library imports that are only used for type annotations
     "TC004",  # Remove imports from type-checking guard blocks if used at runtime
     "TC005",  # Delete empty type-checking blocks
     "ARG",    # Unused arguments
@@ -279,6 +280,7 @@ ignore = [
     "A003",   # Class attribute shadowing built-in (reason: Class attributes don't often get bare references)
     "SIM117", # Use a single `with` statement with multiple contexts instead of nested `with` statements
     # (reason: this creates long lines that get wrapped and reduces readability)
+    "PLW1641", # eq-without-hash (most classes should be unhashable)
 
     # Ignored due to conflicts with ruff's formatter:
     # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
@@ -323,6 +325,8 @@ classmethod-decorators = ["pydantic.validator", "pydantic.root_validator"]
     "PLR0913", # Allow many arguments for test functions (useful if we need many fixtures)
     "PLR2004", # Allow magic values in tests
     "SLF",     # Allow accessing private members from tests.
+    "FBT001",  # Boolean-typed positional arguments are common in tests
+    "FBT002",  # Boolean default values are common in test helpers
 ]
 "__init__.py" = [
     "I001", # isort leaves init files alone by default, this makes ruff ignore them too.

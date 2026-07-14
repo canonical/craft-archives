@@ -1,54 +1,62 @@
-# Craft Archives
+<If the software has approved imagery or logo, add it here.>
 
-[![Documentation Status][rtd-badge]][rtd-latest]
-[![Codecov Status][codecov-badge]][codecov-status]
-[![Ruff status][ruff-badge]][ruff-site]
+# Starcraft
 
-Craft Archives is a Python package to manage interaction with software package
-repositories on behalf of tools using the [Craft Parts] library.
+<Include the build status badges.>
 
-Craft Archives provides a set of common interfaces to define the locations of
-and install new repositories.
+<Answer elevator-pitch questions about the software – What is it? What does it do? What
+essential problem does it solve? Who is it useful for?>
 
-It aims to provide a uniform, extensible set of interfaces that other tools and
-packages can use when working with repositories.
+<If it's a library or framework and the solutions it provides are more open-ended, you
+can describe the project's overarching philosophy.>
 
-This package is most useful for developers who write tools with [Craft Parts]
-and need to provide support for additional software package repositories.
+## Basic usage
+
+<Show the essence of the product with carefully-chosen examples of it in use. Give the
+prospective user a sense of what the software _feels_ like.>
+
+<This could be the constituent parts of the main user story, or smaller individual
+stories. Some examples:>
+
+- <For CLI apps and tools, three-to-five invocations of essential commands>
+- <For frameworks, some short examples of the structures and syntax>
+- <For libraries, the library name (`import <package>`) and the main APIs>
+
+## Installation
+
+<Briefly describe what platforms the software is supported on.>
+
+<Provide the simplest way to install it, prioritising the snap release on Ubuntu.>
+
+<If available, link to other installation methods in the documentation.>
 
 ## Documentation
 
-The [Craft Archives documentation][rtd-latest] provides guidance about
-understanding and using the library.
+<Encourage the reader to start their journey with the documentation and link to it.>
 
 ## Community and support
 
+<Invite the user to participate in the community, with a link to the Code of Conduct and
+its central forums.>
+
 You can report any issues or bugs on the project's [GitHub
-repository](https://github.com/canonical/craft-archives/issues).
+repository](https://github.com/canonical/starcraft/issues).
 
-Craft Archives is covered by the [Ubuntu Code of
-Conduct](https://ubuntu.com/community/ethos/code-of-conduct).
+Starcraft is covered by the [Ubuntu Code of
+Conduct](https://ubuntu.com/community/docs/ethos/code-of-conduct).
 
-## Contribute to Craft Archives
+## Contribute to Starcraft
 
-Craft Archives is open source and part of the Canonical family. We would love your help.
+Starcraft is open source and part of the Canonical family. We would love your help.
 
 If you're interested, start with the [contribution guide](HACKING.md).
 
 We welcome any suggestions and help with the docs. The [Canonical Open Documentation
 Academy](https://github.com/canonical/open-documentation-academy) is the hub for doc
-development, including Craft Archives docs. No prior coding experience is required.
+development, including Starcraft docs. No prior coding experience is required.
 
 ## License and copyright
 
-Craft Archives is released under the [GPL-3.0 license](LICENSE).
+Starcraft is released under the [GPL-3.0 license](LICENSE).
 
-© 2023-2025 Canonical Ltd.
-
-[rtd-badge]: https://readthedocs.com/projects/canonical-craft-archives/badge/?version=latest
-[rtd-latest]: https://canonical-craft-archives.readthedocs-hosted.com/en/latest/
-[ruff-badge]: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json
-[ruff-site]: https://github.com/astral-sh/ruff
-[codecov-badge]: https://codecov.io/github/canonical/craft-archives/coverage.svg?branch=main
-[codecov-status]: https://codecov.io/github/canonical/craft-archives?branch=main
-[Craft Parts]: https://canonical-craft-parts.readthedocs-hosted.com/en/latest/
+© <start year>-<current year> Canonical Ltd.
