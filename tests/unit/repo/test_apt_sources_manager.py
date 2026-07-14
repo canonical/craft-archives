@@ -336,7 +336,7 @@ def test_install_ppa_invalid(apt_sources_mgr):
 
 @patch(
     "urllib.request.urlopen",
-    side_effect=urllib.error.HTTPError("", http.HTTPStatus.NOT_FOUND, "", {}, None),  # type: ignore[reportArgumentType, arg-type]
+    side_effect=urllib.error.HTTPError("", http.HTTPStatus.NOT_FOUND, "", {}, None),  # type: ignore # noqa: PGH003
 )
 def test_install_uca_invalid(urllib, apt_sources_mgr):
     repo = PackageRepositoryAptUCA(type="apt", cloud="FAKE-CLOUD")
