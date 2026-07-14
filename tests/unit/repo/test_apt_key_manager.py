@@ -421,16 +421,14 @@ def test_install_key_from_keyserver_with_gpg_failure(apt_gpg, mock_run):
     assert str(raised.value) == "Failed to install GPG key: some error"
 
 
-def test_install_key_from_keyserver_with_gpg_timeout(
-    apt_gpg,
-    monkeypatch,
-    mock_run,
-    mock_chmod,
+@pytest.mark.parametrize("error_message", errors.GPG_PROXY_ERRORS)
+def test_install_key_from_keyserver_with_gpg_errors(
+    apt_gpg, monkeypatch, mock_run, mock_chmod, error_message
 ):
     monkeypatch.setenv("http_proxy", "http://a-proxy-url:3128")
     mock_run.side_effect = [
         subprocess.CalledProcessError(
-            cmd=["gpg"], returncode=1, stderr=errors.GPG_TIMEOUT_MESSAGE.encode()
+            cmd=["gpg"], returncode=1, stderr=error_message.encode()
         ),
         subprocess.CompletedProcess(
             ["gpg"], returncode=0, stdout=SAMPLE_GPG_SHOW_KEY_OUTPUT
