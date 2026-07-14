@@ -56,7 +56,7 @@ constraint-dependencies = [
     # Basic constraints to allow --resolution=lowest
     "cffi>=1.15",
     "iniconfig>=1.1.0",
-    "httplib2>=0.20.0",
+    "httplib2>=0.32.0",
     "libnacl>=2.0",
     "lxml>=5.0",
     "markdown>=3.0",
@@ -69,7 +69,7 @@ constraint-dependencies = [
     "pytz>=2020",
     "pyyaml>=5.0",
     "regex>=2021.11.10",
-    "setuptools>=50",
+    "setuptools>=83.0.0",
     "sphinx-basic-ng>=1.0.0b1",
     "tornado>=4.0",
     "urllib3>=2.0",
@@ -78,7 +78,7 @@ constraint-dependencies = [
 ]
 
 [build-system]
-requires = ["setuptools>=69.0", "setuptools_scm[toml]>=7.1"]
+requires = ["setuptools>=83.0.0", "setuptools_scm[toml]>=7.1"]
 build-backend = "setuptools.build_meta"
 
 
