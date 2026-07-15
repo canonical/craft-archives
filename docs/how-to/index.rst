@@ -10,6 +10,6 @@ These pages provide directions for completing tasks and solving problems with Cr
 Archives.
 
 .. toctree::
-    :maxdepth: 1
+    :hidden:
 
     add_repo
