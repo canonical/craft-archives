@@ -1,11 +1,17 @@
+.. meta::
+    :description: The reference documentation for Craft Archives. These pages describe the library's supported repository properties and reference material.
+
 .. _reference:
 
 Reference
 =========
 
-.. toctree::
-   :maxdepth: 1
+Reference material describes the structure and function of the individual
+components in Craft Archives.
 
-   defaults
-   repo_properties
-   ../changelog
+.. toctree::
+    :hidden:
+
+    defaults
+    repo_properties
+    ../changelog
