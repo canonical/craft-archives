@@ -141,8 +141,12 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.doctest",
     "sphinx-pydantic",
-    "sphinx_toolbox",
-    "sphinx_toolbox.more_autodoc",
+    # Only the specific sphinx_toolbox submodules we actually use for autodoc
+    # rendering are loaded here (rather than the top-level "sphinx_toolbox",
+    # which transitively pulls in unused extensions such as
+    # sphinx_toolbox.latex, .github, .shields, and .wikipedia).
+    "sphinx_toolbox.more_autodoc.augment_defaults",
+    "sphinx_toolbox.more_autodoc.typehints",
     "sphinx.ext.autodoc",  # Must be loaded after more_autodoc
 ]
 
