@@ -7,11 +7,6 @@ UV_DOCS_GROUPS := "--group=docs"
 UV_LINT_GROUPS := "--group=lint" "--group=types" $(UV_DOCS_GROUPS)
 UV_TICS_GROUPS := "--group=tics"
 
-# sphinx_toolbox.latex doesn't declare whether it's safe for parallel reads,
-# which triggers a warning (and thus a --fail-on-warning build failure) when
-# Sphinx's default "-j auto" tries to build in parallel. Force serial reads.
-export SPHINX_OPTS := -c . -d _dev/.doctrees -j 1
-
 # If you have dev dependencies that depend on your distro version, uncomment these:
 # ifneq ($(wildcard /etc/os-release),)
 # include /etc/os-release
