@@ -1,11 +1,11 @@
+.. meta::
+    :description: Tutorials for Craft Archives. Use the available learning resources to get started with the library.
+
 .. _tutorials:
 
 Tutorials
 =========
 
-If you want to learn the basics from experience, then our tutorials will help
-you acquire the necessary competencies from real-life examples with fully
-reproducible steps.
-
-.. toctree::
-   :maxdepth: 1
+Craft Archives does not yet provide a step-by-step tutorial. To get started
+with the library, use the :ref:`how-to-guides` for task-oriented examples and
+the :ref:`reference` section for repository properties and API details.

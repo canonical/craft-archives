@@ -2,8 +2,8 @@
 
 ## Release cycle
 
-<!--
-The information under this header may not be strictly accurate for all apps and libraries.
+<!---
+The information under this header may not be strictly accurate for all applications.
 Review the wording carefully and only copy it if the support offered makes sense. If it
 seems wrong, speak with Canonical Security Engineering about refining a version for
 your application.

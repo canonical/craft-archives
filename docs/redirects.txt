@@ -3,3 +3,6 @@
 # Paths must be represented as source files relative to the root of the `docs` dir.
 # The old path must be a file that _doesn't exist_ in the source. The current path
 # must be a file that _does exist_ in the source.
+
+"how-to-guides" "how-to"
+"how-to-guides/add_repo" "how-to/add_repo"
