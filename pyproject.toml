@@ -32,7 +32,7 @@ lint = [
     "codespell[toml]~=2.3",
 ]
 types = [
-    "mypy[reports]~=1.5",
+    "mypy[reports]~=2.3",
 ]
 docs = [
     "canonical-sphinx[full]~=0.4",
