@@ -35,6 +35,8 @@ html_theme_options = {
     "source_edit_link": "https://github.com/canonical/craft-archives",
 }
 
+slug = "craft-archives"
+
 extensions = [
     "canonical_sphinx",
 ]
