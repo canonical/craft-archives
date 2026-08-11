@@ -35,6 +35,7 @@ html_theme_options = {
     "source_edit_link": "https://github.com/canonical/craft-archives",
 }
 
+# The version slug passed to the sphinx-notfound-page extenssion
 slug = "craft-archives"
 
 extensions = [
