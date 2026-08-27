@@ -24,11 +24,13 @@ import os
 import pathlib
 import subprocess
 import tempfile
-from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from . import apt_ppa, errors, gpg, package_repository
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 logger = logging.getLogger(__name__)
 
