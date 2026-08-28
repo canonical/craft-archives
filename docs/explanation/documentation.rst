@@ -1,5 +1,5 @@
 .. meta::
-  :description: An explanation of the documentation system, process, and writing style and conventions in Craft Archives.
+    :description: An explanation of the documentation system, process, and writing style and conventions in Craft Archives.
 
 
 .. _explanation-documentation:

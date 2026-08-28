@@ -1,6 +1,6 @@
 # Contributing
 
-Craft Archives has a community from all over the world, and we welcomes all
+Craft Archives has a community from all over the world, and we welcome all
 contributions.
 
 Contributing offers an opportunity to polish your technical skills, develop as a
