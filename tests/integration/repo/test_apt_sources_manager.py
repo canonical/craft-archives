@@ -24,8 +24,6 @@ from craft_archives.repo.apt_sources_manager import AptSourcesManager
 from craft_archives.repo.package_repository import PackageRepositoryApt
 from debian import deb822
 
-# pyright: reportGeneralTypeIssues=false
-
 EXPECTED_SIGNED_BY = "/usr/share/keyrings/FC42E99D.gpg"
 
 DEFAULT_SOURCE = """

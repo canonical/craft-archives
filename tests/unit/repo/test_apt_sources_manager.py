@@ -44,8 +44,6 @@ from craft_archives.repo.package_repository import (
     PocketEnum,
 )
 
-# pyright: reportGeneralTypeIssues=false
-
 
 @pytest.fixture(autouse=True)
 def mock_apt_ppa_get_signing_key(mocker):
@@ -336,7 +334,7 @@ def test_install_ppa_invalid(apt_sources_mgr):
 
 @patch(
     "urllib.request.urlopen",
-    side_effect=urllib.error.HTTPError("", http.HTTPStatus.NOT_FOUND, "", {}, None),  # type: ignore[reportArgumentType, arg-type]  # ty: ignore[invalid-argument-type]
+    side_effect=urllib.error.HTTPError("", http.HTTPStatus.NOT_FOUND, "", {}, None),  # ty: ignore[invalid-argument-type]
 )
 def test_install_uca_invalid(urllib, apt_sources_mgr):
     repo = PackageRepositoryAptUCA(type="apt", cloud="FAKE-CLOUD")

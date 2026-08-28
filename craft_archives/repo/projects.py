@@ -26,6 +26,6 @@ def validate_repository(data: dict[str, Any]) -> None:
 
     :param data: The repository data to validate.
     """
-    if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
+    if not isinstance(data, dict):
         raise TypeError("value must be a dictionary")
     PackageRepository.unmarshal(data)

@@ -32,8 +32,6 @@ from craft_archives.repo.package_repository import (
     PackageRepositoryAptUCA,
 )
 
-# pyright: reportGeneralTypeIssues=false
-
 SAMPLE_GPG_SHOW_KEY_OUTPUT = b"""\
 pub:-:4096:1:F1831DDAFC42E99D:1416490823:::-:::scSC::::::23::0:
 fpr:::::::::FAKE-KEY-ID-FROM-GNUPG:
