@@ -25,8 +25,6 @@ from craft_archives.repo.package_repository import (
 )
 from pydantic_core import Url
 
-# pyright: reportGeneralTypeIssues=false
-
 # region Test data and fixtures
 BASIC_PPA_MARSHALLED = {
     "type": "apt",
@@ -605,7 +603,7 @@ def test_unmarshal_package_repositories_list_none():
 
 def test_unmarshal_package_repositories_invalid_data():
     with pytest.raises(errors.PackageRepositoryValidationError) as raised:
-        PackageRepository.unmarshal_package_repositories("not-a-list")  # pyright: ignore[reportArgumentType]  # ty: ignore[invalid-argument-type]
+        PackageRepository.unmarshal_package_repositories("not-a-list")  # ty: ignore[invalid-argument-type]
 
     err = raised.value
     assert str(err) == (
