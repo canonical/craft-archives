@@ -486,7 +486,8 @@ def test_apt_json_schema_uses_aliases_and_unique_items():
         prop_schema = properties[prop]
         any_of = prop_schema.get("anyOf", [prop_schema])
         assert any(
-            isinstance(item, dict) and item.get("uniqueItems") is True for item in any_of
+            isinstance(item, dict) and item.get("uniqueItems") is True
+            for item in any_of
         )
 
 
