@@ -474,6 +474,15 @@ def test_apt_invalid_priority():
     assert expected_message in str(err)
 
 
+def test_apt_json_schema_uses_aliases_and_unique_items():
+    schema = PackageRepositoryApt.model_json_schema()
+
+    assert schema["properties"]["key-id"]["pattern"] == "^[0-9A-F]{40}$"
+    assert schema["properties"]["key-server"]["title"] == "Key-Server"
+    assert schema["properties"]["architectures"]["anyOf"][0]["uniqueItems"] is True
+    assert schema["properties"]["components"]["anyOf"][0]["uniqueItems"] is True
+
+
 @pytest.mark.parametrize(
     ("priority_str", "priority_int"),
     [

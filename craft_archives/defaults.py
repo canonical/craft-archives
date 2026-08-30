@@ -27,8 +27,8 @@ from typing import TYPE_CHECKING, Literal, cast
 from urllib.parse import urlparse
 from urllib.request import HTTPError, urlopen
 
-import pydantic
 from debian._deb822_repro import parse_deb822_file
+from pydantic import AnyUrl, BaseModel, Field, FileUrl, field_validator
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -37,19 +37,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AptSource(pydantic.BaseModel):
+class AptSource(BaseModel):
     """A generic model for an apt source."""
 
-    types: list[Literal["deb", "deb-src"]] = pydantic.Field(alias="Types")
-    uris: list[pydantic.AnyUrl | pydantic.FileUrl] = pydantic.Field(alias="URIs")
-    suites: list[str] = pydantic.Field(alias="Suites")
-    components: list[str] = pydantic.Field(alias="Components")
-    signed_by: pathlib.Path | None = pydantic.Field(default=None, alias="Signed-By")
-    architectures: list[str] | None = pydantic.Field(
-        default=None, alias="Architectures"
-    )
+    types: list[Literal["deb", "deb-src"]] = Field(alias="Types")
+    uris: list[AnyUrl | FileUrl] = Field(alias="URIs")
+    suites: list[str] = Field(alias="Suites")
+    components: list[str] = Field(alias="Components")
+    signed_by: pathlib.Path | None = Field(default=None, alias="Signed-By")
+    architectures: list[str] | None = Field(default=None, alias="Architectures")
 
-    @pydantic.field_validator(
+    @field_validator(
         "types", "uris", "suites", "components", "architectures", mode="before"
     )
     @classmethod
@@ -138,7 +136,7 @@ class AptSource(pydantic.BaseModel):
             if cast(str, urlparse(str(uri)).hostname).endswith(old_domain):
                 source_indeces.append(i)
         for i in source_indeces:
-            self.uris[i] = pydantic.AnyUrl(new_uri)
+            self.uris[i] = AnyUrl(new_uri)
 
 
 @functools.cache

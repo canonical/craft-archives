@@ -178,17 +178,20 @@ class PackageRepository(BaseModel, abc.ABC):
 
     """
 
-    @model_validator(mode="before")
-    @classmethod
-    def priority_cannot_be_zero(cls, values: dict[str, Any]) -> dict[str, Any]:
+    @model_validator(mode="after")
+    def priority_cannot_be_zero(self, _info: ValidationInfo) -> Self:
         """Priority cannot be zero per apt Preferences specification."""
-        priority = values.get("priority")
-        if priority == 0:
+        if self.priority == 0:
+            source = (
+                self.__dict__.get("url")
+                or self.__dict__.get("ppa")
+                or self.__dict__.get("cloud")
+            )
             raise _create_validation_error(
-                url=str(values.get("url") or values.get("ppa") or values.get("cloud")),
+                url=str(source) if source is not None else None,
                 message="invalid priority: Priority cannot be zero.",
             )
-        return values
+        return self
 
     @field_validator("priority")
     @classmethod
