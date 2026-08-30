@@ -183,9 +183,9 @@ class PackageRepository(BaseModel, abc.ABC):
         """Priority cannot be zero per apt Preferences specification."""
         if self.priority == 0:
             source = (
-                self.__dict__.get("url")
-                or self.__dict__.get("ppa")
-                or self.__dict__.get("cloud")
+                getattr(self, "url", None)
+                or getattr(self, "ppa", None)
+                or getattr(self, "cloud", None)
             )
             raise _create_validation_error(
                 url=str(source) if source is not None else None,
