@@ -5,6 +5,11 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+Next release
+------------
+
+* Make the Pydantic models more idiomatic for Pydantic 2.
+
 2.2.1 (2026-07-08)
 ------------------
 
