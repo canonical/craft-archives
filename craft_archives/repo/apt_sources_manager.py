@@ -42,7 +42,7 @@ _DEFAULT_SOURCES_DIRECTORY = Path("/etc/apt/sources.list.d")
 _DEFAULT_SIGNED_BY_ROOT = Path("/")
 
 # The Ubuntu release where arm64 was migrated from ports.ubuntu.com to archive.ubuntu.com
-_UBUNTU_ARM64_ARCHIVE_MIGRATION_VERSION = 25.10
+_UBUNTU_ARM64_ARCHIVE_MIGRATION_VERSION = (25, 10)
 
 
 def _get_compatible_architectures(current_arch: str) -> list[str]:
@@ -59,9 +59,11 @@ def _get_compatible_architectures(current_arch: str) -> list[str]:
     if current_arch == "arm64":
         if distro.id() == "ubuntu":
             try:
-                version = float(distro.version())
+                version = (int(distro.major_version()), int(distro.minor_version()))
             except (ValueError, TypeError):
-                version = 0.0
+                # If the version can't be parsed, assume it's a newer version.
+                version = _UBUNTU_ARM64_ARCHIVE_MIGRATION_VERSION
+
             if version >= _UBUNTU_ARM64_ARCHIVE_MIGRATION_VERSION:
                 return ["arm64"]
 
