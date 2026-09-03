@@ -76,6 +76,7 @@ def mock_run(mocker):
 def mock_version_codename(monkeypatch):
     mock_codename = mock.Mock(return_value="FAKE-CODENAME")
     monkeypatch.setattr(distro, "codename", mock_codename)
+    monkeypatch.setattr(distro, "id", mock.Mock(return_value="ubuntu"))
     return mock_codename
 
 
@@ -385,6 +386,7 @@ def test_preferences_path_for_root():
 def test_add_architecture_compatible_not_deb822(caplog, mocker, host_arch, repo_arch):
     """Add compatible architectures even if the default sources aren't deb822."""
     caplog.set_level(logging.DEBUG)
+    mocker.patch("distro.version", return_value="24.04")
     update_sources_file_mock = mocker.patch(
         "craft_archives.repo.apt_sources_manager._update_sources_file"
     )
@@ -395,7 +397,7 @@ def test_add_architecture_compatible_not_deb822(caplog, mocker, host_arch, repo_
         [repo_arch], root=Path("/"), sources_dir=_DEFAULT_SOURCES_DIRECTORY
     )
 
-    check_output_mock.assert_called_once_with(["dpkg", "--print-architecture"])
+    check_output_mock.assert_any_call(["dpkg", "--print-architecture"])
     assert run_mock.mock_calls == [
         call(
             ["dpkg", "--root", "/", "--add-architecture", repo_arch],
@@ -420,6 +422,7 @@ def test_add_architecture_compatible_not_deb822(caplog, mocker, host_arch, repo_
 def test_add_architecture_incompatible_not_deb822(caplog, mocker, host_arch, repo_arch):
     """Don't add incompatible architectures if the default sources aren't deb822."""
     caplog.set_level(logging.DEBUG)
+    mocker.patch("distro.version", return_value="24.04")
     update_sources_file_mock = mocker.patch(
         "craft_archives.repo.apt_sources_manager._update_sources_file"
     )
@@ -430,7 +433,7 @@ def test_add_architecture_incompatible_not_deb822(caplog, mocker, host_arch, rep
         [repo_arch], root=Path("/"), sources_dir=_DEFAULT_SOURCES_DIRECTORY
     )
 
-    check_output_mock.assert_called_once_with(["dpkg", "--print-architecture"])
+    check_output_mock.assert_any_call(["dpkg", "--print-architecture"])
     assert not run_mock.called
     update_sources_file_mock.assert_not_called()
     assert (
@@ -440,17 +443,67 @@ def test_add_architecture_incompatible_not_deb822(caplog, mocker, host_arch, rep
 
 
 @pytest.mark.parametrize(
-    ("host_arch", "compatible_archs", "repo_arch"),
+    ("host_arch", "compatible_archs", "repo_arch", "distro_id", "version"),
     [
-        pytest.param(b"amd64\n", ["amd64", "i386"], "arm64", id="compatible-arch-pair"),
-        pytest.param(b"riscv64\n", "riscv64", "arm64", id="lone-arch"),
+        pytest.param(
+            b"amd64\n", ["amd64", "i386"], "arm64", "ubuntu", "24.04", id="amd64-noble"
+        ),
+        pytest.param(
+            b"amd64\n",
+            ["amd64", "i386"],
+            "arm64",
+            "ubuntu",
+            "26.04",
+            id="amd64-resolute",
+        ),
+        pytest.param(
+            b"arm64\n",
+            ["arm64", "armhf"],
+            "amd64",
+            "ubuntu",
+            "24.04",
+            id="arm64-noble",
+        ),
+        pytest.param(
+            b"arm64\n", ["arm64"], "amd64", "ubuntu", "25.10", id="arm64-questing"
+        ),
+        pytest.param(
+            b"arm64\n", ["arm64"], "amd64", "ubuntu", "26.04", id="arm64-resolute"
+        ),
+        pytest.param(
+            b"arm64\n",
+            ["arm64", "armhf"],
+            "amd64",
+            "debian",
+            "12",
+            id="arm64-debian",
+        ),
+        pytest.param(
+            b"riscv64\n", ["riscv64"], "arm64", "ubuntu", "24.04", id="lone-arch-noble"
+        ),
+        pytest.param(
+            b"riscv64\n",
+            ["riscv64"],
+            "arm64",
+            "ubuntu",
+            "26.04",
+            id="lone-arch-resolute",
+        ),
     ],
 )
 @pytest.mark.parametrize("mock_is_deb822_default", [True], indirect=True)
 def test_add_architecture_deb822(
-    mocker, host_arch, compatible_archs, repo_arch, mock_is_deb822_default
+    mocker,
+    host_arch,
+    compatible_archs,
+    repo_arch,
+    distro_id,
+    version,
+    mock_is_deb822_default,
 ):
     """Update default sources and add archs if the default sources are deb822."""
+    mocker.patch("distro.id", return_value=distro_id)
+    mocker.patch("distro.version", return_value=version)
     update_sources_file_mock = mocker.patch(
         "craft_archives.repo.apt_sources_manager._update_sources_file"
     )
@@ -461,7 +514,7 @@ def test_add_architecture_deb822(
         [repo_arch], root=Path("/"), sources_dir=_DEFAULT_SOURCES_DIRECTORY
     )
 
-    check_output_mock.assert_called_once_with(["dpkg", "--print-architecture"])
+    check_output_mock.assert_any_call(["dpkg", "--print-architecture"])
     assert run_mock.mock_calls == [
         call(
             ["dpkg", "--root", "/", "--add-architecture", repo_arch],
