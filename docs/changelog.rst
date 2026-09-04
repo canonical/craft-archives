@@ -5,6 +5,16 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
+2.2.2 (2026-09-04)
+------------------
+
+Bug Fixes
+
+* On Ubuntu 25.10 and higher, don't enable ARMHF as a foreign architecture on ARM64
+  systems, because Ubuntu 25.10 moved ARM64 packages from ports.ubuntu.com to
+  archive.ubuntu.com. Instead, add ports.ubuntu.com as a package repository on
+  ARM64 systems that need ARMHF packages.
+
 2.2.1 (2026-07-08)
 ------------------
 

@@ -40,11 +40,36 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_SOURCES_DIRECTORY = Path("/etc/apt/sources.list.d")
 _DEFAULT_SIGNED_BY_ROOT = Path("/")
-# a mapping of architectures to a list of architectures with compatible packages
-_COMPATIBLE_ARCHS = {
-    "amd64": ["amd64", "i386"],
-    "arm64": ["arm64", "armhf"],
-}
+
+# The Ubuntu release where arm64 was migrated from ports.ubuntu.com to archive.ubuntu.com
+_UBUNTU_ARM64_ARCHIVE_MIGRATION_VERSION = (25, 10)
+
+
+def _get_compatible_architectures(current_arch: str) -> list[str]:
+    """Get list of compatible architectures for the current architecture.
+
+    - amd64: i386 is cohosted in archive.ubuntu.com.
+    - arm64: armhf was cohosted in ports.ubuntu.com until Ubuntu 25.10, when arm64
+      migrated to archive.ubuntu.com (which does not provide armhf packages).
+
+    :returns: A list of compatible architectures.
+    """
+    if current_arch == "amd64":
+        return ["amd64", "i386"]
+    if current_arch == "arm64":
+        if distro.id() == "ubuntu":
+            try:
+                version = (int(distro.major_version()), int(distro.minor_version()))
+            except (ValueError, TypeError):
+                # If the version can't be parsed, assume it's a newer version.
+                version = _UBUNTU_ARM64_ARCHIVE_MIGRATION_VERSION
+
+            if version >= _UBUNTU_ARM64_ARCHIVE_MIGRATION_VERSION:
+                return ["arm64"]
+
+        return ["arm64", "armhf"]
+
+    return [current_arch]
 
 
 def _construct_deb822_source(
@@ -348,6 +373,7 @@ def _add_architecture(
     :param sources_dir: The directory containing the sources listings.
     """
     current_arch = _get_current_architecture()
+    compatible_archs = _get_compatible_architectures(current_arch)
 
     # Sources in 'ubuntu.sources' don't list architectures, so apt assumes the default
     # repository provides packages for all architectures. These need to be restricted
@@ -356,7 +382,7 @@ def _add_architecture(
         _update_sources_file(
             sources_file=sources_dir / "ubuntu.sources",
             field="Architectures",
-            values=_COMPATIBLE_ARCHS.get(current_arch, current_arch),
+            values=compatible_archs,
         )
     else:
         logger.debug(
@@ -365,9 +391,7 @@ def _add_architecture(
         )
 
     for arch in architectures:
-        if _is_deb822_default(sources_dir) or arch in _COMPATIBLE_ARCHS.get(
-            current_arch, []
-        ):
+        if _is_deb822_default(sources_dir) or arch in compatible_archs:
             logger.info(f"Adding repository architecture: {arch}")
             subprocess.run(
                 # Note: the order of parameters matters here, as "--add-architecture"

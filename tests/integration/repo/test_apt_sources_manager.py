@@ -16,11 +16,14 @@
 """Integration tests for AptSourcesManager."""
 
 import logging
+import platform
+import subprocess
 import textwrap
+from pathlib import Path
 
 import pytest
 from craft_archives.repo import gpg
-from craft_archives.repo.apt_sources_manager import AptSourcesManager
+from craft_archives.repo.apt_sources_manager import AptSourcesManager, _add_architecture
 from craft_archives.repo.package_repository import PackageRepositoryApt
 from debian import deb822
 
@@ -145,3 +148,48 @@ def test_install_sources_conflicting_keys(
 
     all_log = "\n".join(caplog.messages)
     assert expected_log in all_log
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(platform.machine() != "aarch64", reason="Test is for arm64")
+@pytest.mark.skipif(
+    not Path("/etc/apt/sources.list.d/ubuntu.sources").is_file(),
+    reason="host doesn't use a deb822 'ubuntu.sources' file",
+)
+def test_add_architecture_arm64(tmp_path):
+    """Verify `apt update` succeeds after adding an arch on an arm64 system.
+
+    Regression test for #230.
+    """
+    # set up an isolated root dir, so we don't contaminate the host
+    sources_dir = tmp_path / "etc/apt/sources.list.d"
+    sources_dir.mkdir(parents=True)
+    (tmp_path / "var/lib/apt/lists/partial").mkdir(parents=True)
+    (tmp_path / "var/cache/apt/archives/partial").mkdir(parents=True)
+
+    ubuntu_sources = sources_dir / "ubuntu.sources"
+    ubuntu_sources.write_text(
+        Path("/etc/apt/sources.list.d/ubuntu.sources").read_text()
+    )
+
+    _add_architecture(["arm64"], root=tmp_path, sources_dir=sources_dir)
+    # run apt-get update against the isolated root directory
+    cmd = [
+        "apt-get",
+        "update",
+        "-o",
+        f"Dir={tmp_path}",
+        "-o",
+        f"Dir::Etc={tmp_path}/etc/apt",
+        "-o",
+        "Dir::Etc::sourcelist=/dev/null",
+        "-o",
+        f"Dir::Etc::sourceparts={sources_dir}",
+        "-o",
+        "Dir::State::status=/var/lib/dpkg/status",
+        "-o",
+        "APT::Sandbox::User=root",
+    ]
+    res = subprocess.run(cmd, capture_output=True, text=True, check=False)
+
+    assert res.returncode == 0, f"apt-get update failed:\n{res.stderr}"
