@@ -5,8 +5,8 @@ Changelog
 See the `Releases page`_ on Github for a complete list of commits that are
 included in each version.
 
-(unreleased)
-------------
+2.2.2 (2026-09-04)
+------------------
 
 Bug Fixes
 
