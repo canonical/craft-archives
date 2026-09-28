@@ -49,15 +49,16 @@ PPA_SOURCES = dedent(
     """
 ).lstrip()
 
-# Needed because some "clouds" are only available for specific Ubuntu releases
+# Ubuntu Cloud Archive (UCA) is only available on specific Ubuntu LTS releases.
+# Non-Ubuntu distros (e.g. Debian) and non-LTS Ubuntu releases (e.g. mantic)
+# don't have a cloud archive, so cloud-related tests are skipped.
 RELEASE_TO_CLOUD = {
     "noble": {"cloud": "dalmatian", "codename": "noble"},
     "jammy": {"cloud": "antelope", "codename": "jammy"},
     "focal": {"cloud": "wallaby", "codename": "focal"},
 }
 
-# If running on a distro that's not supported, set CLOUD_DATA to None
-CLOUD_DATA = RELEASE_TO_CLOUD.get(VERSION_CODENAME)
+CLOUD_DATA = RELEASE_TO_CLOUD.get(VERSION_CODENAME) if distro.id() == "ubuntu" else None
 
 CLOUD_SOURCES = dedent(
     """
