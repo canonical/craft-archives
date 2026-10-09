@@ -77,7 +77,7 @@ dev = [
     "pytest-cov==7.1.0",
     "pytest-check~=2.5",
     "pytest-mock~=3.14",
-    "python-gnupg==0.5.6",
+    "python-gnupg==0.5.7",
 ]
 tics = ["flake8", "pylint"]
 
