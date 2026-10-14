@@ -341,5 +341,5 @@ def retry_with_fallback_keyserver(
 ) -> bool:
     """Check if the gpg error should be retried using the fallback default keyserver."""
     return key_server == DEFAULT_APT_KEYSERVER and any(
-        message in error.stderr.decode() for message in errors.GPG_PROXY_ERRORS
+        message in error.stderr.decode() for message in errors.GPG_TRANSIENT_ERRORS
     )
