@@ -107,7 +107,7 @@ constraint-dependencies = [
     "setuptools>=83.0.0",
     "sphinx-basic-ng>=1.0.0b1",
     "tornado>=4.0",
-    "urllib3>=2.0",
+    "urllib3>=2.8.0",
     "webencodings>=0.4.0",
     "wheel>=0.38",
 ]
