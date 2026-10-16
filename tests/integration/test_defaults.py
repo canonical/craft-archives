@@ -22,6 +22,7 @@ import pytest
 from craft_archives import defaults
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     ("distro_name", "expected"),
     [
@@ -39,6 +40,7 @@ def test_is_on_old_releases_real_ubuntu(distro_name: str, expected):
     assert defaults._is_on_old_releases(distro_name) == expected
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     ("distro_name", "archive_url", "retries", "expected"),
     [
