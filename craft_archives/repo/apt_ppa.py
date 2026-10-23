@@ -16,15 +16,11 @@
 
 """Personal Package Archive helpers."""
 
-# pyright: reportMissingTypeStubs=false
-# Eliminate launchpadlib typing issues:
-# pyright: reportUnknownMemberType=false
-
 import logging
 from typing import cast
 
-import lazr.restfulclient.errors  # type: ignore[import-untyped]
-from launchpadlib.launchpad import Launchpad  # type: ignore[import-untyped]
+import lazr.restfulclient.errors
+from launchpadlib.launchpad import Launchpad
 
 from . import errors
 

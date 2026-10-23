@@ -12,4 +12,5 @@ jobs:
     # Uncomment this and add your project's name on Tiobe TICS
     with:
       project: "craft-archives"
-    secrets: inherit
+    secrets:
+      TICSAUTHTOKEN: ${{ secrets.TICSAUTHTOKEN }}

@@ -23,7 +23,6 @@ import logging
 import pathlib
 import textwrap
 import time
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Literal, cast
 from urllib.parse import urlparse
 from urllib.request import HTTPError, urlopen
@@ -32,6 +31,7 @@ import pydantic
 from debian._deb822_repro import parse_deb822_file
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from http.client import HTTPResponse
 
 logger = logging.getLogger(__name__)

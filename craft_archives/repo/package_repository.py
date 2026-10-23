@@ -29,19 +29,19 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-from overrides import overrides  # pyright: ignore[reportUnknownVariableType]
+from overrides import overrides
 from pydantic import (
     AfterValidator,
     AnyUrl,
     BaseModel,
     ConfigDict,
-    Field,  # pyright: ignore[reportUnknownVariableType]
+    Field,
     FileUrl,
     StringConstraints,
     ValidationInfo,
     field_serializer,
-    field_validator,  # pyright: ignore[reportUnknownVariableType]
-    model_validator,  # pyright: ignore[reportUnknownVariableType]
+    field_validator,
+    model_validator,
 )
 from typing_extensions import Self
 
@@ -221,7 +221,7 @@ class PackageRepository(BaseModel, abc.ABC):
     @classmethod
     def unmarshal(cls, data: Mapping[str, Any]) -> "PackageRepository":
         """Create a package repository object from the given data."""
-        if not isinstance(data, dict):  # pyright: ignore[reportUnnecessaryIsInstance]
+        if not isinstance(data, dict):
             raise errors.PackageRepositoryValidationError(
                 url=str(data),
                 brief="invalid object.",
@@ -247,7 +247,7 @@ class PackageRepository(BaseModel, abc.ABC):
         repositories: list[PackageRepository] = []
 
         if data is not None:
-            if not isinstance(data, list):  # pyright: ignore[reportUnnecessaryIsInstance]
+            if not isinstance(data, list):
                 raise errors.PackageRepositoryValidationError(
                     url=str(data),
                     brief="invalid list object.",

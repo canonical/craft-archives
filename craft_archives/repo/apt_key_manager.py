@@ -16,7 +16,6 @@
 
 """APT key management helpers."""
 
-# pyright: reportMissingTypeStubs=false
 from __future__ import annotations
 
 import logging
@@ -24,11 +23,13 @@ import os
 import pathlib
 import subprocess
 import tempfile
-from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 from . import apt_ppa, errors, gpg, package_repository
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 logger = logging.getLogger(__name__)
 
@@ -290,7 +291,7 @@ class AptKeyManager:
 
 
 @contextmanager
-def _temporary_home_dir() -> Iterator[pathlib.Path]:
+def _temporary_home_dir() -> Generator[pathlib.Path, None, None]:
     """Yield a temporary directory with proper permissions for gpg."""
     with tempfile.TemporaryDirectory() as tmpdir_str:
         tmpdir = pathlib.Path(tmpdir_str)
