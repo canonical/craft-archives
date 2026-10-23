@@ -59,6 +59,7 @@ def test_is_on_old_releases_custom(
     )
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "directory",
     [
