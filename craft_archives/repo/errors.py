@@ -93,9 +93,15 @@ class AptGPGKeyringError(PackageRepositoryError):
 
 GPG_TIMEOUT_MESSAGE = "gpg: keyserver receive failed: Connection timed out"
 GPG_NETWORK_UNREACHABLE = "gpg: keyserver receive failed: Network is unreachable"
+GPG_SERVER_FAILED_MESSAGE = "gpg: keyserver receive failed: Server indicated a failure"
 
 # Errors that are possibly caused by a proxy server not being used.
 GPG_PROXY_ERRORS = (GPG_TIMEOUT_MESSAGE, GPG_NETWORK_UNREACHABLE)
+
+# Errors that may be transient on the keyserver or resolver side, and are
+# worth retrying against the fallback keyserver.
+# See apt_key_manager.retry_with_fallback_keyserver().
+GPG_TRANSIENT_ERRORS = (*GPG_PROXY_ERRORS, GPG_SERVER_FAILED_MESSAGE)
 
 
 class AptGPGKeyInstallError(PackageRepositoryError):
@@ -119,11 +125,8 @@ class AptGPGKeyInstallError(PackageRepositoryError):
             and key_server
         ):
             message = f"GPG key {key_id!r} not found on key server {key_server!r}"
-        elif (
-            "gpg: keyserver receive failed: Server indicated a failure" in message
-            and key_server
-        ):
-            message = f"unable to establish connection to key server {key_server!r}"
+        elif GPG_SERVER_FAILED_MESSAGE in message and key_server:
+            message = f"key server {key_server!r} indicated a failure"
         elif GPG_TIMEOUT_MESSAGE in message and key_server:
             message = (
                 f"unable to establish connection to key server {key_server!r} "

@@ -419,7 +419,7 @@ def test_install_key_from_keyserver_with_gpg_failure(apt_gpg, mock_run):
     assert str(raised.value) == "Failed to install GPG key: some error"
 
 
-@pytest.mark.parametrize("error_message", errors.GPG_PROXY_ERRORS)
+@pytest.mark.parametrize("error_message", errors.GPG_TRANSIENT_ERRORS)
 def test_install_key_from_keyserver_with_gpg_errors(
     apt_gpg, monkeypatch, mock_run, mock_chmod, error_message
 ):
@@ -481,6 +481,52 @@ def test_install_key_from_keyserver_with_gpg_errors(
             capture_output=True,
         ),
     ]
+
+
+def test_install_key_from_keyserver_server_failure_no_retry_non_default(
+    apt_gpg, mock_run
+):
+    """A "Server indicated a failure" from a non-default keyserver is fatal.
+
+    The fallback keyserver must not be used for user-specified keyservers,
+    and the surfaced error should report the failure without claiming a
+    connection was attempted.
+    """
+    mock_run.side_effect = subprocess.CalledProcessError(
+        cmd=["gpg"], returncode=2, stderr=errors.GPG_SERVER_FAILED_MESSAGE.encode()
+    )
+
+    with pytest.raises(errors.AptGPGKeyInstallError) as raised:
+        apt_gpg.install_key_from_keyserver(
+            key_id="fake-key-id", key_server="fake-server"
+        )
+
+    assert mock_run.call_count == 1
+    assert str(raised.value) == (
+        "Failed to install GPG key: key server 'fake-server' indicated a failure"
+    )
+
+
+def test_install_key_from_keyserver_server_failure_fallback_also_fails(
+    apt_gpg, mock_run
+):
+    """If the fallback keyserver also fails, the error surfaces."""
+    error = subprocess.CalledProcessError(
+        cmd=["gpg"], returncode=2, stderr=errors.GPG_SERVER_FAILED_MESSAGE.encode()
+    )
+    mock_run.side_effect = [error, error]
+
+    with pytest.raises(errors.AptGPGKeyInstallError):
+        apt_gpg.install_key_from_keyserver(
+            key_id="fake-key-id", key_server=DEFAULT_APT_KEYSERVER
+        )
+
+    # One call against the default keyserver, one against the fallback.
+    assert mock_run.call_count == 2
+    fallback_cmd = mock_run.call_args_list[1].args[0]
+    assert fallback_cmd[fallback_cmd.index("--keyserver") + 1] == (
+        "hkp://keyserver.ubuntu.com:80"
+    )
 
 
 @pytest.mark.parametrize(
