@@ -32,7 +32,7 @@ dev = [
   "build>=0.7.0",
   "coverage[toml]~=7.8",
   "pytest~=9.0",
-  "pytest-check~=2.5",
+  "pytest-check~=3.0",
   "pytest-cov==7.1.0",
   "pytest-mock~=3.14",
   "python-gnupg==0.5.7",
